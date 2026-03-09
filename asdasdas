@@ -1,0 +1,62 @@
+--!strict
+-- AK47 Recoil Profile (fast kick + fast return)
+
+return {
+	-- base recoil
+	kickStrength = 0.12,
+	kickRandomness = 0.22,
+
+	horizontalStrength = 0.075,
+	horizontalRandomness = 0.35,
+
+	rollStrength = 0.03,
+
+	-- spray
+	firstShotMultiplier = 1.35,
+	sprayIncrease = 0.10,
+	sprayDecayTime = 0.35,
+
+	-- camera shake used by RecoilSystem
+	cameraShake = 0.045,
+
+	-- positional kick (viewmodel kick)
+	gunKickback = 0.10,
+	gunRise = 0.09,
+
+	-- pattern settings
+	usePattern = true,
+	patternScale = 0.048,
+	patternSpeed = 18,
+	patternRandomness = 0.12,
+
+	-- pattern: mostly up + slight left
+	pattern = {
+		{x = -0.02, y = 0.95},
+		{x = -0.04, y = 1.00},
+		{x = -0.06, y = 1.05},
+		{x = -0.08, y = 1.10},
+		{x = -0.10, y = 1.08},
+		{x = -0.12, y = 1.06},
+		{x = -0.14, y = 1.04},
+		{x = -0.16, y = 1.02},
+		{x = -0.18, y = 1.00},
+		{x = -0.20, y = 0.98},
+		{x = -0.22, y = 0.96},
+		{x = -0.24, y = 0.94},
+	},
+
+	-- multipliers for states
+	aimMultiplier = 0.35,
+	crouchMultiplier = 0.70,
+	moveMultiplier = 1.25,
+
+	-- fast return tuning (used if RecoilSystem reads these fields)
+	springStiffness = 170.0,
+	springDamping = 34.0,
+
+	-- clamp (so it can travel higher)
+	minPitch = -0.20,
+	maxPitch = 1.05,
+	maxYaw = 0.60,
+	maxRoll = 0.34,
+}
