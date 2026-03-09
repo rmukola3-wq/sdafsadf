@@ -1,0 +1,55 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-15 12:31:38
+-- Luau version 6, Types version 3
+-- Time taken: 0.003827 seconds
+
+local module = {}
+local tbl_2 = {
+	Players = game:GetService("Players");
+	ReplicatedStorage = game:GetService("ReplicatedStorage");
+	Workspace = game:GetService("Workspace");
+	UserInputService = game:GetService("UserInputService");
+	ContextActionService = game:GetService("ContextActionService");
+	RunService = game:GetService("RunService");
+	TweenService = game:GetService("TweenService");
+	HttpService = game:GetService("HttpService");
+	SoundService = game:GetService("SoundService");
+	StarterGui = game:GetService("StarterGui");
+}
+local tbl = {
+	Framework = tbl_2.ReplicatedStorage:FindFirstChild("Framework");
+}
+local tbl_upvr = {
+	Modules = tbl.Framework:FindFirstChild("Modules");
+	Models = tbl.Framework:FindFirstChild("Models");
+}
+local LocalPlayer_upvr = tbl_2.Players.LocalPlayer
+function module.Setup(arg1) -- Line 27
+	--[[ Upvalues[2]:
+		[1]: tbl_upvr (readonly)
+		[2]: LocalPlayer_upvr (readonly)
+	]]
+	local var6
+	local function INLINED() -- Internal function, doesn't exist in bytecode
+		var6 = tbl_upvr.Models:FindFirstChild("ViewmodelCloth"):Clone()
+		return var6
+	end
+	if not workspace:GetAttribute("ViewmodelRealism") or not INLINED() then
+		var6 = tbl_upvr.Models:FindFirstChild("Viewmodel"):Clone()
+	end
+	var6.RootPart.Anchored = true
+	local Character = LocalPlayer_upvr.Character
+	local class_BodyColors = Character:FindFirstChildOfClass("BodyColors")
+	if class_BodyColors then
+		class_BodyColors:Clone().Parent = var6
+	end
+	local class_Shirt = Character:FindFirstChildOfClass("Shirt")
+	if class_Shirt and not var6:GetAttribute("NoShirt") then
+		class_Shirt:Clone().Parent = var6
+	end
+	var6:PivotTo(workspace.CurrentCamera.CFrame)
+	return var6
+end
+return module

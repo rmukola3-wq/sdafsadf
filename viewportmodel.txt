@@ -1,0 +1,141 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-15 12:31:06
+-- Luau version 6, Types version 3
+-- Time taken: 0.010866 seconds
+
+local tbl_4_upvr = {0, 1, 2, 3, 4, 5, 6, 7}
+local tbl_2_upvr = {0, 1, 3, 4, 5, 7}
+local tbl_upvr = {0, 1, 4, 5, 6}
+local module_upvr = {}
+module_upvr.__index = module_upvr
+module_upvr.ClassName = "ViewportModel"
+local function _(arg1) -- Line 13, Named "getIndices"
+	--[[ Upvalues[3]:
+		[1]: tbl_2_upvr (readonly)
+		[2]: tbl_upvr (readonly)
+		[3]: tbl_4_upvr (readonly)
+	]]
+	if arg1:IsA("WedgePart") then
+		return tbl_2_upvr
+	end
+	if arg1:IsA("CornerWedgePart") then
+		return tbl_upvr
+	end
+	return tbl_4_upvr
+end
+local function getCorners_upvr(arg1, arg2, arg3) -- Line 22, Named "getCorners"
+	local module_2 = {}
+	for _, v in pairs(arg3) do
+		module_2[v + 1] = (arg1) * (arg2 * Vector3.new(math.floor(v / 4) % 2 * 2 - 1, math.floor(v / 2) % 2 * 2 - 1, 2 * v % 2 - 1))
+	end
+	return module_2
+end
+local function getModelPointCloud_upvr(arg1) -- Line 34, Named "getModelPointCloud"
+	--[[ Upvalues[4]:
+		[1]: tbl_2_upvr (readonly)
+		[2]: tbl_upvr (readonly)
+		[3]: tbl_4_upvr (readonly)
+		[4]: getCorners_upvr (readonly)
+	]]
+	local module = {}
+	for _, v_2 in pairs(arg1:GetDescendants()) do
+		local children = v_2:IsA("BasePart")
+		if children then
+			if v_2:IsA("WedgePart") then
+				children = tbl_2_upvr
+			elseif v_2:IsA("CornerWedgePart") then
+				children = tbl_upvr
+			else
+				children = tbl_4_upvr
+			end
+			for _, v_3 in pairs(getCorners_upvr(v_2.CFrame, v_2.Size / 2, children)) do
+				table.insert(module, v_3)
+			end
+		end
+	end
+	return module
+end
+local function viewProjectionEdgeHits_upvr(arg1, arg2, arg3, arg4) -- Line 48, Named "viewProjectionEdgeHits"
+	local var33 = (-math.huge)
+	local var34 = math.huge
+	for _, v_4 in pairs(arg1) do
+		local var38 = arg4 * (arg3 - v_4.Z)
+		local var39 = v_4[arg2] + var38
+		local var40 = v_4[arg2] - var38
+		var33 = math.max(var33, var39, var40)
+		var34 = math.min(var34, var39, var40)
+	end
+	return var33, var34
+end
+function module_upvr.new(arg1, arg2) -- Line 67
+	--[[ Upvalues[1]:
+		[1]: module_upvr (readonly)
+	]]
+	local setmetatable_result1 = setmetatable({}, module_upvr)
+	setmetatable_result1.Model = nil
+	setmetatable_result1.ViewportFrame = arg1
+	setmetatable_result1.Camera = arg2
+	setmetatable_result1._points = {}
+	setmetatable_result1._modelCFrame = CFrame.new()
+	setmetatable_result1._modelSize = Vector3.new()
+	setmetatable_result1._modelRadius = 0
+	setmetatable_result1._viewport = {}
+	setmetatable_result1:Calibrate()
+	return setmetatable_result1
+end
+function module_upvr.SetModel(arg1, arg2) -- Line 91
+	--[[ Upvalues[1]:
+		[1]: getModelPointCloud_upvr (readonly)
+	]]
+	arg1.Model = arg2
+	local any_GetBoundingBox_result1, any_GetBoundingBox_result2 = arg2:GetBoundingBox()
+	arg1._points = getModelPointCloud_upvr(arg2)
+	arg1._modelCFrame = any_GetBoundingBox_result1
+	arg1._modelSize = any_GetBoundingBox_result2
+	arg1._modelRadius = any_GetBoundingBox_result2.Magnitude / 2
+end
+function module_upvr.Calibrate(arg1) -- Line 104
+	local tbl_3 = {}
+	local AbsoluteSize = arg1.ViewportFrame.AbsoluteSize
+	tbl_3.aspect = AbsoluteSize.X / AbsoluteSize.Y
+	tbl_3.yFov2 = math.rad(arg1.Camera.FieldOfView / 2)
+	tbl_3.tanyFov2 = math.tan(tbl_3.yFov2)
+	tbl_3.xFov2 = math.atan(tbl_3.tanyFov2 * tbl_3.aspect)
+	tbl_3.tanxFov2 = math.tan(tbl_3.xFov2)
+	tbl_3.cFov2 = math.atan(tbl_3.tanyFov2 * math.min(1, tbl_3.aspect))
+	tbl_3.sincFov2 = math.sin(tbl_3.cFov2)
+	arg1._viewport = tbl_3
+end
+function module_upvr.GetFitDistance(arg1, arg2) -- Line 126
+	if not arg2 or not (arg2 - arg1._modelCFrame.Position).Magnitude then
+	end
+	return (arg1._modelRadius + 0) / arg1._viewport.sincFov2
+end
+function module_upvr.GetMinimumFitCFrame(arg1, arg2) -- Line 138
+	--[[ Upvalues[1]:
+		[1]: viewProjectionEdgeHits_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	local var50
+	if not arg1.Model then
+		return CFrame.new()
+	end
+	local any_Inverse_result1 = arg2 - arg2.Position:Inverse()
+	local _points = arg1._points
+	local tbl = {}
+	var50 = any_Inverse_result1 * _points[1]
+	tbl[1] = var50
+	var50 = tbl[1].Z
+	for i_5 = 2, #_points do
+		local var54 = any_Inverse_result1 * _points[i_5]
+		var50 = math.min(var50, var54.Z)
+		tbl[i_5] = var54
+		local _
+	end
+	local viewProjectionEdgeHits_upvr_result1_2, viewProjectionEdgeHits_upvr_result2 = viewProjectionEdgeHits_upvr(tbl, 'X', var50, arg1._viewport.tanxFov2)
+	local viewProjectionEdgeHits_upvr_result1, viewProjectionEdgeHits_result2 = viewProjectionEdgeHits_upvr(tbl, 'Y', var50, arg1._viewport.tanyFov2)
+	return arg2 * CFrame.new((viewProjectionEdgeHits_upvr_result1_2 + viewProjectionEdgeHits_upvr_result2) / 2, (viewProjectionEdgeHits_upvr_result1 + viewProjectionEdgeHits_result2) / 2, var50 + math.max((viewProjectionEdgeHits_upvr_result1_2 - viewProjectionEdgeHits_upvr_result2) / 2 / arg1._viewport.tanxFov2, (viewProjectionEdgeHits_upvr_result1 - viewProjectionEdgeHits_result2) / 2 / arg1._viewport.tanyFov2))
+end
+return module_upvr

@@ -1,0 +1,227 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-15 12:31:12
+-- Luau version 6, Types version 3
+-- Time taken: 0.029840 seconds
+
+local module_upvr = {}
+module_upvr.__index = module_upvr
+local min_upvr = math.min
+local max_upvr = math.max
+local clock_upvr = os.clock
+function module_upvr.new() -- Line 38
+	--[[ Upvalues[1]:
+		[1]: module_upvr (readonly)
+	]]
+	local setmetatable_result1 = setmetatable({}, module_upvr)
+	setmetatable_result1.pitch = 0
+	setmetatable_result1.yaw = 0
+	setmetatable_result1.roll = 0
+	setmetatable_result1.pitchVel = 0
+	setmetatable_result1.yawVel = 0
+	setmetatable_result1.rollVel = 0
+	setmetatable_result1.posX = 0
+	setmetatable_result1.posY = 0
+	setmetatable_result1.posZ = 0
+	setmetatable_result1.velX = 0
+	setmetatable_result1.velY = 0
+	setmetatable_result1.velZ = 0
+	setmetatable_result1.shotsFired = 0
+	setmetatable_result1.sprayAmount = 0
+	setmetatable_result1.lastShotTime = 0
+	setmetatable_result1.patternIndex = 0
+	setmetatable_result1.bounceDirection = 1
+	return setmetatable_result1
+end
+local random_upvr = math.random
+function module_upvr.Kick(arg1, arg2, arg3, arg4) -- Line 50
+	--[[ Upvalues[4]:
+		[1]: clock_upvr (readonly)
+		[2]: max_upvr (readonly)
+		[3]: random_upvr (readonly)
+		[4]: min_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	local clock_upvr_result1 = clock_upvr()
+	local var19 = clock_upvr_result1 - arg1.lastShotTime
+	local var20 = arg2
+	if not var20 then
+		var20 = {}
+	end
+	local var21 = var20
+	if (var21.sprayDecayTime or 0.4) < var19 then
+		arg1.sprayAmount = max_upvr(0, arg1.sprayAmount - var19 * 3.5)
+		if arg1.sprayAmount < 0.05 then
+			arg1.sprayAmount = 0
+			arg1.shotsFired = 0
+			arg1.patternIndex = 0
+		end
+	end
+	arg1.lastShotTime = clock_upvr_result1
+	local var22 = arg4 * 0.5
+	if arg1.shotsFired ~= 0 or not var21.firstShotMultiplier then
+	end
+	arg1.shotsFired += 1
+	arg1.sprayAmount += (var21.sprayIncrease or 0.08) / (1 + arg1.shotsFired * 0.035)
+	local var23 = (var21.kickStrength or 0.08) * (1 + (random_upvr() - 0.5) * (var21.kickRandomness or 0.3)) * 1 * (1 + arg1.sprayAmount)
+	local var24 = (var21.horizontalStrength or 0.04) * (random_upvr() * 2 - 1) * (1 + (random_upvr() - 0.5) * (var21.horizontalRandomness or 0.5))
+	if var21.usePattern and var21.pattern and 0 < #var21.pattern then
+		arg1.patternIndex = min_upvr(arg1.patternIndex + 1, #var21.pattern)
+		local var25 = var21.pattern[arg1.patternIndex]
+		local var26 = var21.patternScale or 1
+		local var27 = 1 + (random_upvr() - 0.5) * (var21.patternRandomness or 0.1) * 0.8
+		var23 = var25.y * var26 * var27
+		var24 = var25.x * var26 * var27
+	end
+	if var21.horizontalBounce then
+		var24 *= arg1.bounceDirection * (var21.bounceAmount or 0.7)
+		arg1.bounceDirection = -arg1.bounceDirection
+	end
+	local var28 = (var21.patternSpeed or 25) * (min_upvr(var19, 0.1) * 2 + 0.8)
+	var23 *= var22 * var28
+	var24 *= var22 * var28
+	arg1.pitchVel += var23
+	arg1.yawVel += var24
+	arg1.rollVel += ((var21.rollStrength or 0.02) * (random_upvr() * 2 - 1)) * (var22 * var28) * 0.7 - var24 * 0.25
+	arg1.velZ -= (var21.gunKickback or 0.06) * var28 * 1.1
+	arg1.velY += (var21.gunRise or 0.04) * var28 * 0.75
+	arg1.velX += var24 * 0.25
+end
+local abs_upvr = math.abs
+local clamp_upvr = math.clamp
+local sin_upvr = math.sin
+local cos_upvr = math.cos
+function module_upvr.Update(arg1, arg2) -- Line 103
+	--[[ Upvalues[7]:
+		[1]: min_upvr (readonly)
+		[2]: abs_upvr (readonly)
+		[3]: max_upvr (readonly)
+		[4]: clamp_upvr (readonly)
+		[5]: clock_upvr (readonly)
+		[6]: sin_upvr (readonly)
+		[7]: cos_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	local var2_result1_upvw = min_upvr(arg2, 0.1)
+	local function _(arg1_2, arg2_2) -- Line 108, Named "updateSpring"
+		--[[ Upvalues[2]:
+			[1]: var2_result1_upvw (read and write)
+			[2]: abs_upvr (copied, readonly)
+		]]
+		local var34 = arg2_2 + (-56.25 * arg1_2 - 12.75 * arg2_2) * var2_result1_upvw
+		local var35 = arg1_2 + var34 * var2_result1_upvw
+		if abs_upvr(var35) < 0.0008 and abs_upvr(var34) < 0.008 then
+			return var35 * 0.5, var34 * 0.5
+		end
+		return var35, var34
+	end
+	local pitch = arg1.pitch
+	local pitchVel = arg1.pitchVel
+	local var38 = pitchVel + (-56.25 * pitch - 12.75 * pitchVel) * var2_result1_upvw
+	local var39 = pitch + var38 * var2_result1_upvw
+	local var40
+	if abs_upvr(var39) < 0.0008 and abs_upvr(var38) < 0.008 then
+		var40 = var39 * 0.5
+	else
+		var40 = var39
+	end
+	arg1.pitch = var40
+	arg1.pitchVel = var38
+	local yaw = arg1.yaw
+	local yawVel = arg1.yawVel
+	local var43 = yawVel + (-56.25 * yaw - 12.75 * yawVel) * var2_result1_upvw
+	local var44 = yaw + var43 * var2_result1_upvw
+	if abs_upvr(var44) < 0.0008 and abs_upvr(var43) < 0.008 then
+		var40 = var44 * 0.5
+	else
+		var40 = var44
+	end
+	arg1.yaw = var40
+	arg1.yawVel = var43
+	local roll = arg1.roll
+	local rollVel = arg1.rollVel
+	local var47 = rollVel + (-56.25 * roll - 12.75 * rollVel) * var2_result1_upvw
+	local var48 = roll + var47 * var2_result1_upvw
+	if abs_upvr(var48) < 0.0008 and abs_upvr(var47) < 0.008 then
+		var40 = var48 * 0.5
+	else
+		var40 = var48
+	end
+	arg1.roll = var40
+	arg1.rollVel = var47
+	local posX = arg1.posX
+	local velX = arg1.velX
+	local var51 = velX + (-56.25 * posX - 12.75 * velX) * var2_result1_upvw
+	local var52 = posX + var51 * var2_result1_upvw
+	if abs_upvr(var52) < 0.0008 and abs_upvr(var51) < 0.008 then
+		var40 = var52 * 0.5
+	else
+		var40 = var52
+	end
+	arg1.posX = var40
+	arg1.velX = var51
+	local posY = arg1.posY
+	local velY = arg1.velY
+	local var55 = velY + (-56.25 * posY - 12.75 * velY) * var2_result1_upvw
+	local var56 = posY + var55 * var2_result1_upvw
+	if abs_upvr(var56) < 0.0008 and abs_upvr(var55) < 0.008 then
+		var40 = var56 * 0.5
+	else
+		var40 = var56
+	end
+	arg1.posY = var40
+	arg1.velY = var55
+	local posZ = arg1.posZ
+	local velZ = arg1.velZ
+	local var59 = velZ + (-56.25 * posZ - 12.75 * velZ) * var2_result1_upvw
+	local var60 = posZ + var59 * var2_result1_upvw
+	if abs_upvr(var60) < 0.0008 and abs_upvr(var59) < 0.008 then
+		var40 = var60 * 0.5
+	else
+		var40 = var60
+	end
+	arg1.posZ = var40
+	arg1.velZ = var59
+	var40 = max_upvr(0, arg1.sprayAmount - var2_result1_upvw * 2.2)
+	arg1.sprayAmount = var40
+	var40 = clamp_upvr(arg1.pitch, -0.3, 0.8)
+	arg1.pitch = var40
+	var40 = clamp_upvr(arg1.yaw, -0.5, 0.5)
+	arg1.yaw = var40
+	var40 = clamp_upvr(arg1.roll, -0.35, 0.35)
+	arg1.roll = var40
+	var40 = clock_upvr()
+	local var61 = (abs_upvr(arg1.pitchVel) + abs_upvr(arg1.yawVel)) * 0.004
+	return CFrame.new(arg1.posX * 0.25 + (sin_upvr(var40 * 47.3) * 0.6 + cos_upvr(var40 * 31.7) * 0.4) * var61 * 0, arg1.posY * 0.35 + (sin_upvr(var40 * 41.2) * 0.6 + cos_upvr(var40 * 37.9) * 0.4) * var61 * 0, arg1.posZ * 0.4) * CFrame.Angles(arg1.pitch, arg1.yaw, arg1.roll)
+end
+function module_upvr.GetCameraRecoil(arg1) -- Line 137
+	return Vector2.new(arg1.yaw * 45, -arg1.pitch * 45)
+end
+function module_upvr.Reset(arg1) -- Line 139
+	arg1.pitch = 0
+	arg1.yaw = 0
+	arg1.roll = 0
+	arg1.pitchVel = 0
+	arg1.yawVel = 0
+	arg1.rollVel = 0
+	arg1.posX = 0
+	arg1.posY = 0
+	arg1.posZ = 0
+	arg1.velX = 0
+	arg1.velY = 0
+	arg1.velZ = 0
+	arg1.shotsFired = 0
+	arg1.sprayAmount = 0
+	arg1.patternIndex = 0
+end
+function module_upvr.SetPattern(arg1, arg2) -- Line 147
+	arg1.patternIndex = 0
+end
+function module_upvr.GetSprayAmount(arg1) -- Line 148
+	return arg1.sprayAmount
+end
+function module_upvr.GetShotsFired(arg1) -- Line 149
+	return arg1.shotsFired
+end
+return module_upvr

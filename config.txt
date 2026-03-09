@@ -1,0 +1,1000 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-15 12:29:06
+-- Luau version 6, Types version 3
+-- Time taken: 0.039710 seconds
+
+return table.freeze({
+	HoldToAim = true;
+	OverheatDefaults = {
+		WARM = 0.4;
+		HOT = 0.7;
+		CRIT = 0.9;
+		UNLOCK = 0.25;
+		SuppressorHeatMult = 1.18;
+		AutoHeatMult = 1.07;
+		BurstHeatMult = 1.05;
+		BaseDecay = 1.5;
+		HotBonusDecay = 0.75;
+		SprintDecayBoost = 0.35;
+		UnequippedBoost = 0.65;
+		WaterBurst = 6;
+		HeatJamScale = 0.75;
+		HotDelayFrac = 0.2;
+		CritDelayFrac = 0.45;
+		HotRecoilUp = 0.1;
+		SmokeAt = 0.35;
+		SmokeMaxAt = 1;
+	};
+	ScopeParallax = {
+		Enabled = true;
+		BaseStrength = 0.25;
+		AimReduction = 0.75;
+		FocusReduction = 0.85;
+		StaminaInfluence = 0.4;
+		MaxOffset = 120;
+		Smoothing = 0.12;
+	};
+	UpdateSpeed = 0.4;
+	HeadHorFactor = 1.1;
+	HeadVertFactor = 0.9;
+	BodyHorFactor = 0.5;
+	BodyVertFactor = 0.4;
+	SendInterval = 0.075;
+	EnableWaist = false;
+	RecoilStateMultipliers = {
+		Standing = 1;
+		Moving = 1.12;
+		Airborne = 1.3;
+		Jumping = 1.45;
+		Crouching = 0.8;
+		Prone = 0.55;
+		HoldingFocus = 0.45;
+		bipod = 0.45;
+		Aiming = 0.75;
+	};
+	JumpPower = 30;
+	BulletSize = Vector3.new(0.20000, 0.20000, 0.20000);
+	BulletShape = Enum.PartType.Ball;
+	BulletMaterial = Enum.Material.Neon;
+	BulletColor = BrickColor.new("Hot pink");
+	BulletPoolSize = 200;
+	WhizzPoolSize = 12;
+	HitEffectPoolSize = 40;
+	SwaySpringFrequency = 3.5;
+	SwaySpringDamping = 0.94;
+	SwaySpringMass = 1.2;
+	RotSpringFrequency = 6;
+	RotSpringDamping = 0.88;
+	RotSpringMass = 1;
+	BreathPosSpringFrequency = 6;
+	BreathPosSpringDamping = 0.92;
+	BreathPosSpringMass = 1;
+	BreathRotSpringFrequency = 12;
+	BreathRotSpringDamping = 0.85;
+	BreathRotSpringMass = 1;
+	WalkPosSpringFrequency = 10;
+	WalkPosSpringDamping = 0.92;
+	WalkPosSpringMass = 1;
+	WalkRotSpringFrequency = 10;
+	WalkRotSpringDamping = 0.92;
+	WalkRotSpringMass = 1;
+	BreathTime = 0;
+	LerpSpeed = 5;
+	AimLerpSpeed = 20;
+	FOVTweenTime = 1.5;
+	FOVTweenStyle = Enum.EasingStyle.Quad;
+	FOVTweenDirection = Enum.EasingDirection.Out;
+	DefaultFOV = 70;
+	AimMouseSensitivity = 0.35;
+	NormalMouseSensitivity = 1;
+	MuzzleFlashEmitDivider = 10;
+	BoltPullStyle = Enum.EasingStyle.Back;
+	BoltPullDirection = Enum.EasingDirection.Out;
+	BoltResetStyle = Enum.EasingStyle.Back;
+	BoltResetDirection = Enum.EasingDirection.In;
+	BoltPullCFrame = CFrame.new(0, 0, -0.25);
+	BoltResetCFrame = CFrame.new(0, 0, 0);
+	AutoBoltOnReload = false;
+	AdsMeshTweenTime = 0.25;
+	AdsMeshTweenStyle = Enum.EasingStyle.Linear;
+	AdsMeshTweenDirection = Enum.EasingDirection.Out;
+	BobbleEquipTrigger = 0.5;
+	BobbleReloadTrigger = 0.5;
+	BobbleDryFireTrigger = 0.4;
+	BobbleChangeAimTrigger = 1;
+	BobbleChangeFiremodeTrigger = 0.35;
+	BobbleToggleLaserTrigger = 0.2;
+	NotificationSystem = true;
+	NotificationMessages = {
+		Jammed = "Weapon jammed, pull the bolt to clear.";
+		NoAmmo = "Out of ammo!";
+		ChamberGun = "Chamber your weapon before firing.";
+		WeaponUnchambered = "Weapon is unchambered.";
+		Reloading = "Reloading...";
+		EmptyReload = "Reloaded";
+		SuppressorToggled = "Suppressor toggled.";
+		LaserToggled = "Laser sight toggled.";
+		ChangeFireMode = "Fire mode set to %s.";
+		ChangeAimMode = "Aim mode changed.";
+		CannotFire = "You can't fire right now.";
+		CannotReload = "Can't reload at the moment.";
+		SafeMode = "Fire mode: Safe, weapon locked.";
+		HeatWarm = "Barrel warming.";
+		HeatHot = "Barrel hot. Pace your shots.";
+		HeatCrit = "Critical heat! Firing throttled.";
+		ADSOn = "Aiming down sights.";
+		ADSOff = "Stopped aiming.";
+		WeaponEquipped = "Weapon equipped.";
+		ReloadFailed = "No spare magazines left.";
+		ReloadBlocked = "Can't reload while firing.";
+		WeaponUnequipped = "Weapon unequipped.";
+		BoltPulled = "Bolt pulled.";
+		FlashlightToggled = "Flashlight toggled";
+		Overheated = "Weapon overheated!";
+		CooledDown = "Weapon cooled down.";
+		BipodUnavailable = "No bipod on this weapon.";
+		BipodNoSurface = "No surface to deploy the bipod.";
+		BipodDeployed = "Bipod deployed.";
+		BipodLifted = "Bipod lifted.";
+		ComtacsOn = "Comtacs enabled.";
+		ComtacsOff = "Comtacs disabled.";
+		ComtacsMode = "Comtacs mode: %s.";
+		ComtacsLevel = "Comtacs level: %0.0f%%.";
+	};
+	Movement = {
+		StanceCooldown = 0.35;
+		StanceAnimLock = 0.25;
+		DefaultWalkspeed = 8;
+		SprintWalkspeed = 18;
+		JogWalkspeed = 14.5;
+		CrouchWalkspeed = 5;
+		ProneWalkspeed = 2.5;
+		LeanSpeed = 1;
+		LeanEasePower = 2;
+		StaminaDrainSprint = 3;
+		StaminaDrainJog = 0;
+		StaminaRegen = 4;
+		SprintMinToSustain = 15;
+		SprintReenterAt = 35;
+		ClimbMinStamina = 20;
+		ClimbCost = 12;
+		VaultCost = 8;
+	};
+	ViewmodelSettings = {
+		MaxDT = 0.03333333333333333;
+		HardCutoffDT = 0.2;
+		IdleThreshold = 1;
+		Sensitivity = 0.18;
+		RollMultiplier = 0.0008;
+		PitchMultiplier = 0.0008;
+		RollClamp = 0.06;
+		PitchClamp = 0.06;
+		BlindfireRotMultiplier = 0.75;
+		BlindfirePosMultiplier = 0.002;
+		LerpSpeed = 6;
+		DefaultSpeed = 12;
+		StabilizeLerpSpeed = 4;
+		BaseBreathSwayAmount = 0.01;
+		BaseBreathTiltAmount = 0.013962634015954637;
+		BaseBreathUpDownAmount = 0.018;
+		BaseBreathSpeed = 1.1;
+		BaseWalkSwayAmount = 0.018;
+		BaseWalkUpDownAmount = 0.015;
+		BaseWalkForwardAmount = 0.018;
+		BaseWalkTiltAmount = 0.038397243543875255;
+		AimFactor = 0.55;
+		AimFactorLerpSpeed = 18;
+		MaxAimStamina = 100;
+		StaminaDrainRate = 5;
+		StaminaRegenRate = 12;
+		SwayMultiplier = 1;
+		FocusMultiplier = 0.18;
+		ExhaustedMultiplier = 1.3;
+		SwayLerpSpeed = 5;
+		ExhaustedLerpSpeed = 3;
+		AimLerpSpeed = 12;
+		AimTiltTarget = -0.13962634015954636;
+		BreathSpeedMultiplier = 0.45;
+		BreathTiltMultiplier = 0.25;
+		BreathPitchAmount = 0.006981317007977318;
+		FocusBreathSpeedMultiplier = 0.5;
+		LongAimNoiseSpeedX = 0.15;
+		LongAimNoiseSeedX = 123;
+		LongAimFactorX = 0.025;
+		LongAimNoiseSpeedY = 0.18;
+		LongAimNoiseSeedY = 456;
+		LongAimFactorY = 0.04;
+		LongAimNoiseSpeedPitch = 0.22;
+		LongAimNoiseSeedPitch = 789;
+		LongAimFactorPitch = 0.012217304763960306;
+		LongAimNoiseSpeedYaw = 0.18;
+		LongAimNoiseSeedYaw = 101;
+		LongAimFactorYaw = 0.006981317007977318;
+		LongAimNoiseSpeedRoll = 0.2;
+		LongAimNoiseSeedRoll = 112;
+		LongAimFactorRoll = 0.024434609527920613;
+		WalkBobSpeed = 13.5;
+		WalkPitchMultiplier = 1.5;
+		WalkYawMultiplier = 0.8;
+		WalkRollDirectionDot = 0.13962634015954636;
+		WalkFactorLerpSpeed = 5;
+		WalkPitchAmount = 0.4;
+		WalkYawAmount = 0.25;
+		PushbackLerpSpeed = 20;
+		SprintCFLerpSpeed = 7;
+		IdleAimTimeThreshold = 6;
+		IdleAimTimeRamp = 6;
+		StaminaFactor = 1.8;
+		StabilizeFactorAdd = 1.8;
+		BreathSpeedFactor = 0.4;
+		BlindfireAimCFrame = CFrame.new(-0.1, 0.85, 0.7) * CFrame.Angles(-0.04363323129985824, 0, 1.1344640137963142);
+		Offset = CFrame.new(-0.05, -0.075, -0.1);
+	};
+	BurstCountDefault = 3;
+	RecoilCameraTime = 0.1;
+	RecoilCameraIntensity = 1.5;
+	DefaultRecoilProfile = "COMPACTAK";
+	DefaultFireMode = "Semi";
+	DefaultFireRate = 600;
+	DefaultBulletSpeed = 1500;
+	DefaultBulletDrop = 0.1;
+	RenderStepPriority = 1001;
+	MinDistanceCheck = 0.000001;
+	MaxRatioClamp = 1;
+	MinRatioClamp = -1;
+	ViewmodelBindName = "Viewmodel";
+	BulletTypeDamage = {
+		[".22 LR"] = {
+			Head = 150;
+			Torso = 22;
+			Arms = 12;
+			Legs = 10;
+		};
+		[".25 ACP"] = {
+			Head = 150;
+			Torso = 18;
+			Arms = 10;
+			Legs = 8;
+		};
+		[".32 ACP"] = {
+			Head = 150;
+			Torso = 28;
+			Arms = 16;
+			Legs = 14;
+		};
+		[".380 ACP"] = {
+			Head = 150;
+			Torso = 35;
+			Arms = 20;
+			Legs = 18;
+		};
+		["9x18mm"] = {
+			Head = 150;
+			Torso = 38;
+			Arms = 22;
+			Legs = 20;
+		};
+		["9x19mm"] = {
+			Head = 150;
+			Torso = 42;
+			Arms = 25;
+			Legs = 22;
+		};
+		[".38 Special"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		[".38 S&W"] = {
+			Head = 150;
+			Torso = 38;
+			Arms = 22;
+			Legs = 20;
+		};
+		["5.7x28mm"] = {
+			Head = 150;
+			Torso = 38;
+			Arms = 22;
+			Legs = 20;
+		};
+		["5.8x21mm"] = {
+			Head = 150;
+			Torso = 38;
+			Arms = 22;
+			Legs = 20;
+		};
+		["7.62x25mm"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.62x25 Tokarev"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.62x25mm TT AKBS"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.62x25mm TT FMJ43"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.62x25mm TT LRN"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.62x25mm TT LRNPC"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.62x25mm TT P gl"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.62x25mm TT PT gzh"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.62x25mm TT Pst gzh"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["7.63x25mm"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 24;
+			Legs = 21;
+		};
+		["9x21mm Gyurza"] = {
+			Head = 150;
+			Torso = 48;
+			Arms = 28;
+			Legs = 25;
+		};
+		["9x23mm Largo"] = {
+			Head = 150;
+			Torso = 46;
+			Arms = 27;
+			Legs = 24;
+		};
+		[".357 SIG"] = {
+			Head = 150;
+			Torso = 48;
+			Arms = 28;
+			Legs = 25;
+		};
+		[".40 S&W"] = {
+			Head = 150;
+			Torso = 48;
+			Arms = 30;
+			Legs = 26;
+		};
+		["10mm Auto"] = {
+			Head = 150;
+			Torso = 55;
+			Arms = 35;
+			Legs = 30;
+		};
+		[".45 ACP"] = {
+			Head = 150;
+			Torso = 52;
+			Arms = 33;
+			Legs = 28;
+		};
+		[".45 Colt"] = {
+			Head = 150;
+			Torso = 55;
+			Arms = 35;
+			Legs = 30;
+		};
+		[".357 Magnum"] = {
+			Head = 150;
+			Torso = 62;
+			Arms = 40;
+			Legs = 35;
+		};
+		[".44 Special"] = {
+			Head = 150;
+			Torso = 58;
+			Arms = 38;
+			Legs = 33;
+		};
+		[".44 Magnum"] = {
+			Head = 150;
+			Torso = 72;
+			Arms = 48;
+			Legs = 42;
+		};
+		[".455 Webley"] = {
+			Head = 150;
+			Torso = 60;
+			Arms = 40;
+			Legs = 35;
+		};
+		["7.62x38mmR"] = {
+			Head = 150;
+			Torso = 45;
+			Arms = 28;
+			Legs = 24;
+		};
+		[".460 S&W Magnum"] = {
+			Head = 150;
+			Torso = 85;
+			Arms = 58;
+			Legs = 50;
+		};
+		[".500 S&W"] = {
+			Head = 150;
+			Torso = 92;
+			Arms = 62;
+			Legs = 55;
+		};
+		[".50 AE"] = {
+			Head = 150;
+			Torso = 78;
+			Arms = 52;
+			Legs = 46;
+		};
+		[".50 GI"] = {
+			Head = 150;
+			Torso = 65;
+			Arms = 42;
+			Legs = 38;
+		};
+		["5.45x18mm"] = {
+			Head = 150;
+			Torso = 32;
+			Arms = 18;
+			Legs = 16;
+		};
+		["5.45x39mm"] = {
+			Head = 150;
+			Torso = 45;
+			Arms = 28;
+			Legs = 24;
+		};
+		["5.45x39mm FMJ"] = {
+			Head = 150;
+			Torso = 45;
+			Arms = 28;
+			Legs = 24;
+		};
+		["5.45x39mm HP"] = {
+			Head = 150;
+			Torso = 52;
+			Arms = 32;
+			Legs = 28;
+		};
+		["5.45x39mm SP"] = {
+			Head = 150;
+			Torso = 50;
+			Arms = 30;
+			Legs = 26;
+		};
+		["5.45x39mm PS gs"] = {
+			Head = 150;
+			Torso = 45;
+			Arms = 28;
+			Legs = 24;
+		};
+		["5.45x39mm PP gs"] = {
+			Head = 150;
+			Torso = 43;
+			Arms = 27;
+			Legs = 23;
+		};
+		["5.45x39mm BP gs"] = {
+			Head = 150;
+			Torso = 42;
+			Arms = 26;
+			Legs = 22;
+		};
+		["5.45x39mm BS gs"] = {
+			Head = 150;
+			Torso = 44;
+			Arms = 27;
+			Legs = 23;
+		};
+		["5.45x39mm BT gs"] = {
+			Head = 150;
+			Torso = 46;
+			Arms = 28;
+			Legs = 24;
+		};
+		["5.45x39mm PRS gs"] = {
+			Head = 150;
+			Torso = 48;
+			Arms = 30;
+			Legs = 26;
+		};
+		["5.45x39mm T gs"] = {
+			Head = 150;
+			Torso = 44;
+			Arms = 27;
+			Legs = 23;
+		};
+		["5.45x39mm 7N39 \"Igolnik\""] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 25;
+			Legs = 21;
+		};
+		["5.56x45mm"] = {
+			Head = 150;
+			Torso = 48;
+			Arms = 30;
+			Legs = 26;
+		};
+		["5.56x45mm FMJ"] = {
+			Head = 150;
+			Torso = 48;
+			Arms = 30;
+			Legs = 26;
+		};
+		["5.56x45mm HP"] = {
+			Head = 150;
+			Torso = 58;
+			Arms = 36;
+			Legs = 32;
+		};
+		["5.56x45mm M855"] = {
+			Head = 150;
+			Torso = 46;
+			Arms = 29;
+			Legs = 25;
+		};
+		["5.56x45mm M855A1"] = {
+			Head = 150;
+			Torso = 50;
+			Arms = 31;
+			Legs = 27;
+		};
+		["5.56x45mm M856"] = {
+			Head = 150;
+			Torso = 45;
+			Arms = 28;
+			Legs = 24;
+		};
+		["5.56x45mm M856A1"] = {
+			Head = 150;
+			Torso = 47;
+			Arms = 29;
+			Legs = 25;
+		};
+		["5.56x45mm M995"] = {
+			Head = 150;
+			Torso = 42;
+			Arms = 26;
+			Legs = 22;
+		};
+		["5.56x45mm MK 255"] = {
+			Head = 150;
+			Torso = 52;
+			Arms = 32;
+			Legs = 28;
+		};
+		["5.56x45mm MK 318"] = {
+			Head = 150;
+			Torso = 55;
+			Arms = 34;
+			Legs = 30;
+		};
+		["5.56x45mm SSA AP"] = {
+			Head = 150;
+			Torso = 40;
+			Arms = 25;
+			Legs = 21;
+		};
+		["5.56x45mm Varmageddon"] = {
+			Head = 150;
+			Torso = 60;
+			Arms = 38;
+			Legs = 34;
+		};
+		["7.62x39mm"] = {
+			Head = 150;
+			Torso = 55;
+			Arms = 35;
+			Legs = 30;
+		};
+		["7.62x39mm HP"] = {
+			Head = 150;
+			Torso = 65;
+			Arms = 42;
+			Legs = 36;
+		};
+		["7.62x39mm BP gzh"] = {
+			Head = 150;
+			Torso = 50;
+			Arms = 32;
+			Legs = 27;
+		};
+		["7.62x39mm MAI AP"] = {
+			Head = 150;
+			Torso = 48;
+			Arms = 30;
+			Legs = 25;
+		};
+		["9x39mm"] = {
+			Head = 150;
+			Torso = 62;
+			Arms = 40;
+			Legs = 35;
+		};
+		["7.62x51mm"] = {
+			Head = 150;
+			Torso = 72;
+			Arms = 48;
+			Legs = 42;
+		};
+		[".308 Winchester"] = {
+			Head = 150;
+			Torso = 72;
+			Arms = 48;
+			Legs = 42;
+		};
+		["7.62x54mmR"] = {
+			Head = 150;
+			Torso = 75;
+			Arms = 50;
+			Legs = 44;
+		};
+		[".303 British"] = {
+			Head = 150;
+			Torso = 70;
+			Arms = 46;
+			Legs = 40;
+		};
+		["7.5x54mm"] = {
+			Head = 150;
+			Torso = 72;
+			Arms = 48;
+			Legs = 42;
+		};
+		["7.7x57mmSR"] = {
+			Head = 150;
+			Torso = 70;
+			Arms = 46;
+			Legs = 40;
+		};
+		["7.92x57mm"] = {
+			Head = 150;
+			Torso = 75;
+			Arms = 50;
+			Legs = 44;
+		};
+		["8x50mmR"] = {
+			Head = 150;
+			Torso = 72;
+			Arms = 48;
+			Legs = 42;
+		};
+		["7.35x51mm"] = {
+			Head = 150;
+			Torso = 65;
+			Arms = 42;
+			Legs = 36;
+		};
+		[".30-03"] = {
+			Head = 150;
+			Torso = 72;
+			Arms = 48;
+			Legs = 42;
+		};
+		["6.5x48mm"] = {
+			Head = 150;
+			Torso = 60;
+			Arms = 38;
+			Legs = 33;
+		};
+		["6.5x50mmSR"] = {
+			Head = 150;
+			Torso = 58;
+			Arms = 36;
+			Legs = 32;
+		};
+		["6.5x52mm"] = {
+			Head = 150;
+			Torso = 58;
+			Arms = 36;
+			Legs = 32;
+		};
+		[".276 Pedersen"] = {
+			Head = 150;
+			Torso = 62;
+			Arms = 40;
+			Legs = 35;
+		};
+		[".300 Winchester Magnum"] = {
+			Head = 150;
+			Torso = 85;
+			Arms = 58;
+			Legs = 50;
+		};
+		[".338 Lapua Magnum"] = {
+			Head = 150;
+			Torso = 95;
+			Arms = 65;
+			Legs = 58;
+		};
+		[".375 CheyTac"] = {
+			Head = 150;
+			Torso = 100;
+			Arms = 70;
+			Legs = 62;
+		};
+		[".408 CheyTac"] = {
+			Head = 150;
+			Torso = 105;
+			Arms = 72;
+			Legs = 65;
+		};
+		[".45-70 Govt"] = {
+			Head = 150;
+			Torso = 88;
+			Arms = 60;
+			Legs = 52;
+		};
+		[".450 Bushmaster"] = {
+			Head = 150;
+			Torso = 82;
+			Arms = 55;
+			Legs = 48;
+		};
+		[".458 SOCOM"] = {
+			Head = 150;
+			Torso = 85;
+			Arms = 58;
+			Legs = 50;
+		};
+		[".50 Beowulf"] = {
+			Head = 150;
+			Torso = 90;
+			Arms = 62;
+			Legs = 54;
+		};
+		[".50-90 Sharps"] = {
+			Head = 150;
+			Torso = 95;
+			Arms = 65;
+			Legs = 58;
+		};
+		[".416 Barrett"] = {
+			Head = 150;
+			Torso = 110;
+			Arms = 78;
+			Legs = 70;
+		};
+		[".50 BMG"] = {
+			Head = 150;
+			Torso = 120;
+			Arms = 85;
+			Legs = 78;
+		};
+		["12.7x108mm"] = {
+			Head = 150;
+			Torso = 120;
+			Arms = 85;
+			Legs = 78;
+		};
+		["14.5x114mm"] = {
+			Head = 150;
+			Torso = 135;
+			Arms = 95;
+			Legs = 88;
+		};
+		["12g_00Buck"] = {
+			Head = 25;
+			Torso = 12;
+			Arms = 6;
+			Legs = 5;
+		};
+		["12g_4Buck"] = {
+			Head = 20;
+			Torso = 10;
+			Arms = 5;
+			Legs = 4;
+		};
+		["12g_Bird"] = {
+			Head = 10;
+			Torso = 5;
+			Arms = 3;
+			Legs = 2;
+		};
+		["12g_Slug"] = {
+			Head = 40;
+			Torso = 25;
+			Arms = 15;
+			Legs = 13;
+		};
+		["12g_Sabot"] = {
+			Head = 35;
+			Torso = 22;
+			Arms = 14;
+			Legs = 12;
+		};
+	};
+	Animation_CFG = {
+		flags = {
+			usePhysicsSpeed = true;
+			animateScaleRun = false;
+			rootMotionScale = 1;
+		};
+		tiers = {
+			idle = {
+				name = "idle";
+				target = 0;
+			};
+			walk = {
+				name = "walk";
+				min = 0.1;
+				max = 10;
+				target = 8;
+			};
+			jog = {
+				name = "jog";
+				min = 10;
+				max = 15;
+				target = 14.5;
+			};
+			run = {
+				name = "run";
+				min = 15;
+				max = math.huge;
+				target = 18;
+			};
+		};
+		speedMap = {
+			minMult = 0.7;
+			maxMult = 1.3;
+		};
+		transition = {
+			fall = 0.18;
+			jump = 0.1;
+			jumpDuration = 0.31;
+			idle = 0.5;
+			walk = 0.15;
+			jog = 0.3;
+			run = 0.5;
+			climb = 0.1;
+			swim = 0.4;
+			swimidle = 0.4;
+			sit = 0.4;
+			land_soft = 0.18;
+			land_hard = 0.25;
+		};
+		anims = {
+			walk_forward = {{
+				id = "rbxassetid://117411726902594";
+				speed = 1;
+			}};
+			walk_backward = {{
+				id = "rbxassetid://87093753705467";
+				speed = 0.9;
+			}};
+			walk_left = {{
+				id = "rbxassetid://135852779026730";
+				speed = 0.9;
+			}};
+			walk_right = {{
+				id = "rbxassetid://122728410097945";
+				speed = 0.9;
+			}};
+			jog = {{
+				id = "rbxassetid://73667952382863";
+			}};
+			run = {{
+				id = "rbxassetid://121302309464896";
+			}};
+			swim = {{
+				id = "rbxassetid://507784897";
+			}};
+			swimidle = {{
+				id = "rbxassetid://507785072";
+			}};
+			jump = {{
+				id = "rbxassetid://507765000";
+			}};
+			fall = {{
+				id = "rbxassetid://507767968";
+			}};
+			climb = {{
+				id = "rbxassetid://129980771941015";
+			}};
+			sit = {{
+				id = "rbxassetid://2506281703";
+			}};
+			land_soft = {{
+				id = "rbxassetid://112689724095203";
+			}};
+			land_hard = {{
+				id = "rbxassetid://112689724095203";
+			}};
+			idle_NoGun = {{
+				id = "rbxassetid://79950301683859";
+			}};
+			idle_WithGun = {{
+				id = "rbxassetid://79950301683859";
+			}};
+			crouch_start = {{
+				id = "rbxassetid://92467284672402";
+				speed = 1;
+			}};
+			crouch_idle = {{
+				id = "rbxassetid://120162543211328";
+				speed = 1;
+			}};
+			crouch_walk_forward = {{
+				id = "rbxassetid://123511412543098";
+				speed = 0.9;
+			}};
+			crouch_walk_backward = {{
+				id = "rbxassetid://72873076663541";
+				speed = 0.9;
+			}};
+			crouch_walk_left = {{
+				id = "rbxassetid://134940088147643";
+				speed = 0.9;
+			}};
+			crouch_walk_right = {{
+				id = "rbxassetid://82229979019092";
+				speed = 0.9;
+			}};
+			prone_idle = {{
+				id = "rbxassetid://140680691149548";
+				speed = 1;
+			}};
+			prone_crawl_forward = {{
+				id = "rbxassetid://73681863375352";
+				speed = 0.8;
+			}};
+			prone_crawl_backward = {{
+				id = "rbxassetid://135156127326115";
+				speed = 0.8;
+			}};
+			prone_turn_left = {{
+				id = "rbxassetid://135596535520601";
+				speed = 1;
+			}};
+			prone_turn_right = {{
+				id = "rbxassetid://137472387966618";
+				speed = 1;
+			}};
+		};
+		priority = Enum.AnimationPriority.Core;
+		scale = {
+			defaultHipHeight = 2;
+			scaleDampeningValueName = "ScaleDampeningPercent";
+		};
+		thresholds = {
+			stopSpeed = 0.75;
+			stopIntentMag = 0.05;
+			startSpeed = 1;
+		};
+		landing = {
+			hardFromHeight = 10;
+			cooldown = 0.25;
+		};
+	};
+})
