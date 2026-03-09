@@ -1,0 +1,80 @@
+--!strict
+-- 5.56mm Standard Rifle Profile (M4, HK416, etc.) - HARDCORE RECOIL
+
+-- BACKUP ORIGINAL VALUES:
+--[[
+gunKickback = -0.08,
+patternScale = 0.065,
+patternSpeed = 25,
+]]
+
+return {
+	-- Вертикальная отдача (нормализовано)
+	kickStrength = 0.09,
+	kickRandomness = 0.25,
+	
+	-- Горизонтальная отдача (нормализовано)
+	horizontalStrength = 0.055,
+	horizontalRandomness = 0.4,
+	
+	-- Roll (наклон влево-вправо) (нормализовано)
+	rollStrength = 0.025,
+	
+	-- Параметры возврата
+	returnSpeed = 0.18,
+	returnSmoothness = 0.8,
+	
+	-- Первый выстрел (нормализовано)
+	firstShotMultiplier = 1.25,
+	
+	-- Progressive spray (нормализовано)
+	sprayIncrease = 0.085,
+	sprayDecayTime = 0.4,
+	
+	-- Camera shake (нормализовано)
+	cameraShake = 0.04,
+	
+	-- Gun kick (positional) (УВЕЛИЧЕНО)
+	gunKickback = 0.08,
+	gunRise = 0.05,
+	
+	-- Pattern settings (УВЕЛИЧЕНО масштаб)
+	usePattern = true,
+	patternScale = 0.028, -- ближе к "топовому" ощущению, меньше перегиба
+	patternSpeed = 18,    -- чуть ниже, чтобы не было сверх-ускорения
+	patternRandomness = 0.15,
+	
+	-- Spray pattern (x = horizontal, y = vertical)
+	pattern = {
+		{x = 0, y = 0.85},
+		{x = -0.06, y = 0.88},
+		{x = -0.12, y = 0.8},
+		{x = -0.1, y = 0.85},
+		{x = 0.03, y = 0.8},
+		{x = 0.12, y = 0.76},
+		{x = 0.16, y = 0.72},
+		{x = 0.1, y = 0.76},
+		{x = 0, y = 0.72},
+		{x = -0.06, y = 0.76},
+		{x = -0.1, y = 0.72},
+		{x = -0.06, y = 0.76},
+		{x = 0.03, y = 0.72},
+		{x = 0.06, y = 0.76},
+		{x = 0.03, y = 0.72},
+	},
+	
+	-- Spring tuning (чем больше stiffness/speed — тем резче; чем больше damping — тем меньше "пружинит")
+	springStiffness = 160.0,
+	springDamping = 32.0,
+
+	-- Clamp (ограничения, чтобы не улетала камера/ствол)
+	minPitch = -0.18,
+	maxPitch = 0.45,
+	maxYaw = 0.28,
+	maxRoll = 0.22,
+	
+	-- Множители для разных состояний
+	aimMultiplier = 0.3,
+	crouchMultiplier = 0.65,
+	moveMultiplier = 1.2,
+}
