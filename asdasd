@@ -1,0 +1,44 @@
+local Spring = require(script.Parent.Spring)
+
+local VMKick = {}
+VMKick.__index = VMKick
+
+function VMKick.new()
+	local self = setmetatable({}, VMKick)
+
+	-- Пружина позиции (назад/вверх)
+	self.Pos = Spring.new(Vector3.new())
+	self.Pos.s = 70
+	self.Pos.d = 0.75
+
+	-- Пружина вращения (подброс ствола)
+	self.Rot = Spring.new(Vector3.new())
+	self.Rot.s = 85
+	self.Rot.d = 0.75
+
+	-- Точка вращения (важно для эффекта "ствол подбрасывает")
+	self.Pivot = 0.18 -- 0.12..0.25 подбирай
+
+	return self
+end
+
+function VMKick:FireKick(posImpulse: Vector3, rotImpulse: Vector3)
+	-- Импульс в пружины
+	self.Pos:accelerate(posImpulse)
+	self.Rot:accelerate(rotImpulse)
+end
+
+function VMKick:Update(_dt)
+	-- _dt не нужен, Spring сам считает от tick()
+	local p = self.Pos.p
+	local r = self.Rot.p
+
+	local pivot = self.Pivot
+
+	return CFrame.new(p.X, p.Y, p.Z)
+		* CFrame.new(0, 0, pivot)
+		* CFrame.Angles(r.X, r.Y, r.Z)
+		* CFrame.new(0, 0, -pivot)
+end
+
+return VMKick
