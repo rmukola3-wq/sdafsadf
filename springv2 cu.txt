@@ -1,0 +1,188 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-15 12:31:34
+-- Luau version 6, Types version 3
+-- Time taken: 0.008648 seconds
+
+return {
+	new = function(arg1) -- Line 3, Named "new"
+		local tick_result1_2_upvw = tick()
+		local var3_upvw = arg1 or 0
+		local var4_upvw
+		local function INLINED() -- Internal function, doesn't exist in bytecode
+			var4_upvw = 0 * arg1
+			return var4_upvw
+		end
+		if not arg1 or not INLINED() then
+			var4_upvw = 0
+		end
+		local var5_upvw = arg1 or 0
+		local var6_upvw = 1
+		local var7_upvw = 1
+		local function positionVelocity_upvr(arg1_2) -- Line 11, Named "positionVelocity"
+			--[[ Upvalues[6]:
+				[1]: tick_result1_2_upvw (read and write)
+				[2]: var3_upvw (read and write)
+				[3]: var5_upvw (read and write)
+				[4]: var7_upvw (read and write)
+				[5]: var6_upvw (read and write)
+				[6]: var4_upvw (read and write)
+			]]
+			local var8 = arg1_2 - tick_result1_2_upvw
+			local var9 = var3_upvw - var5_upvw
+			if var7_upvw == 0 then
+				return var3_upvw, 0
+			end
+			if var6_upvw < 1 then
+				local squareroot_2 = math.sqrt(1 - var6_upvw ^ 2)
+				local var11 = (var4_upvw / var7_upvw + var6_upvw * var9) / squareroot_2
+				local cosine = math.cos(squareroot_2 * var7_upvw * var8)
+				local sine = math.sin(squareroot_2 * var7_upvw * var8)
+				local exponentiated_2 = math.exp(var6_upvw * var7_upvw * var8)
+				return var5_upvw + (var9 * cosine + var11 * sine) / exponentiated_2, var7_upvw * ((squareroot_2 * var11 - var6_upvw * var9) * cosine - (squareroot_2 * var9 + var6_upvw * var11) * sine) / exponentiated_2
+			end
+			local var15 = var4_upvw / var7_upvw + var9
+			local exponentiated = math.exp(var7_upvw * var8)
+			return var5_upvw + (var9 + var15 * var7_upvw * var8) / exponentiated, var7_upvw * (var15 - var9 - var15 * var7_upvw * var8) / exponentiated
+		end
+		return setmetatable({
+			accelerate = function(arg1_3, arg2) -- Line 34, Named "accelerate"
+				--[[ Upvalues[4]:
+					[1]: positionVelocity_upvr (readonly)
+					[2]: var3_upvw (read and write)
+					[3]: var4_upvw (read and write)
+					[4]: tick_result1_2_upvw (read and write)
+				]]
+				local tick_result1 = tick()
+				local positionVelocity_upvr_result1, positionVelocity_upvr_result2 = positionVelocity_upvr(tick_result1)
+				var3_upvw = positionVelocity_upvr_result1
+				var4_upvw = positionVelocity_upvr_result2 + arg2
+				tick_result1_2_upvw = tick_result1
+			end;
+		}, {
+			__index = function(arg1_4, arg2) -- Line 43, Named "__index"
+				--[[ Upvalues[7]:
+					[1]: positionVelocity_upvr (readonly)
+					[2]: tick_result1_2_upvw (read and write)
+					[3]: var3_upvw (read and write)
+					[4]: var5_upvw (read and write)
+					[5]: var7_upvw (read and write)
+					[6]: var6_upvw (read and write)
+					[7]: var4_upvw (read and write)
+				]]
+				local string_lower_result1_2 = string.lower(arg2)
+				if string_lower_result1_2 == "value" or string_lower_result1_2 == "position" or string_lower_result1_2 == 'p' then
+					local positionVelocity_result1_4, positionVelocity_upvr_result2_2 = positionVelocity_upvr(tick())
+					return positionVelocity_result1_4
+				end
+				if string_lower_result1_2 == "velocity" or string_lower_result1_2 == 'v' then
+					local _, positionVelocity_result2 = positionVelocity_upvr(tick())
+					return positionVelocity_result2
+				end
+				if string_lower_result1_2 == "acceleration" or string_lower_result1_2 == 'a' then
+					local var27 = tick() - tick_result1_2_upvw
+					local var28 = var3_upvw - var5_upvw
+					if var7_upvw == 0 then
+						return 0
+					end
+					if var6_upvw < 1 then
+						local squareroot = math.sqrt(1 - var6_upvw ^ 2)
+						local var30 = (var4_upvw / var7_upvw + var6_upvw * var28) / squareroot
+						return var7_upvw ^ 2 * ((var28 * var6_upvw ^ 2 - squareroot * 2 * var6_upvw * var30 - var28 * squareroot ^ 2) * math.cos(squareroot * var7_upvw * var27) + (var30 * var6_upvw ^ 2 + squareroot * 2 * var6_upvw * var28 - var30 * squareroot ^ 2) * math.sin(squareroot * var7_upvw * var27)) / math.exp(var6_upvw * var7_upvw * var27)
+					end
+					local var31 = var4_upvw / var7_upvw + var28
+					return var7_upvw ^ 2 * (var28 - 2 * var31 + var31 * var7_upvw * var27) / math.exp(var7_upvw * var27)
+				end
+				if string_lower_result1_2 == "target" or string_lower_result1_2 == 't' then
+					return var5_upvw
+				end
+				if string_lower_result1_2 == "damper" or string_lower_result1_2 == 'd' then
+					return var6_upvw
+				end
+				if string_lower_result1_2 == "speed" or string_lower_result1_2 == 's' then
+					return var7_upvw
+				end
+				if string_lower_result1_2 == "magnitude" or string_lower_result1_2 == 'm' then
+					local positionVelocity_upvr_result1_2, _ = positionVelocity_upvr(tick())
+					return positionVelocity_upvr_result1_2.magnitude
+				end
+				error(arg2.." is not a valid member of spring", 0)
+			end;
+			__newindex = function(arg1_5, arg2, arg3) -- Line 80, Named "__newindex"
+				--[[ Upvalues[7]:
+					[1]: positionVelocity_upvr (readonly)
+					[2]: var3_upvw (read and write)
+					[3]: var4_upvw (read and write)
+					[4]: var5_upvw (read and write)
+					[5]: var6_upvw (read and write)
+					[6]: var7_upvw (read and write)
+					[7]: tick_result1_2_upvw (read and write)
+				]]
+				-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+				local string_lower_result1 = string.lower(arg2)
+				if string_lower_result1 == "value" or string_lower_result1 == "position" or string_lower_result1 == 'p' then
+					local _, positionVelocity_result2_4 = positionVelocity_upvr(tick())
+					var3_upvw = arg3
+					var4_upvw = positionVelocity_result2_4
+				elseif string_lower_result1 == "velocity" or string_lower_result1 == 'v' then
+					-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+					local positionVelocity_result1, _ = positionVelocity_upvr(tick())
+					var3_upvw = positionVelocity_result1
+					var4_upvw = arg3
+				elseif string_lower_result1 == "acceleration" or string_lower_result1 == 'a' then
+					-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+					local positionVelocity_result1_3, positionVelocity_result2_3 = positionVelocity_upvr(tick())
+					var3_upvw = positionVelocity_result1_3
+					var4_upvw = positionVelocity_result2_3 + arg3
+				elseif string_lower_result1 == "target" or string_lower_result1 == 't' then
+					-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+					local positionVelocity_result1_2, positionVelocity_result2_2 = positionVelocity_upvr(tick())
+					var3_upvw = positionVelocity_result1_2
+					var4_upvw = positionVelocity_result2_2
+					var5_upvw = arg3
+					local var43
+				elseif string_lower_result1 == "damper" or string_lower_result1 == 'd' then
+					var43 = positionVelocity_upvr
+					-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+					var43 = var43(tick())
+					local var43_result1, var43_result2 = var43(tick())
+					var3_upvw = var43_result1
+					var4_upvw = var43_result2
+					if arg3 < 0 then
+						var43_result1 = 0
+						local var46 = var43_result1
+					else
+						local function INLINED_2() -- Internal function, doesn't exist in bytecode
+							var46 = arg3
+							return var46
+						end
+						if arg3 >= 1 or not INLINED_2() then
+							var46 = 1
+						end
+					end
+					var6_upvw = var46
+					local var47
+				elseif string_lower_result1 == "speed" or string_lower_result1 == 's' then
+					var47 = positionVelocity_upvr
+					-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+					var47 = var47(tick())
+					local var47_result1, var47_result2 = var47(tick())
+					var3_upvw = var47_result1
+					var4_upvw = var47_result2
+					if arg3 < 0 then
+						var47_result1 = 0
+					else
+						var47_result1 = arg3
+					end
+					var7_upvw = var47_result1
+				else
+					var47_result1 = error
+					var47_result1(arg2.." is not a valid member of spring", 0)
+				end
+				-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+				tick_result1_2_upvw = tick()
+			end;
+		})
+	end;
+}

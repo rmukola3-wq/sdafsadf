@@ -1,0 +1,216 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-15 12:31:00
+-- Luau version 6, Types version 3
+-- Time taken: 0.020474 seconds
+
+local new_upvr_3 = Vector3.new
+local RaycastParams_new_result1_upvr = RaycastParams.new()
+RaycastParams_new_result1_upvr.FilterType = Enum.RaycastFilterType.Exclude
+local module = {}
+local ViewmodelSettings_upvr = require(game:GetService("ReplicatedStorage"):WaitForChild("Framework"):WaitForChild("Config")).ViewmodelSettings
+local vector2_upvr = Vector2.new(0, 0)
+local zero_cframe_upvr = CFrame.new()
+local new_upvr_2 = Vector2.new
+local min_upvr = math.min
+local new_upvr = CFrame.new
+local clamp_upvr = math.clamp
+local max_upvr = math.max
+local Angles_upvr = CFrame.Angles
+local noise_upvr = math.noise
+local sin_upvr = math.sin
+local cos_upvr = math.cos
+local rad_upvr = math.rad
+local cframe_upvr = CFrame.new(0, 0, 0)
+local abs_upvr = math.abs
+function module.Render(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17) -- Line 35
+	--[[ Upvalues[17]:
+		[1]: ViewmodelSettings_upvr (readonly)
+		[2]: vector2_upvr (readonly)
+		[3]: zero_cframe_upvr (readonly)
+		[4]: new_upvr_2 (readonly)
+		[5]: min_upvr (readonly)
+		[6]: new_upvr (readonly)
+		[7]: clamp_upvr (readonly)
+		[8]: max_upvr (readonly)
+		[9]: new_upvr_3 (readonly)
+		[10]: Angles_upvr (readonly)
+		[11]: noise_upvr (readonly)
+		[12]: sin_upvr (readonly)
+		[13]: cos_upvr (readonly)
+		[14]: rad_upvr (readonly)
+		[15]: cframe_upvr (readonly)
+		[16]: RaycastParams_new_result1_upvr (readonly)
+		[17]: abs_upvr (readonly)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 361 start (CF ANALYSIS FAILED)
+	if not arg3.Viewmodel or not arg5.humanoid or not arg5.hrp then return end
+	-- KONSTANTERROR: [0] 1. Error Block 361 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [15] 11. Error Block 7 start (CF ANALYSIS FAILED)
+	arg3.Viewmodel:PivotTo(arg11.CFrame)
+	do
+		return
+	end
+	-- KONSTANTERROR: [15] 11. Error Block 7 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [23] 16. Error Block 475 start (CF ANALYSIS FAILED)
+	if not arg4.renderStartTime then
+		arg4.renderStartTime = tick()
+	end
+	local blindfireRot = arg4.blindfireRot
+	if not blindfireRot then
+		blindfireRot = vector2_upvr
+	end
+	arg4.blindfireRot = blindfireRot
+	blindfireRot = arg4.blindfirePos
+	local var20 = blindfireRot
+	if not var20 then
+		var20 = vector2_upvr
+	end
+	arg4.blindfirePos = var20
+	var20 = arg4.smoothCF
+	local var21 = var20
+	if not var21 then
+		var21 = vector2_upvr
+	end
+	arg4.smoothCF = var21
+	var21 = arg4.smoothCFPos
+	local var22 = var21
+	if not var22 then
+		var22 = vector2_upvr
+	end
+	arg4.smoothCFPos = var22
+	var22 = arg4.AimCF
+	local var23 = var22
+	if not var23 then
+		var23 = zero_cframe_upvr
+	end
+	arg4.AimCF = var23
+	arg4.Lean = arg4.Lean or 0
+	arg4.BlindFire = arg4.BlindFire or false
+	arg4.BipodActive = arg4.BipodActive or false
+	arg4.StanceViewmodel = arg4.StanceViewmodel or 0
+	arg4.Sprinting = arg4.Sprinting or false
+	arg4.isMoving = arg4.isMoving or false
+	arg4.isHoldingFocus = arg4.isHoldingFocus or false
+	arg4.FreeLook = arg4.FreeLook or false
+	arg4.AimHide = arg4.AimHide or false
+	arg4.GunTilting = arg4.GunTilting or false
+	local LimitRot = arg4.LimitRot
+	if not LimitRot then
+		LimitRot = new_upvr_2(45, 45)
+	end
+	arg4.LimitRot = LimitRot
+	LimitRot = arg4.LimitPos
+	local var25 = LimitRot
+	if not var25 then
+		var25 = new_upvr_2(1, 1)
+	end
+	arg4.LimitPos = var25
+	arg4.StaminaValue = arg4.StaminaValue or 100
+	arg4.stabilizeFactor = arg4.stabilizeFactor or 0
+	arg4.walkFactor = arg4.walkFactor or 0
+	arg4.walkBobTime = arg4.walkBobTime or 0
+	arg4.idleAimTime = arg4.idleAimTime or 0
+	arg4.pushback = arg4.pushback or 0
+	arg4.bipodWay = arg4.bipodWay or 0
+	arg4.bipodDir = arg4.bipodDir or Vector3.new(0, 0, 0)
+	arg4.isWall = arg4.isWall or false
+	arg4.bipodSurfaceNormal = arg4.bipodSurfaceNormal or Vector3.new(0, 1, 0)
+	arg4.prevAimFactor = arg4.prevAimFactor or 1
+	arg4.aimTilt = arg4.aimTilt or 0
+	arg4.droopPos = arg4.droopPos or Vector3.new(0, 0, 0)
+	arg4.droopRot = arg4.droopRot or Vector3.new(0, 0, 0)
+	arg4.lookSwayPos = arg4.lookSwayPos or Vector3.new(0, 0, 0)
+	arg4.lookSwayRot = arg4.lookSwayRot or Vector3.new(0, 0, 0)
+	local prevLook = arg4.prevLook
+	if not prevLook then
+		prevLook = vector2_upvr
+	end
+	arg4.prevLook = prevLook
+	arg4.camKickRot = arg4.camKickRot or Vector3.new(0, 0, 0)
+	arg12.breathTime = arg12.breathTime or 0
+	local aimStamina = arg12.aimStamina
+	if not aimStamina then
+		aimStamina = ViewmodelSettings_upvr.MaxAimStamina
+	end
+	arg12.aimStamina = aimStamina
+	aimStamina = arg12.maxAimStamina
+	local var28 = aimStamina
+	if not var28 then
+		var28 = ViewmodelSettings_upvr.MaxAimStamina
+	end
+	arg12.maxAimStamina = var28
+	var28 = arg12.staminaDrainRate
+	local var29 = var28
+	if not var29 then
+		var29 = ViewmodelSettings_upvr.StaminaDrainRate
+	end
+	arg12.staminaDrainRate = var29
+	var29 = arg12.staminaRegenRate
+	local var30 = var29
+	if not var30 then
+		var30 = ViewmodelSettings_upvr.StaminaRegenRate
+	end
+	arg12.staminaRegenRate = var30
+	var30 = arg12.swayMultiplier
+	local var31 = var30
+	if not var31 then
+		var31 = ViewmodelSettings_upvr.SwayMultiplier
+	end
+	arg12.swayMultiplier = var31
+	var31 = arg12.LerpSpeed
+	local var32 = var31
+	if not var32 then
+		var32 = ViewmodelSettings_upvr.LerpSpeed
+	end
+	arg12.LerpSpeed = var32
+	var32 = arg12.SprintCF
+	local var33 = var32
+	if not var33 then
+		var33 = zero_cframe_upvr
+	end
+	arg12.SprintCF = var33
+	var33 = arg12.StanceViewmodelCF
+	local var34 = var33
+	if not var34 then
+		var34 = zero_cframe_upvr
+	end
+	arg12.StanceViewmodelCF = var34
+	var34 = arg12.GunTiltCF
+	local var35 = var34
+	if not var35 then
+		var35 = zero_cframe_upvr
+	end
+	arg12.GunTiltCF = var35
+	if not arg13.swayPitchSpring then
+		arg13.swayPitchSpring = arg2.Spring.new(5, 0.25, 0)
+		arg13.swayRollSpring = arg2.Spring.new(4, 0.15, 0)
+		arg13.aimPosSpring = arg2.Spring.new(6, 0.8, Vector3.new(0, 0, 0))
+		arg13.aimRotSpring = arg2.Spring.new(5, 0.8, Vector3.new(0, 0, 0))
+		arg13.breathPosSpring = arg2.Spring.new(4, 0.8, Vector3.new(0, 0, 0))
+		arg13.breathRotSpring = arg2.Spring.new(4, 0.8, Vector3.new(0, 0, 0))
+		arg13.walkPosSpring = arg2.Spring.new(5, 0.7, Vector3.new(0, 0, 0))
+		arg13.walkRotSpring = arg2.Spring.new(5, 0.6, Vector3.new(0, 0, 0))
+		arg13.droopPosSpring = arg2.Spring.new(4, 0.6, Vector3.new(0, 0, 0))
+		arg13.droopRotSpring = arg2.Spring.new(2.5, 0.55, Vector3.new(0, 0, 0))
+		arg13.lookSwayPosSpring = arg2.Spring.new(6, 0.7, Vector3.new(0, 0, 0))
+		arg13.lookSwayRotSpring = arg2.Spring.new(5, 0.65, Vector3.new(0, 0, 0))
+		arg13.camKickSpring = arg2.Spring.new(8, 0.5, Vector3.new(0, 0, 0))
+	end
+	local var8_result1 = min_upvr(arg1, ViewmodelSettings_upvr.MaxDT)
+	arg12.breathTime += var8_result1
+	if arg8 and arg14:GetMouseDelta().Magnitude < ViewmodelSettings_upvr.IdleThreshold then
+		arg4.idleAimTime += var8_result1
+	else
+		arg4.idleAimTime = 0
+	end
+	-- KONSTANTERROR: [23] 16. Error Block 475 end (CF ANALYSIS FAILED)
+end
+function module.FireKick(arg1, arg2, arg3, arg4) -- Line 600
+	--[[ Upvalues[1]:
+		[1]: new_upvr_3 (readonly)
+	]]
+	arg1.camKickTarget = new_upvr_3(arg2 or 0, arg3 or 0, arg4 or 0)
+end
+return module
