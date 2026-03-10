@@ -1,0 +1,513 @@
+local ServerConfig = {
+
+
+
+	----------------------------------------------------------------------------------------------------
+	-----------------=[ TOGGLES ]=----------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	HoldToADS = false						--- Need to hold right mouse button in order to stay aiming 
+	,HoldToLean = false						--- Need to hold E and Q in order to stay leaning
+
+	----------------------------------------------------------------------------------------------------
+	-----------------=[ General ]=----------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,TeamKill = false					--- Enable TeamKill?
+	,TeamDamageMultiplier = 1			--- Between 0-1 | This will make you cause less damage if you hit your teammate
+	,BulletSplash = true				--- Shrapnel damage to bullets shot near you, only if spashdamage is in gun settings script
+
+	,KickOnFailedSanityCheck = false	--- kick if the id argument provided in a remote event is not valid (anti-exploit measure, may result in false kicks if the code is not written properly)
+	,KickMessage = "Potential exploits detected, rejoin if wrongly kicked" --"potential exploits detected !1!1!1!!1!!!!111 reeeeee" -- change to nil for cringy kick messages
+
+	,AntiBunnyHop = true				--- Enable anti bunny hop system?
+	,JumpCoolDown = 3					--- Seconds before you can jump again
+	,JumpPower = 50						--- Jump power, default is 50
+
+	,ReplicatedBullets = true			--- Bullets from 3rd person, harmless (client-side are used for damage)
+	,RealisticLaser = true				--- True = Laser line is invisible
+	,ReplicatedLaser = true				
+	,ReplicatedFlashlight = true
+	,ReplicatedRicochet = true			--- replicate ricochet bullets (3rd person bullets don't do either by default)
+	,ReplicatedWallbang = true			--- replicate wallbang bullets (3rd person bullets don't do either by default)
+
+	,IgnoreWater = false				--- bullets ignore water
+	,GLIgnoreWater = true				--- grenade launcher bullets ignore water
+	,LaserIgnoreWater = false			--- lasers ignore water
+
+	,BipodSwayMultiplier = 0.25			--- New sway amount when with bipod, set to 0 to reduce sway to 0
+	,LegacyRecoil = false				--- legacy acs recoil (no spring recoil)
+	,LegacyFireSound = false			--- legacy sound firing mode (disabled in auto loop mode anyway)
+
+	,AimWhenObstructed = true			--- let gun aim when a part is in the way (pushes gun back when not aiming)
+	,AimDisablesRun = true				--- if running, clicking on aim stops you running
+	,SpeedOfSound = 1360				--- in SPS, default: 340 * 4
+	,DisableHolster = false				--- override all holster settings to disable holstering (holsters may cause lag apparently)
+	,LimitHolster = true				--- limit holster number to 2 (one for a rifle (GunType is not 0), one for a pistol)
+
+	,TeamTags = false					--- See a teamtag above your teammate's heads
+	,HitmarkerSound = false				--- GGWP MLG 360 NO SCOPE xD
+	,EnableRagdoll = true 				--- Enable ragdoll death
+	,DeathSoundID = 3372006703
+
+	,RecoilModule = "ACSR15"			--- Recoil module used to calculate recoil from recoil parameters (ACS_Engine/Modulos/Recoil folder)
+	,SpringModule = "Springy"			--- Spring walk/recoil module used to set the speed and damper of spring objects (spring recoil)
+	,OverrideSpringSettings = false		--- override already existing spring settings in guns (will result in the same spring profile being used for every gun)
+
+	,PistolRecoilOffset = 0.4			--- distance in studs behind the Handle that the recoil should pivot if the gun is a pistol (PistolRecoil = true or GunType = 0)
+	,AimOffsetRecoil = true				--- allow punch recoil to carry onto Aim Offset
+	,OffsetRecoilMult = 1				--- multiplier for applying recoil to aim offset (if AimOffsetRecoil if enabled)
+	,FOVRecoilMult = 0.05				--- set to 0 to disable, punch recoil causes FOV recoil
+	,MinFOVRecoil = 0.8					--- minimum recoil FOV as a proportion of non-recoil FOV, recoil will not zoom camera beyond that point if using FOVRecoilMult, does not stop FOV recoil from FOVEffect setting
+	
+	,PresetSens = false					--- reset aim sensitivity of a gun every time it is re-equipped
+	
+	----------------------------------------------------------------------------------------------------
+	-----------------=[ CagChon Settings ]=----------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	
+	,LaserLightBrightness = 34
+	,LaserLightRange = 1.7
+	,LaserLighShadows = true
+	----------------------------------------------------------------------------------------------------
+	-----------------=[ Mobile Controls ]=--------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------e
+	,HideButtonsWhenUnequipped = true
+
+	----------------------------------------------------------------------------------------------------
+	-----------------=[ Throttle ]=---------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,RaycastThrottle = false				--- Skip frames when processing bullet travel to reduce lag (may result in slightly less precise bullet hits at times of lag)
+	,ServerBulletThrottle = true		--- same as raycast throttle, but for replicated bullets
+	,AIBulletThrottle = true			--- same as raycast throttle, but for AI enemy bullets
+
+	----------------------------------------------------------------------------------------------------
+	-----------------=[ Crosshair ]=--------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,Crosshair = false					--- Crosshair for Hipfire shooters and arcade modes
+	,DynamicCrosshair = true			--- Crosshair follows the REAL bullet trajectory
+	,CrosshairOffset = 5				--- Crosshair size offset
+
+	----------------------------------------------------------------------------------------------------
+	------------------=[ Core GUI ]=--------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,CoreGuiHealth = true				--- Enable Health Bar?
+	,CoreGuiPlayerList = true			--- Enable Player List?
+	,TopBarTransparency = 0.9
+
+	----------------------------------------------------------------------------------------------------
+	------------------=[ Ping System ]=-----------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,PingSystem = false 					--- Enable the ping system (works like Modern Warfare)
+	,ActivationKey = Enum.KeyCode.K		--- Keybind to ping 
+	,PingCoolDown = 6 					--- Time between each ping you must wait
+	,TeamOnly = true 					--- Whether or not pings are only seen by teamates
+
+	----------------------------------------------------------------------------------------------------
+	------------------=[ Rappeling ]=-------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,EnableRappel = true
+
+	,RappelThickness = 0.1				--- default: 0.1
+	,RappelColor = "Black"				--- default: Black, replace with White if you want to be spiderman
+	,RappelStartLength = 20
+	,RappelMinLength = 2
+	,RappelMaxLength = 32
+	,RappelLengthStep = 8				--- how fast rappel gets longer/shorter, studs per second, default: 0.2
+
+	----------------------------------------------------------------------------------------------------
+	------------------=[ Status UI ]=-------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,EnableStatusUI = true				--- Don't disable this
+	,RunWalkSpeed =  17.9    				
+	,NormalWalkSpeed = 12
+	,SlowPaceWalkSpeed = 8	
+	,CrouchWalkSpeed = 8
+	,ProneWalksSpeed = 4				--- Dont put above 5 (??? huh try it and you'll be off-brand spiderman)
+
+	,EnableHunger = false				--- Hunger and Thirst system
+	,HungerWaitTime = 500
+	,ThirstWaitTime = 100
+
+	,CanDrown = true 					--- Enable drowning from being in water for too long
+
+	,EnableStamina = true 				--- Weapon Sway based on stamina, run and you increase stamina
+	,RunValue = 1						--- Stamina consumption
+	,StandRecover = .6					--- Stamina recovery while standing
+	,CrouchRecover = .8					--- Stamina recovery while crouching
+	,ProneRecover = 1					--- Stamina recovery while lying
+
+	,EnableCrouch = true				--- someone wanted to disable crouch so I added this
+	,EnableLeaning = true				--- huh why not
+
+	,WalkSpeedTime = 0.2				--- time taken to tween walk speed (e.g. )
+	,StanceTime = 0.3					--- time taken to change stance (lean, crouch)
+
+	,EnableGPS = false					--- GPS shows your allies around you
+	,GPSdistance = 150
+
+	,InteractionMenuKey = Enum.KeyCode.LeftControl
+
+
+	----------------------------------------------------------------------------------------------------
+	----------------=[ Medic System ]=------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,EnableMedSys = true				--- probably don't disable this, but you can
+
+	,BleedDamage = 30					--- The damage needed to start bleeding
+	,InjuredDamage = 40					--- The damage needed to get injured
+	,KODamage = 80						--- The damage needed to pass out
+
+	-- the 2 variables below are for damage handling
+	,PainMult = 1						--- Increase in pain from damage
+	,BloodMult = 1						--- Rate of increase in blood loss from damage
+
+
+	,BleedingRates = { -- rate of blood loss, not influenced by bloodmult in any way
+		-- bleeding
+		1		-- default
+		,1.5	-- increase in bleeding rate
+
+		,0		-- with tourniquet applied
+		,1.5	-- increase in bleeding rate
+
+		,0.12	-- added with starter iv kit (not applied with tourniquet if blood loss is 0)
+
+
+
+		-- internal bleeding / surgical
+		,0.6	-- default
+		,1.5	-- increase in bleeding rate
+
+		,0.3	-- when tourniquet applied
+		,1.5	-- increase in bleeding rate
+
+		,0.12	-- added with starter iv kit (not applied with tourniquet if blood loss is 0)
+	}
+
+
+	-- you should probably keep at least one of those true or else you might not die at all
+	,BleedToDeath = true				--- Die upon bleeding out?
+	,ZeroHealthEqualsDeath = true		--- Disabled in MopMedical Advanced by default, die by default?
+
+	,SurgicalEnabled = true				--- Internal Bleeding/Surgical? Surgery needed to heal victims with surgical wounds if set to true
+	,TourniquetPainRate = 0.1			--- Rate of increased pain from tourniquet
+
+	,PainKnocksOut = true
+	,KOPain = 200						--- Level of pain that causes you to pass out - default: 200
+	,BloodLossKnocksOut = true
+	,KOBlood = 2800						--- Below this amount of blood, you pass out - default: 3500
+
+	,BloodRecoveryRate = 30				--- Rate of blood recovery
+	,PainRecoveryRate = 1.5				--- Rate of recovery from pain
+	,MLRecoveryRate = 1.5				--- rate/severity of bleeding? recovery - the longer you wait the less you will bleed if you start bleeding again
+
+	,EnableFallDamage = true			--- Enable Fall Damage?
+	,MaxVelocity = 75					--- Velocity that will trigger the damage
+	,DamageMult = 0.5 					--- The min time a player has to fall in order to take fall damage.
+
+
+	----------------------------------------------------------------------------------------------------
+	----------------=[ Gun Fallback Values (Compatibility) ]=-------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	-- gun settings modulescript compat
+	,RPStepMult = 60.9	--- uses range from minimum to maximum recoil power (e.g. 0.2 means it takes 5 shots to get from minimum to maximum recoil power)
+	,AIStepMult = 3.1	--- same concept, but appleid to aim inaccuracy
+	,AIDecreaseMult = 0.05
+
+	,OffsetAngle = 1
+	,OffsetSens = 62.1
+
+	,ZeroingIncrement = 100
+
+	,CanADS = true
+	,CrossHairEnabled = true
+
+	,DamageableObjects = {
+		Barrel = {10,15},
+	}
+	,ForceDamageableObjectsFallback = true		-- if set to true, it will add to the already existing damageable objects inside a gun's settings config with the ones in the fallback
+	,MuzzleFXDelay = 1/20			--- acs default: 1/30, default/fallback delay in seconds after gunfire before muzzle fire FX is turned off
+	,AimRecoverDuration = 0.05		--- time taken for camera recoil to recover (amount depends on AimRecovery value inside gun Settings modulescript) - legacy default: 0.5
+
+	-- gun variaveis folder compat
+	,AimTime = 69    
+	,IronSights = false  
+	
+	,ForceEnableTracer = true
+	,ForceEnableBulletFlare = false
+	,ForceEnableBulletLight = false
+	,ForceRainbowMode = false
+	
+	----------------------------------------------------------------------------------------------------
+	----------------=[ Wallbang ]=----------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,WallbangEnabled = true
+	,WallbangConstant = 1		-- Wallbang penetration constant - higher values = stronger bullets
+
+	,WallbangMaterialHardness = {	-- resistance to wallbang penetration of each material
+		default = 1.1,			-- default material hardness, DO NOT DELETE
+		Concrete = 1.1,
+		Brick = 1.1,
+
+		Basalt = 1.3,
+
+		Wood = 0.5,
+		WoodPlanks = 0.5,
+
+		Metal = 5,
+		DiamondPlate = 5,
+		CorrodedMetal = 5,
+
+		Grass = 0.8,
+		LeafyGrass = 0.8,
+		Dirt = 0.8,
+		Ground = 0.8,
+
+		Mud = 0.7,
+		Sand = 0.5,
+
+		Snow = 0.35,
+		Fabric = 0.2,
+
+		Glass = 0.35,
+		Neon = 0.35,
+
+		Water = 0.2,
+	}
+
+	,WallbangSpecialNames = { -- parts with special names will override material based wallbang resistance
+		BulletproofGlass = 2,
+		Armor = 10,
+		EShield = 10,
+		Hitmaker = 1000,
+		Invincible = 1000,
+		BouncyPart = 1000,
+		Sandbag = 1,
+	}
+
+	,WallbangBulletIndex = { -- penetrative power per bullet caliber, procedurally calculated if caliber not in list, usually in the range of 0.5 for pistols and 1 for rifles
+		[".22 LR"] = 0.137,
+		["4.6x30mm"] = 0.562,
+		["5.7x28mm"] = 0.396,
+		
+		["9x18mm"] = 0.091,
+		["9x19mm"] = 0.148,
+		[".45 ACP"] = 0.121,
+		["9x21mm"] = 0.183,
+		["7.62x25mm"] = 0.261,
+		[".50 AE"] = 0.305,
+
+		["5.56x45mm"] = 1.35,
+		["7.62x51mm"] = 1.419,
+
+		["5.45x39mm"] = 1.06,
+		["7.62x39mm"] = 0.84,
+		["9x39mm"] = 0.219,
+
+		[".30 Carbine"] = 0.539,
+		["7.92x33mm"] = 0.707,
+
+		[".303 British"] = 1.425,
+		[".30-03"] = 1.57,
+		[".30-06"] = 1.57,
+		["7.62x54mmR"] = 1.412,
+		["7.92x57mm"] = 1.441,
+
+		[".338 Lapua Magnum"] = 2.287,
+		[".50 BMG"] = 2.802,
+		
+		["PG-7VL"] = 0,
+	}
+
+
+	----------------------------------------------------------------------------------------------------
+	----------------=[ Ricochet ]=----------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+	,RicochetEnabled = true		-- bullets can bounce off of surfaces 
+
+	,RicochetSpecialNames = { -- special named parts, checked before material like with wallbang
+		BouncyPart = 90,
+	}
+
+	-- Max angle between incident path of bullet and the surface of the object for ricochet to happen (degrees)
+	,RicochetMaterialMaxAngles = {
+		default = 6,			-- default material max angle for ricochet, DO NOT DELETE
+
+		Wood = 1,
+		WoodPlanks = 1,
+
+		Metal = 15,
+		DiamondPlate = 15,
+		CorrodedMetal = 15,
+
+		Grass = 4,
+		LeafyGrass = 4,
+		Dirt = 4,
+		Ground = 4,
+		Sand = 3,
+
+		Mud = 1,
+
+		Snow = 1,
+		Fabric = 0.5,
+	}
+
+	,RicochetLoss = 0.35					--- energy lost from richochet, translates directly to loss in damage
+	,RicoDamageMult = 0.35					--- damage multiplier for when a bullet ricochets off of a player
+	,MinRicoTravelDistance = 0.2			--- distance required to travel from one ricochet to enable another - intended to stop scenarios where bullet just ricochets along 2 wallparts next to each other and sneaks its way past a wall corner/border
+	,MinRicoBulletSpeed = 100				--- minimum bullet speed required for ricochet
+
+	,RicoSoundEnabled = true				--- enable ricochet sound?
+	,RicoSoundVolume = 2
+	,RicoSoundRollOffMinDistance = 24
+	,RicoSoundRollOffMaxDistance = 120
+
+
+	----------------------------------------------------------------------------------------------------
+	----------------=[ Others ]=------------------------------------------------------------------------
+	----------------------------------------------------------------------------------------------------
+
+	-- the 2 tables below are used solely for impact fx
+	,BulletHoleSizes = { -- a lot of those just came from bullet diameter in cm, change as you wish
+		default = 0.7,			-- DO NOT DELETE
+		
+		[".22 LR"] = 0.57,
+		["4.6x30mm"] = 0.465,
+		["5.7x28mm"] = 0.57,
+		
+		["9x18mm"] = 0.927,
+		["9x19mm"] = 0.901,
+		[".45 ACP"] = 1.15,
+		["9x21mm"] = 0.905,
+		["7.62x25mm"] = 0.792,
+		[".50 AE"] = 1.27,
+
+		["5.56x45mm"] = 0.57,
+		["7.62x51mm"] = 0.782,
+
+		["5.45x39mm"] = 0.56,
+		["7.62x39mm"] = 0.792,
+		["9x39mm"] = 0.925,
+
+		[".30 Carbine"] = .78,
+		["7.92x33mm"] = .822,
+
+		[".303 British"] = .792,
+		[".30-03"] = 0.78,
+		[".30-06"] = .78,
+		["7.62x54mmR"] = 0.792,
+		["7.92x57mm"] = 0.822,
+
+		[".338 Lapua Magnum"] = 0.861,
+		[".50 BMG"] = 1.3 * 1.1,
+	}
+
+	,BulletImpactEnergies = {
+		default = 1,
+		
+		[".22 LR"] = 0.178,
+		["4.6x30mm"] = 0.486,
+		["5.7x28mm"] = 0.515,
+		
+		["9x18mm"] = 0.313,
+		["9x19mm"] = 0.481,
+		[".45 ACP"] = 0.639,
+		["9x21mm"] = 0.601,
+		["7.62x25mm"] = 0.654,
+		[".50 AE"] = 1.965,
+
+		["5.56x45mm"] = 1.755,
+		["7.62x51mm"] = 3.47,
+
+		["5.45x39mm"] = 1.328,
+		["7.62x39mm"] = 2.108,
+		["9x39mm"] = 0.75,
+
+		[".30 Carbine"] = 1.311,
+		["7.92x33mm"] = 1.909,
+
+		[".303 British"] = 3.574,
+		[".30-03"] = 3.505,
+		[".30-06"] = 3.82,
+		["7.62x54mmR"] = 3.614,
+		["7.92x57mm"] = 3.816,
+
+		[".338 Lapua Magnum"] = 6.782,
+		[".50 BMG"] = 18.942,
+	}
+
+	,Keybinds = { -- at default settings, letters I, O and P are seemingly free
+		Reload = "r",
+		Chamber = "f",
+		Zoom = "t",
+		FireMode = "v",
+		Bipod = "b",
+		MagCheck = "m",
+		NightVision = "n",
+		Door = "g",
+
+		-- leaning
+		LLeft = "q",
+		LRight = "e",
+
+		Steady = "z",
+		Crouch = "c",
+		Stand = "x",
+
+		RappelDown = "c", -- crouch disabled if key for rappel and crouch are same
+		RappelUp = "x", -- stand disabled if key for rappel and stand are same
+
+		BlindFire = "y",
+
+		ZeroDown = "LeftBracket", -- [
+		ZeroUp = "RightBracket", -- ]
+
+		NVLightDown = "Minus", -- - making projector sight (scopes, eotech, etc) light or darker in night vision mode
+		NVLightUp = "Equals", -- =
+
+		Laser = "h",
+		Flashlight = "j",
+		Silencer = "u",
+	}
+	
+	,KeybindsGP = { -- xbox controller
+		Shoot = "ButtonR2",
+		Aim = "ButtonL2",
+		
+		Reload = "ButtonX",
+		Chamber = "ButtonY",
+		FireMode = "ButtonA",
+		Door = "ButtonB",
+		
+		LLeft = "ButtonL1",
+		LRight = "ButtonR1",
+		
+		Crouch = "DPadDown",
+		Steady = "DPadUp",
+		
+	}
+
+	,LMBChamberWhenJammed = false	-- Chamber gun with mouse click if jammed or not chambered
+	,LMBReloadWhenJammed = false	-- Reload gun with mouse click if empty
+
+	,AimPartOffset = 0			-- studs camera is behind aimpart when aiming
+	,RecoverAimOffset = false		-- default: false, if set to true, gradually returns gun to normal position after turning around, aimed state not affected
+	,HeadCameraOffset = -0.5		--camera put x studs behind your head
+	,VehicleMaxZoom = 20
+
+	,HumanWeight = 60			-- default: 60, used as a base weight value to judge the effect of added weight (i.e. if double the weight, then the result is half the walkspeed)
+
+	,ServerAnimationsEnabled = true
+
+	,DefaultShellLifetime = 4
+
+	,DisableHeadRotWhenUnequipped = false
+
+	,SilencerNames = {
+		"Supressor",
+		"Suppressor",
+		"Silencer",
+		"Silenciador",
+	}
+}
+
+return ServerConfig
