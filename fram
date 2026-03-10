@@ -1,0 +1,1484 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-15 12:34:14
+-- Luau version 6, Types version 3
+-- Time taken: 0.134173 seconds
+
+local TweenService_upvr = game:GetService("TweenService")
+local SoundService_upvr = game:GetService("SoundService")
+local ReplicatedStorage_upvr = game:GetService("ReplicatedStorage")
+local HttpService_upvr = game:GetService("HttpService")
+local RunService_upvr = game:GetService("RunService")
+local LocalPlayer_upvr = game:GetService("Players").LocalPlayer
+local PlayerGui_upvr = LocalPlayer_upvr:WaitForChild("PlayerGui")
+local Framework_upvr = ReplicatedStorage_upvr:WaitForChild("Framework")
+local Client_upvr = Framework_upvr:WaitForChild("Models"):WaitForChild("Client")
+local module_upvr_3 = require(ReplicatedStorage_upvr:WaitForChild("Game"):FindFirstChild("Modules"):FindFirstChild("Packets"))
+local module_upvr = require(ReplicatedStorage_upvr:WaitForChild("Game"):WaitForChild("Modules"):WaitForChild("ViewportHandle"))
+local BG = PlayerGui_upvr:WaitForChild("Menu"):WaitForChild("MainMenu"):WaitForChild("BG")
+local Tabs_upvr = BG:WaitForChild("Tabs")
+local Profile_upvr = BG:WaitForChild("Topbar").Profile
+local PurchaseConfirmation_upvr = BG.PurchaseConfirmation
+local TweenInfo_new_result1_upvr_2 = TweenInfo.new(0.2)
+local TweenInfo_new_result1_upvr_3 = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local TweenInfo_new_result1_upvr = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local any_IsStudio_result1_upvr = RunService_upvr:IsStudio()
+local var20_upvw = 1
+local tbl_upvr_2 = {{
+	Primary = nil;
+	Secondary = nil;
+	Equipment = nil;
+}}
+local tbl_12_upvr = {}
+local tbl_2_upvr = {}
+local Animation_upvr = Instance.new("Animation")
+Animation_upvr.AnimationId = "rbxassetid://127469658141850"
+local tbl_upvr = {
+	SelectedDrone = nil;
+	SelectedAttachment = nil;
+	Connections = {};
+	AvailableDrones = {"FPV"};
+	AttachmentGui = nil;
+	WarheadsUI = nil;
+	ArrowConnections = {};
+	AttachmentModel = nil;
+	DroneSaves = {
+		FPV = "";
+		MAVIC = "";
+	};
+}
+local function _(arg1, arg2, arg3) -- Line 64, Named "TweenProperty"
+	--[[ Upvalues[2]:
+		[1]: TweenService_upvr (readonly)
+		[2]: TweenInfo_new_result1_upvr_2 (readonly)
+	]]
+	local var29 = arg3
+	if not var29 then
+		var29 = TweenInfo_new_result1_upvr_2
+	end
+	TweenService_upvr:Create(arg1, var29, arg2):Play()
+end
+local function ToggleCapturePoints_upvr(arg1, arg2) -- Line 68, Named "ToggleCapturePoints"
+	for _, v in pairs(workspace.Game["Capture Points"]:GetDescendants()) do
+		if v:IsA("BillboardGui") then
+			v.Enabled = arg2
+		end
+	end
+end
+local var35_upvw
+local function CharacterHandle_upvr(arg1) -- Line 77, Named "CharacterHandle"
+	--[[ Upvalues[4]:
+		[1]: LocalPlayer_upvr (readonly)
+		[2]: var35_upvw (read and write)
+		[3]: Client_upvr (readonly)
+		[4]: Animation_upvr (readonly)
+	]]
+	local Character = LocalPlayer_upvr.Character
+	if not Character then
+	else
+		local RightHand = Character:FindFirstChild("RightHand")
+		if not RightHand then return end
+		local class_Humanoid = Character:FindFirstChildOfClass("Humanoid")
+		if not class_Humanoid or 0 >= class_Humanoid.Health then return end
+		if var35_upvw then
+			var35_upvw:Stop(0)
+			var35_upvw = nil
+		end
+		local class_Model_4 = RightHand:FindFirstChildOfClass("Model")
+		if class_Model_4 then
+			class_Model_4:Destroy()
+		end
+		if not arg1 or not workspace:GetAttribute("Primary") then return end
+		local SOME_2 = Client_upvr:FindFirstChild(tostring(workspace:GetAttribute("Primary")))
+		if SOME_2 and RightHand then
+			local clone = SOME_2:Clone()
+			clone.Parent = RightHand
+			clone:PivotTo(RightHand:GetPivot())
+			local Handle = clone:FindFirstChild("Handle")
+			if Handle then
+				local Motor6D = Instance.new("Motor6D")
+				Motor6D.Part0 = RightHand
+				Motor6D.Part1 = Handle
+				Motor6D.Parent = clone
+				Handle.Anchored = false
+				var35_upvw = class_Humanoid:LoadAnimation(Animation_upvr)
+				var35_upvw:Play(0, 1000)
+			end
+			for _, v_15 in pairs(clone:GetDescendants()) do
+				if v_15:IsA("BasePart") then
+					v_15.Anchored = false
+				end
+			end
+		end
+	end
+end
+local function _() -- Line 127, Named "LoadLoadout"
+	--[[ Upvalues[4]:
+		[1]: module_upvr_3 (readonly)
+		[2]: var20_upvw (read and write)
+		[3]: HttpService_upvr (readonly)
+		[4]: tbl_upvr_2 (readonly)
+	]]
+	local any_Fire_result1_4 = module_upvr_3.ReturnLoadout:Fire(tostring(var20_upvw))
+	if not any_Fire_result1_4 then
+	else
+		tbl_upvr_2[var20_upvw] = HttpService_upvr:JSONDecode(any_Fire_result1_4)
+	end
+end
+local function _() -- Line 135, Named "SaveLoadout"
+	--[[ Upvalues[4]:
+		[1]: HttpService_upvr (readonly)
+		[2]: tbl_upvr_2 (readonly)
+		[3]: var20_upvw (read and write)
+		[4]: module_upvr_3 (readonly)
+	]]
+	if not module_upvr_3.SaveLoadout:Fire(tostring(HttpService_upvr:JSONEncode(tbl_upvr_2[var20_upvw])), tostring(var20_upvw)) then
+		warn("Failed to save loadout")
+	end
+end
+local function RefreshLoadout_upvr() -- Line 144, Named "RefreshLoadout"
+	--[[ Upvalues[5]:
+		[1]: Tabs_upvr (readonly)
+		[2]: tbl_upvr_2 (readonly)
+		[3]: var20_upvw (read and write)
+		[4]: TweenService_upvr (readonly)
+		[5]: TweenInfo_new_result1_upvr_2 (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	for _, v_2 in {"Primary", "Secondary", "Equipment"} do
+		for _, v_3 in Tabs_upvr.Loadout[v_2].WeaponsHolder.Weapons[v_2]:GetChildren() do
+			local children_2 = v_3:IsA("ImageButton")
+			if children_2 then
+				if tbl_upvr_2[var20_upvw][v_2] ~= v_3.Name then
+					children_2 = false
+				else
+					children_2 = true
+				end
+				v_3:SetAttribute("Pressed", children_2)
+				if not children_2 or not Color3.new(1, 1, 1) then
+				end
+				if not children_2 or not Color3.new(0, 0, 0) then
+				end
+				if children_2 then
+				else
+				end
+				TweenService_upvr:Create(v_3, TweenInfo_new_result1_upvr_2, {
+					BackgroundColor3 = Color3.new(0, 0, 0);
+				}):Play()
+				TweenService_upvr:Create(v_3:FindFirstChild("Gun"), TweenInfo_new_result1_upvr_2, {
+					TextColor3 = Color3.new(1, 1, 1);
+				}):Play()
+				TweenService_upvr:Create(v_3, TweenInfo_new_result1_upvr_2, {
+					ImageTransparency = 1;
+				}):Play()
+			end
+		end
+		workspace:SetAttribute(v_2, tbl_upvr_2[var20_upvw][v_2] or "N/A")
+	end
+end
+local function _(arg1) -- Line 167, Named "GetDefaultAttachment"
+	if arg1 == "MAVIC" then
+		return "Bomb"
+	end
+	return "Rocket"
+end
+local function UpdateAttachmentModel_upvr(arg1) -- Line 175, Named "UpdateAttachmentModel"
+	--[[ Upvalues[2]:
+		[1]: tbl_upvr (readonly)
+		[2]: ReplicatedStorage_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	if tbl_upvr.AttachmentModel then
+		tbl_upvr.AttachmentModel:Destroy()
+		tbl_upvr.AttachmentModel = nil
+	end
+	local SelectedDroneAttachment = workspace:GetAttribute("SelectedDroneAttachment")
+	if not SelectedDroneAttachment or SelectedDroneAttachment == "" then
+		if tbl_upvr.SelectedDrone == "MAVIC" then
+		else
+		end
+		workspace:SetAttribute("SelectedDroneAttachment", "Rocket")
+	end
+	local DroneSystem = ReplicatedStorage_upvr:FindFirstChild("DroneSystem")
+	if not DroneSystem then
+	else
+		local Attachments = DroneSystem:FindFirstChild("Attachments")
+		if not Attachments then return end
+		-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+		local Rocket = Attachments:FindFirstChild("Rocket")
+		if not Rocket then return end
+		local clone_3 = Rocket:Clone()
+		clone_3.Parent = arg1
+		clone_3:PivotTo(arg1.Other.Parts.Middle.CFrame)
+		for _, v_16 in pairs(clone_3:GetDescendants()) do
+			if v_16:IsA("BasePart") then
+				v_16.Anchored = false
+				local WeldConstraint = Instance.new("WeldConstraint")
+				WeldConstraint.Part0 = arg1.PrimaryPart
+				WeldConstraint.Part1 = v_16
+				WeldConstraint.Parent = v_16
+			end
+		end
+		tbl_upvr.AttachmentModel = clone_3
+		-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+		tbl_upvr.SelectedAttachment = "Rocket"
+	end
+end
+local function CycleDrone_upvr(arg1) -- Line 218, Named "CycleDrone"
+	--[[ Upvalues[1]:
+		[1]: tbl_upvr (readonly)
+	]]
+	local var91
+	if not tbl_upvr.SelectedDrone then
+	else
+		var91 = tbl_upvr
+		var91 = tbl_upvr.SelectedDrone
+		local table_find_result1 = table.find(var91.AvailableDrones, var91)
+		if not table_find_result1 then return end
+		local var93 = table_find_result1 + arg1
+		var91 = 1
+		if var93 < var91 then
+			var91 = tbl_upvr.AvailableDrones
+			var93 = #var91
+		else
+			var91 = #tbl_upvr.AvailableDrones
+			if var91 < var93 then
+				var93 = 1
+			end
+		end
+		var91 = tbl_upvr
+		var91.SelectedDrone = tbl_upvr.AvailableDrones[var93]
+		var91 = workspace:SetAttribute
+		var91("SelectedDroneEdit", tbl_upvr.SelectedDrone)
+		if tbl_upvr.SelectedDrone == "MAVIC" then
+			var91 = "Bomb"
+		else
+			var91 = "Rocket"
+		end
+		workspace:SetAttribute("SelectedDroneAttachment", var91)
+	end
+end
+local function CleanupDroneConnections_upvr() -- Line 238, Named "CleanupDroneConnections"
+	--[[ Upvalues[1]:
+		[1]: tbl_upvr (readonly)
+	]]
+	for i_4, v_4 in pairs(tbl_upvr.Connections) do
+		if v_4 and v_4.Connected then
+			v_4:Disconnect()
+		end
+		tbl_upvr.Connections[i_4] = nil
+	end
+end
+local function CleanupDroneArrows_upvr() -- Line 247, Named "CleanupDroneArrows"
+	--[[ Upvalues[1]:
+		[1]: tbl_upvr (readonly)
+	]]
+	for i_5, v_5 in pairs(tbl_upvr.ArrowConnections) do
+		if v_5 and v_5.Connected then
+			v_5:Disconnect()
+		end
+		tbl_upvr.ArrowConnections[i_5] = nil
+	end
+end
+local function CleanupDroneEditor_upvr() -- Line 256, Named "CleanupDroneEditor"
+	--[[ Upvalues[5]:
+		[1]: CleanupDroneConnections_upvr (readonly)
+		[2]: CleanupDroneArrows_upvr (readonly)
+		[3]: tbl_upvr (readonly)
+		[4]: PlayerGui_upvr (readonly)
+		[5]: LocalPlayer_upvr (readonly)
+	]]
+	CleanupDroneConnections_upvr()
+	CleanupDroneArrows_upvr()
+	if tbl_upvr.AttachmentGui then
+		tbl_upvr.AttachmentGui:Destroy()
+		tbl_upvr.AttachmentGui = nil
+	end
+	if tbl_upvr.WarheadsUI then
+		tbl_upvr.WarheadsUI.Visible = false
+		tbl_upvr.WarheadsUI = nil
+	end
+	if tbl_upvr.AttachmentModel then
+		tbl_upvr.AttachmentModel:Destroy()
+		tbl_upvr.AttachmentModel = nil
+	end
+	tbl_upvr.SelectedDrone = nil
+	tbl_upvr.SelectedAttachment = nil
+	local Junk_2 = PlayerGui_upvr:FindFirstChild("Junk")
+	if Junk_2 then
+		Junk_2:ClearAllChildren()
+	end
+	workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+	local Character_2 = LocalPlayer_upvr.Character
+	if Character_2 then
+		Character_2 = LocalPlayer_upvr.Character:FindFirstChild("Humanoid")
+	end
+	workspace.CurrentCamera.CameraSubject = Character_2
+end
+local function CreateWarheadButton_upvr(arg1, arg2, arg3, arg4) -- Line 287, Named "CreateWarheadButton"
+	--[[ Upvalues[3]:
+		[1]: tbl_upvr (readonly)
+		[2]: UpdateAttachmentModel_upvr (readonly)
+		[3]: module_upvr_3 (readonly)
+	]]
+	local clone_4 = script.TemplateDrone:Clone()
+	clone_4.Name = arg1.Name
+	clone_4.LabelName.Text = arg1.Name
+	clone_4.TextLabel.Text = string.format("Critical Damage: %d, Max Distance: %d", arg1:GetAttribute("Damage") or 100, arg1:GetAttribute("Distance") or 100)
+	clone_4.Visible = true
+	clone_4.Parent = arg2.ScrollingFrame
+	if tbl_upvr and tbl_upvr.DroneSaves and tbl_upvr.DroneSaves[arg3] and tbl_upvr.DroneSaves[arg3] == arg1.Name then
+		print("Loading drone attachment "..arg3..' '..arg1.Name)
+		workspace:SetAttribute("SelectedDroneAttachment", arg1.Name)
+		UpdateAttachmentModel_upvr(arg4)
+	end
+	clone_4.Button.TextButton.Activated:Connect(function() -- Line 306
+		--[[ Upvalues[6]:
+			[1]: arg1 (readonly)
+			[2]: tbl_upvr (copied, readonly)
+			[3]: arg3 (readonly)
+			[4]: module_upvr_3 (copied, readonly)
+			[5]: UpdateAttachmentModel_upvr (copied, readonly)
+			[6]: arg4 (readonly)
+		]]
+		if workspace:GetAttribute("SelectedDroneAttachment") == arg1.Name then
+		else
+			if tbl_upvr.DroneSaves[arg3] then
+				tbl_upvr.DroneSaves[arg3] = arg1.Name
+				module_upvr_3.DroneDataAction:Fire("Save", tbl_upvr.DroneSaves)
+			end
+			workspace:SetAttribute("SelectedDroneAttachment", arg1.Name)
+			UpdateAttachmentModel_upvr(arg4)
+		end
+	end)
+end
+local function UpdateDroneModel_upvr(arg1, arg2) -- Line 322, Named "UpdateDroneModel"
+	--[[ Upvalues[11]:
+		[1]: CleanupDroneConnections_upvr (readonly)
+		[2]: ReplicatedStorage_upvr (readonly)
+		[3]: tbl_upvr (readonly)
+		[4]: UpdateAttachmentModel_upvr (readonly)
+		[5]: PlayerGui_upvr (readonly)
+		[6]: Framework_upvr (readonly)
+		[7]: TweenInfo_new_result1_upvr_3 (readonly)
+		[8]: TweenService_upvr (readonly)
+		[9]: TweenInfo_new_result1_upvr_2 (readonly)
+		[10]: CreateWarheadButton_upvr (readonly)
+		[11]: RunService_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	CleanupDroneConnections_upvr()
+	local class_Model_2 = arg1.GunPoint:FindFirstChildOfClass("Model")
+	if class_Model_2 then
+		class_Model_2:Destroy()
+	end
+	local DroneSystem_2_upvr = ReplicatedStorage_upvr:FindFirstChild("DroneSystem")
+	if not DroneSystem_2_upvr then
+	else
+		local SelectedDroneEdit_upvr = workspace:GetAttribute("SelectedDroneEdit")
+		local SOME_8 = DroneSystem_2_upvr:FindFirstChild(SelectedDroneEdit_upvr)
+		if not SOME_8 then return end
+		local clone_2_upvr = SOME_8:Clone()
+		clone_2_upvr.Parent = arg1.GunPoint
+		clone_2_upvr:PivotTo(arg1.GunPoint.CFrame)
+		tbl_upvr.SelectedDrone = SelectedDroneEdit_upvr
+		local SelectedDroneAttachment_2 = workspace:GetAttribute("SelectedDroneAttachment")
+		local var114
+		if not SelectedDroneAttachment_2 or SelectedDroneAttachment_2 == "" then
+			if SelectedDroneEdit_upvr == "MAVIC" then
+				var114 = "Bomb"
+			else
+				var114 = "Rocket"
+			end
+			workspace:SetAttribute("SelectedDroneAttachment", var114)
+			local var115
+		else
+			if SelectedDroneEdit_upvr == "MAVIC" then
+				var115 = "MAVIC"
+			else
+				var115 = "FPV"
+			end
+			local Attachments_2 = DroneSystem_2_upvr:FindFirstChild("Attachments")
+			local var117
+			local function INLINED() -- Internal function, doesn't exist in bytecode
+				local SOME_4 = Attachments_2:FindFirstChild(SelectedDroneAttachment_2)
+				return SOME_4
+			end
+			if Attachments_2 and (not INLINED() or not SOME_4:GetAttribute(var115)) then
+				if SelectedDroneEdit_upvr == "MAVIC" then
+				else
+				end
+				workspace:SetAttribute("SelectedDroneAttachment", "Rocket")
+			end
+		end
+		UpdateAttachmentModel_upvr(clone_2_upvr)
+		workspace.CurrentCamera.CameraSubject = clone_2_upvr.PrimaryPart
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+		workspace.CurrentCamera.FieldOfView = 45
+		local WarHeads_upvr = arg2.Canvas.WarHeads
+		tbl_upvr.WarheadsUI = WarHeads_upvr
+		local Junk = PlayerGui_upvr:FindFirstChild("Junk")
+		if not Junk then
+			Junk = Instance.new("Folder")
+		end
+		Junk.Name = "Junk"
+		Junk.Parent = PlayerGui_upvr
+		local clone_5_upvr = Framework_upvr.Attachments.AttGui:Clone()
+		clone_5_upvr.PressThis.Interactable = false
+		clone_5_upvr.Parent = Junk
+		clone_5_upvr.Adornee = clone_2_upvr.PrimaryPart
+		clone_5_upvr.StudsOffsetWorldSpace = Vector3.new(0, -0.5, 0)
+		clone_5_upvr.Size = UDim2.new(0.07, 25, 0.07, 25)
+		tbl_upvr.AttachmentGui = clone_5_upvr
+		local var123 = TweenInfo_new_result1_upvr_3
+		if not var123 then
+			var123 = TweenInfo_new_result1_upvr_2
+		end
+		TweenService_upvr:Create(WarHeads_upvr, var123, {
+			Size = UDim2.new(0.15, 0, 0, 0);
+		}):Play()
+		task.delay(0.25, function() -- Line 383
+			--[[ Upvalues[6]:
+				[1]: WarHeads_upvr (readonly)
+				[2]: clone_5_upvr (readonly)
+				[3]: DroneSystem_2_upvr (readonly)
+				[4]: SelectedDroneEdit_upvr (readonly)
+				[5]: CreateWarheadButton_upvr (copied, readonly)
+				[6]: clone_2_upvr (readonly)
+			]]
+			if not workspace:GetAttribute("InRoom") then
+			else
+				WarHeads_upvr.Visible = false
+				clone_5_upvr.PressThis.Interactable = true
+				for _, v_19 in pairs(WarHeads_upvr.ScrollingFrame:GetChildren()) do
+					if v_19:IsA("Frame") then
+						v_19:Destroy()
+					end
+				end
+				for _, v_20 in pairs(DroneSystem_2_upvr.Attachments:GetChildren()) do
+					if v_20:GetAttribute(SelectedDroneEdit_upvr) then
+						CreateWarheadButton_upvr(v_20, WarHeads_upvr, SelectedDroneEdit_upvr, clone_2_upvr)
+					end
+				end
+			end
+		end)
+		tbl_upvr.Connections.AttachmentButton = clone_5_upvr.PressThis.Activated:Connect(function() -- Line 402
+			--[[ Upvalues[8]:
+				[1]: clone_5_upvr (readonly)
+				[2]: WarHeads_upvr (readonly)
+				[3]: tbl_upvr (copied, readonly)
+				[4]: TweenInfo_new_result1_upvr_3 (copied, readonly)
+				[5]: TweenService_upvr (copied, readonly)
+				[6]: TweenInfo_new_result1_upvr_2 (copied, readonly)
+				[7]: RunService_upvr (copied, readonly)
+				[8]: clone_2_upvr (readonly)
+			]]
+			if not workspace:GetAttribute("InRoom") then
+			else
+				clone_5_upvr.PressThis.Interactable = false
+				task.delay(0.25, function() -- Line 406
+					--[[ Upvalues[1]:
+						[1]: clone_5_upvr (copied, readonly)
+					]]
+					if clone_5_upvr and clone_5_upvr.Parent then
+						clone_5_upvr.PressThis.Interactable = true
+					end
+				end)
+				if WarHeads_upvr.Visible then
+					if tbl_upvr.Connections.PositionUpdate then
+						tbl_upvr.Connections.PositionUpdate:Disconnect()
+						tbl_upvr.Connections.PositionUpdate = nil
+					end
+					local var138 = TweenInfo_new_result1_upvr_3
+					if not var138 then
+						var138 = TweenInfo_new_result1_upvr_2
+					end
+					TweenService_upvr:Create(WarHeads_upvr, var138, {
+						Size = UDim2.new(0.15, 0, 0, 0);
+					}):Play()
+					task.delay(0.25, function() -- Line 419
+						--[[ Upvalues[1]:
+							[1]: WarHeads_upvr (copied, readonly)
+						]]
+						if WarHeads_upvr then
+							WarHeads_upvr.Visible = false
+						end
+					end)
+					return
+				end
+				WarHeads_upvr.Visible = true
+				WarHeads_upvr.Size = UDim2.new(0.15, 0, 0, 0)
+				local var141 = TweenInfo_new_result1_upvr_3
+				if not var141 then
+					var141 = TweenInfo_new_result1_upvr_2
+				end
+				TweenService_upvr:Create(WarHeads_upvr, var141, {
+					Size = UDim2.new(0.15, 0, 0.4, 0);
+				}):Play()
+				tbl_upvr.Connections.PositionUpdate = RunService_upvr.RenderStepped:Connect(function() -- Line 429
+					--[[ Upvalues[3]:
+						[1]: tbl_upvr (copied, readonly)
+						[2]: clone_2_upvr (copied, readonly)
+						[3]: WarHeads_upvr (copied, readonly)
+					]]
+					if not workspace:GetAttribute("InRoom") then
+						if tbl_upvr.Connections.PositionUpdate then
+							tbl_upvr.Connections.PositionUpdate:Disconnect()
+							tbl_upvr.Connections.PositionUpdate = nil
+						end
+					else
+						if not clone_2_upvr or not clone_2_upvr.PrimaryPart then
+							if tbl_upvr.Connections.PositionUpdate then
+								tbl_upvr.Connections.PositionUpdate:Disconnect()
+								tbl_upvr.Connections.PositionUpdate = nil
+							end
+							return
+						end
+						local any_WorldToViewportPoint_result1, any_WorldToViewportPoint_result2 = workspace.CurrentCamera:WorldToViewportPoint(clone_2_upvr.PrimaryPart.Position + Vector3.new(0, -0.5, 0))
+						if any_WorldToViewportPoint_result2 then
+							local ViewportSize = workspace.CurrentCamera.ViewportSize
+							WarHeads_upvr.Position = UDim2.new(any_WorldToViewportPoint_result1.X / ViewportSize.X, 0, any_WorldToViewportPoint_result1.Y / ViewportSize.Y, 0)
+						end
+					end
+				end)
+			end
+		end)
+	end
+end
+local function InitializeDroneEditor_upvr(arg1) -- Line 463, Named "InitializeDroneEditor"
+	--[[ Upvalues[11]:
+		[1]: CleanupDroneEditor_upvr (readonly)
+		[2]: ToggleCapturePoints_upvr (readonly)
+		[3]: LocalPlayer_upvr (readonly)
+		[4]: PlayerGui_upvr (readonly)
+		[5]: tbl_upvr (readonly)
+		[6]: module_upvr_3 (readonly)
+		[7]: TweenInfo_new_result1_upvr_3 (readonly)
+		[8]: TweenService_upvr (readonly)
+		[9]: TweenInfo_new_result1_upvr_2 (readonly)
+		[10]: CycleDrone_upvr (readonly)
+		[11]: UpdateDroneModel_upvr (readonly)
+	]]
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
+	end
+	local AttachmentRoom_upvr = workspace.Game:FindFirstChild("AttachmentRoom", true)
+	if not AttachmentRoom_upvr then
+	else
+		CleanupDroneEditor_upvr()
+		local class_Model = AttachmentRoom_upvr.GunPoint:FindFirstChildOfClass("Model")
+		if class_Model then
+			class_Model:Destroy()
+		end
+		workspace:SetAttribute("InRoom", true)
+		ToggleCapturePoints_upvr(LocalPlayer_upvr, false)
+		PlayerGui_upvr:WaitForChild("Menu").Enabled = false
+		tbl_upvr.DroneSaves = module_upvr_3.DroneDataAction:Fire("Retrieve", "")
+		arg1.Enabled = true
+		local Canvas = arg1.Canvas
+		Canvas.Position = UDim2.new(0, 0, 1, 0)
+		local var150 = TweenInfo_new_result1_upvr_3
+		if not var150 then
+			var150 = TweenInfo_new_result1_upvr_2
+		end
+		TweenService_upvr:Create(Canvas, var150, {
+			Position = UDim2.new(1, 0, 1, 0);
+		}):Play()
+		tbl_upvr.ArrowConnections.LeftArrow = Canvas.Left.TextButton.Activated:Connect(function() -- Line 490
+			--[[ Upvalues[4]:
+				[1]: CycleDrone_upvr (copied, readonly)
+				[2]: UpdateDroneModel_upvr (copied, readonly)
+				[3]: AttachmentRoom_upvr (readonly)
+				[4]: arg1 (readonly)
+			]]
+			if not workspace:GetAttribute("InRoom") then
+			else
+				CycleDrone_upvr(-1)
+				UpdateDroneModel_upvr(AttachmentRoom_upvr, arg1)
+			end
+		end)
+		tbl_upvr.ArrowConnections.RightArrow = Canvas.Right.TextButton.Activated:Connect(function() -- Line 496
+			--[[ Upvalues[4]:
+				[1]: CycleDrone_upvr (copied, readonly)
+				[2]: UpdateDroneModel_upvr (copied, readonly)
+				[3]: AttachmentRoom_upvr (readonly)
+				[4]: arg1 (readonly)
+			]]
+			if not workspace:GetAttribute("InRoom") then
+			else
+				CycleDrone_upvr(1)
+				UpdateDroneModel_upvr(AttachmentRoom_upvr, arg1)
+			end
+		end)
+		tbl_upvr.ArrowConnections.GoBack = Canvas.GoBack.Activated:Connect(function() -- Line 502
+			--[[ Upvalues[4]:
+				[1]: arg1 (readonly)
+				[2]: ToggleCapturePoints_upvr (copied, readonly)
+				[3]: LocalPlayer_upvr (copied, readonly)
+				[4]: PlayerGui_upvr (copied, readonly)
+			]]
+			if not workspace:GetAttribute("InRoom") then
+			else
+				arg1.Enabled = false
+				ToggleCapturePoints_upvr(LocalPlayer_upvr, true)
+				PlayerGui_upvr:WaitForChild("Menu").Enabled = true
+				workspace:SetAttribute("InRoom", false)
+			end
+		end)
+		UpdateDroneModel_upvr(AttachmentRoom_upvr, arg1)
+	end
+end
+local module_upvr_2 = require(ReplicatedStorage_upvr.Game.Modules:WaitForChild("Notify"))
+local RippleAPI_upvr = require(ReplicatedStorage_upvr:WaitForChild("Game").Modules.RippleAPI)
+local function SetupWeaponButton_upvr(arg1, arg2, arg3, arg4) -- Line 513, Named "SetupWeaponButton"
+	--[[ Upvalues[20]:
+		[1]: TweenService_upvr (readonly)
+		[2]: any_IsStudio_result1_upvr (readonly)
+		[3]: Profile_upvr (readonly)
+		[4]: tbl_upvr_2 (readonly)
+		[5]: var20_upvw (read and write)
+		[6]: TweenInfo_new_result1_upvr_2 (readonly)
+		[7]: module_upvr_2 (readonly)
+		[8]: PurchaseConfirmation_upvr (readonly)
+		[9]: TweenInfo_new_result1_upvr (readonly)
+		[10]: SoundService_upvr (readonly)
+		[11]: LocalPlayer_upvr (readonly)
+		[12]: RippleAPI_upvr (readonly)
+		[13]: Client_upvr (readonly)
+		[14]: Tabs_upvr (readonly)
+		[15]: HttpService_upvr (readonly)
+		[16]: module_upvr_3 (readonly)
+		[17]: tbl_2_upvr (readonly)
+		[18]: module_upvr (readonly)
+		[19]: tbl_12_upvr (readonly)
+		[20]: Framework_upvr (readonly)
+	]]
+	local clone_upvr = script.Template:Clone()
+	clone_upvr.Name = arg1
+	clone_upvr.Parent = arg4
+	clone_upvr:SetAttribute("Pressed", false)
+	local Gun_upvr = clone_upvr:FindFirstChild("Gun")
+	Gun_upvr.Text = arg1
+	clone_upvr.Price.Text = '$'..arg2.Price
+	clone_upvr.Level.Text = "LEVEL "..arg2.Level
+	if not arg2.Owned and arg1 == "G3A3" then
+		arg2.CantBuy = true
+		clone_upvr.Price.Text = "JOIN OUR COMMUNITY"
+		task.spawn(function() -- Line 529
+			--[[ Upvalues[2]:
+				[1]: clone_upvr (readonly)
+				[2]: TweenService_upvr (copied, readonly)
+			]]
+			while clone_upvr.Parent do
+				TweenService_upvr:Create(clone_upvr.Price, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					TextColor3 = Color3.fromRGB(255, 60, 60);
+				}):Play()
+				task.wait(1.6)
+				TweenService_upvr:Create(clone_upvr.Price, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					TextColor3 = Color3.fromRGB(150, 20, 20);
+				}):Play()
+				task.wait(1.6)
+			end
+		end)
+	end
+	arg2.LevelUnlocked = false
+	if not arg2.Level then
+		if any_IsStudio_result1_upvr then
+			warn(arg1.." has no level! Does it exist in tools?")
+		end
+		clone_upvr.Visible = false
+		return
+	end
+	if Profile_upvr.Level.Label.Text == '/' then
+		repeat
+			task.wait()
+		until Profile_upvr.Level.Label.Text ~= '/'
+	end
+	local tonumber_result1_3 = tonumber(Profile_upvr.Level.Label.Text)
+	if arg2.Level == 0 or tonumber_result1_3 and arg2.Level <= tonumber_result1_3 then
+		arg2.LevelUnlocked = true
+	end
+	arg2.TemplateInstance = clone_upvr
+	clone_upvr.Price.Visible = arg2.LevelUnlocked
+	clone_upvr.Level.Visible = not arg2.LevelUnlocked
+	if tbl_upvr_2[var20_upvw][arg3] == arg1 then
+		clone_upvr:SetAttribute("Pressed", true)
+		TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+			BackgroundColor3 = Color3.new(1, 1, 1);
+		}):Play()
+		TweenService_upvr:Create(Gun_upvr, TweenInfo_new_result1_upvr_2, {
+			TextColor3 = Color3.new(0, 0, 0);
+		}):Play()
+		TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+			ImageTransparency = 0;
+		}):Play()
+	end
+	clone_upvr.MouseEnter:Connect(function() -- Line 579
+		--[[ Upvalues[4]:
+			[1]: clone_upvr (readonly)
+			[2]: TweenService_upvr (copied, readonly)
+			[3]: TweenInfo_new_result1_upvr_2 (copied, readonly)
+			[4]: Gun_upvr (readonly)
+		]]
+		if clone_upvr:GetAttribute("Pressed") then
+		else
+			TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+				BackgroundColor3 = Color3.new(1, 1, 1);
+			}):Play()
+			TweenService_upvr:Create(Gun_upvr, TweenInfo_new_result1_upvr_2, {
+				TextColor3 = Color3.new(0, 0, 0);
+			}):Play()
+			TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+				ImageTransparency = 0;
+			}):Play()
+		end
+	end)
+	clone_upvr.MouseLeave:Connect(function() -- Line 586
+		--[[ Upvalues[4]:
+			[1]: clone_upvr (readonly)
+			[2]: TweenService_upvr (copied, readonly)
+			[3]: TweenInfo_new_result1_upvr_2 (copied, readonly)
+			[4]: Gun_upvr (readonly)
+		]]
+		if clone_upvr:GetAttribute("Pressed") then
+		else
+			TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+				BackgroundColor3 = Color3.new(0, 0, 0);
+			}):Play()
+			TweenService_upvr:Create(Gun_upvr, TweenInfo_new_result1_upvr_2, {
+				TextColor3 = Color3.new(1, 1, 1);
+			}):Play()
+			TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+				ImageTransparency = 1;
+			}):Play()
+		end
+	end)
+	clone_upvr.Activated:Connect(function() -- Line 593
+		--[[ Upvalues[20]:
+			[1]: arg2 (readonly)
+			[2]: module_upvr_2 (copied, readonly)
+			[3]: arg1 (readonly)
+			[4]: PurchaseConfirmation_upvr (copied, readonly)
+			[5]: TweenInfo_new_result1_upvr (copied, readonly)
+			[6]: TweenService_upvr (copied, readonly)
+			[7]: TweenInfo_new_result1_upvr_2 (copied, readonly)
+			[8]: SoundService_upvr (copied, readonly)
+			[9]: LocalPlayer_upvr (copied, readonly)
+			[10]: RippleAPI_upvr (copied, readonly)
+			[11]: clone_upvr (readonly)
+			[12]: arg4 (readonly)
+			[13]: Gun_upvr (readonly)
+			[14]: tbl_upvr_2 (copied, readonly)
+			[15]: var20_upvw (copied, read and write)
+			[16]: arg3 (readonly)
+			[17]: Client_upvr (copied, readonly)
+			[18]: Tabs_upvr (copied, readonly)
+			[19]: HttpService_upvr (copied, readonly)
+			[20]: module_upvr_3 (copied, readonly)
+		]]
+		-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+		local var182
+		if not arg2.LevelUnlocked then
+			var182 = 4
+			module_upvr_2("Loadout", "You have not reached the level to unlock this weapon!", var182)
+		else
+			if not arg2.Owned and not arg2.CantBuy then
+				var182 = arg1
+				workspace:SetAttribute("ToBuy", var182)
+				var182 = "Loadout"
+				PurchaseConfirmation_upvr:SetAttribute("Type", var182)
+				PurchaseConfirmation_upvr.Visible = true
+				var182 = 0
+				;({}).Position = UDim2.new(var182, 0, 0, 0)
+				var182 = TweenService_upvr
+				local var184 = TweenInfo_new_result1_upvr
+				if not var184 then
+					var184 = TweenInfo_new_result1_upvr_2
+				end
+				var182 = var182:Create(PurchaseConfirmation_upvr, var184, {}):Play
+				var182()
+				var182 = arg1
+				PurchaseConfirmation_upvr.Frame:FindFirstChild("Text").Text = string.format("Are you sure you want to purchase %s for $%d?", var182, arg2.Price)
+				SoundService_upvr.Menu.Error:Play()
+				return
+			end
+			if arg2.CantBuy and not LocalPlayer_upvr:IsInGroup(1029859683) then
+				var182 = 3
+				module_upvr_2("Loadout", "Join the Eastern Studios group and rejoin!", var182)
+				return
+			end
+			var182 = 255
+			var182 = 0.7
+			RippleAPI_upvr.RoundRipple(clone_upvr, Color3.fromRGB(var182, 255, 255), var182, 0.3)
+			SoundService_upvr.Menu.Select:Play()
+			for _, v_17 in ipairs(arg4:GetChildren()) do
+				if v_17:IsA("ImageButton") and v_17 ~= clone_upvr then
+					v_17:SetAttribute("Pressed", false)
+					TweenService_upvr:Create(v_17, TweenInfo_new_result1_upvr_2, {
+						BackgroundColor3 = Color3.new(0, 0, 0);
+					}):Play()
+					TweenService_upvr:Create(v_17:FindFirstChild("Gun"), TweenInfo_new_result1_upvr_2, {
+						TextColor3 = Color3.new(1, 1, 1);
+					}):Play()
+					TweenService_upvr:Create(v_17, TweenInfo_new_result1_upvr_2, {
+						ImageTransparency = 1;
+					}):Play()
+				end
+			end
+			local var191 = not clone_upvr:GetAttribute("Pressed")
+			clone_upvr:SetAttribute("Pressed", var191)
+			if var191 then
+				TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+					BackgroundColor3 = Color3.new(1, 1, 1);
+				}):Play()
+				TweenService_upvr:Create(Gun_upvr, TweenInfo_new_result1_upvr_2, {
+					TextColor3 = Color3.new(0, 0, 0);
+				}):Play()
+				TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+					ImageTransparency = 0;
+				}):Play()
+			else
+				TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+					BackgroundColor3 = Color3.new(0, 0, 0);
+				}):Play()
+				TweenService_upvr:Create(Gun_upvr, TweenInfo_new_result1_upvr_2, {
+					TextColor3 = Color3.new(1, 1, 1);
+				}):Play()
+				TweenService_upvr:Create(clone_upvr, TweenInfo_new_result1_upvr_2, {
+					ImageTransparency = 1;
+				}):Play()
+			end
+			if not var191 or not clone_upvr.Name then
+			end
+			tbl_upvr_2[var20_upvw][arg3] = nil
+			if not var191 or not clone_upvr.Name then
+			end
+			workspace:SetAttribute(arg3, "")
+			local SOME_6 = Client_upvr:FindFirstChild(arg1)
+			if not Tabs_upvr.Loadout.Primary:FindFirstChild("EditAttachments") then
+				local EditAttachments_4 = Tabs_upvr.Loadout.Secondary:FindFirstChild("EditAttachments")
+			end
+			if EditAttachments_4 then
+				if SOME_6 then
+					if SOME_6:FindFirstChild("Attachments") == nil then
+					else
+					end
+				end
+				EditAttachments_4.Visible = true
+			end
+			if arg2.Owned then
+				clone_upvr.Price.Text = "Owned"
+			end
+			if not module_upvr_3.SaveLoadout:Fire(tostring(HttpService_upvr:JSONEncode(tbl_upvr_2[var20_upvw])), tostring(var20_upvw)) then
+				warn("Failed to save loadout")
+			end
+		end
+	end)
+	tbl_2_upvr[arg1] = module_upvr.new(clone_upvr.ViewportFrame, Client_upvr:FindFirstChild(arg1), 10)
+	tbl_12_upvr[arg1] = clone_upvr.ViewportFrame
+	Framework_upvr.Remotes.um.OnClientEvent:Connect(function(arg1_2) -- Line 665
+		--[[ Upvalues[5]:
+			[1]: arg1 (readonly)
+			[2]: Client_upvr (copied, readonly)
+			[3]: clone_upvr (readonly)
+			[4]: tbl_2_upvr (copied, readonly)
+			[5]: module_upvr (copied, readonly)
+		]]
+		if tostring(arg1_2) == arg1 then
+			local class_Model_3 = clone_upvr.ViewportFrame:FindFirstChildOfClass("Model")
+			if class_Model_3 then
+				class_Model_3:Destroy()
+			end
+			tbl_2_upvr[arg1] = module_upvr.new(clone_upvr.ViewportFrame, Client_upvr:FindFirstChild(arg1), 10)
+		end
+	end)
+	if arg2.Owned then
+		clone_upvr.Price.Text = "Owned"
+	end
+	return clone_upvr
+end
+local var203_upvw
+local MarketplaceService_upvr = game:GetService("MarketplaceService")
+local var205_upvw = false
+return function() -- Line 683
+	--[[ Upvalues[27]:
+		[1]: PlayerGui_upvr (readonly)
+		[2]: var20_upvw (read and write)
+		[3]: module_upvr_3 (readonly)
+		[4]: HttpService_upvr (readonly)
+		[5]: tbl_upvr_2 (readonly)
+		[6]: var203_upvw (read and write)
+		[7]: RefreshLoadout_upvr (readonly)
+		[8]: Client_upvr (readonly)
+		[9]: Tabs_upvr (readonly)
+		[10]: Framework_upvr (readonly)
+		[11]: CharacterHandle_upvr (readonly)
+		[12]: tbl_2_upvr (readonly)
+		[13]: module_upvr (readonly)
+		[14]: tbl_12_upvr (readonly)
+		[15]: CleanupDroneEditor_upvr (readonly)
+		[16]: Profile_upvr (readonly)
+		[17]: PurchaseConfirmation_upvr (readonly)
+		[18]: MarketplaceService_upvr (readonly)
+		[19]: LocalPlayer_upvr (readonly)
+		[20]: SoundService_upvr (readonly)
+		[21]: TweenInfo_new_result1_upvr (readonly)
+		[22]: TweenService_upvr (readonly)
+		[23]: TweenInfo_new_result1_upvr_2 (readonly)
+		[24]: var205_upvw (read and write)
+		[25]: any_IsStudio_result1_upvr (readonly)
+		[26]: InitializeDroneEditor_upvr (readonly)
+		[27]: SetupWeaponButton_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	local DroneEdit_6 = script:WaitForChild("DroneEdit")
+	DroneEdit_6:WaitForChild("Canvas").Position = UDim2.new(0, 0, 1, 0)
+	DroneEdit_6:Clone().Parent = PlayerGui_upvr
+	workspace:SetAttribute("SelectedDroneEdit", "FPV")
+	workspace:SetAttribute("SelectedDroneAttachment", "Rocket")
+	var20_upvw = 1
+	local any_Fire_result1_3 = module_upvr_3.ReturnLoadout:Fire(tostring(var20_upvw))
+	local var395
+	if not any_Fire_result1_3 then
+	else
+		tbl_upvr_2[var20_upvw] = HttpService_upvr:JSONDecode(any_Fire_result1_3)
+	end
+	var203_upvw = module_upvr_3.ReturnWeapons:Fire()
+	workspace:SetAttribute("Primary", "N/A")
+	workspace:SetAttribute("Secondary", "N/A")
+	workspace:SetAttribute("Equipment", "N/A")
+	task.spawn(function() -- Line 699
+		--[[ Upvalues[7]:
+			[1]: module_upvr_3 (copied, readonly)
+			[2]: var20_upvw (copied, read and write)
+			[3]: HttpService_upvr (copied, readonly)
+			[4]: tbl_upvr_2 (copied, readonly)
+			[5]: RefreshLoadout_upvr (copied, readonly)
+			[6]: Client_upvr (copied, readonly)
+			[7]: Tabs_upvr (copied, readonly)
+		]]
+		module_upvr_3.TeamService.OnClientEvent:Connect(function(arg1, arg2) -- Line 700
+			--[[ Upvalues[7]:
+				[1]: module_upvr_3 (copied, readonly)
+				[2]: var20_upvw (copied, read and write)
+				[3]: HttpService_upvr (copied, readonly)
+				[4]: tbl_upvr_2 (copied, readonly)
+				[5]: RefreshLoadout_upvr (copied, readonly)
+				[6]: Client_upvr (copied, readonly)
+				[7]: Tabs_upvr (copied, readonly)
+			]]
+			if arg1 == "AddPlayerToTeam" then
+				if arg2 == "Neutral" then
+					print("Joined neutral")
+					return
+				end
+				local any_Fire_result1_2 = module_upvr_3.ReturnLoadout:Fire(tostring(var20_upvw))
+				if not any_Fire_result1_2 then
+				else
+					tbl_upvr_2[var20_upvw] = HttpService_upvr:JSONDecode(any_Fire_result1_2)
+				end
+				RefreshLoadout_upvr()
+				if not workspace:GetAttribute("Primary") or workspace:GetAttribute("Primary") == "N/A" then
+					workspace:SetAttribute("Primary", "AK-74")
+				end
+				local SOME_5 = Client_upvr:FindFirstChild(workspace:GetAttribute("Primary"))
+				local EditAttachments_5 = Tabs_upvr.Loadout.Primary:FindFirstChild("EditAttachments")
+				if not EditAttachments_5 then
+					EditAttachments_5 = Tabs_upvr.Loadout.Secondary:FindFirstChild("EditAttachments")
+				end
+				if EditAttachments_5 then
+					local var401 = SOME_5
+					if var401 then
+						if SOME_5:FindFirstChild("Attachments") == nil then
+							var401 = false
+						else
+							var401 = true
+						end
+					end
+					EditAttachments_5.Visible = var401
+				end
+			end
+		end)
+	end)
+	Framework_upvr.Remotes.um.OnClientEvent:Connect(function() -- Line 722
+		--[[ Upvalues[1]:
+			[1]: CharacterHandle_upvr (copied, readonly)
+		]]
+		CharacterHandle_upvr(workspace:GetAttribute("InMenu"))
+	end)
+	workspace:GetAttributeChangedSignal("CurrentTab"):Connect(function() -- Line 726
+		--[[ Upvalues[4]:
+			[1]: tbl_2_upvr (copied, readonly)
+			[2]: Client_upvr (copied, readonly)
+			[3]: module_upvr (copied, readonly)
+			[4]: tbl_12_upvr (copied, readonly)
+		]]
+		for i_6, _ in pairs(tbl_2_upvr) do
+			if tbl_2_upvr[i_6] then
+				tbl_2_upvr[i_6]:Destroy()
+			end
+			tbl_2_upvr[i_6] = module_upvr.new(tbl_12_upvr[i_6], Client_upvr:FindFirstChild(i_6), 10)
+		end
+	end)
+	workspace:GetAttributeChangedSignal("InMenu"):Connect(function() -- Line 737
+		--[[ Upvalues[1]:
+			[1]: CharacterHandle_upvr (copied, readonly)
+		]]
+		CharacterHandle_upvr(workspace:GetAttribute("InMenu"))
+	end)
+	workspace:GetAttributeChangedSignal("Primary"):Connect(function() -- Line 741
+		--[[ Upvalues[1]:
+			[1]: CharacterHandle_upvr (copied, readonly)
+		]]
+		CharacterHandle_upvr(workspace:GetAttribute("InMenu"))
+	end)
+	workspace:GetAttributeChangedSignal("InRoom"):Connect(function() -- Line 745
+		--[[ Upvalues[2]:
+			[1]: CleanupDroneEditor_upvr (copied, readonly)
+			[2]: PlayerGui_upvr (copied, readonly)
+		]]
+		if workspace:GetAttribute("InRoom") then
+		else
+			CleanupDroneEditor_upvr()
+			local DroneEdit_5 = PlayerGui_upvr:FindFirstChild("DroneEdit")
+			if DroneEdit_5 then
+				DroneEdit_5.Enabled = false
+				DroneEdit_5.Canvas.Position = UDim2.new(0, 0, 1, 0)
+			end
+		end
+	end)
+	if not var203_upvw or type(var203_upvw) ~= "table" or next(var203_upvw) == nil then
+		repeat
+			var203_upvw = module_upvr_3.ReturnWeapons:Fire()
+			task.wait(0.5)
+		until not var203_upvw or type(var203_upvw) == "table" or next(var203_upvw) ~= nil
+	end
+	Profile_upvr.Level.Label:GetPropertyChangedSignal("Text"):Connect(function() -- Line 764
+		--[[ Upvalues[2]:
+			[1]: Profile_upvr (copied, readonly)
+			[2]: var203_upvw (copied, read and write)
+		]]
+		local tonumber_result1_2 = tonumber(Profile_upvr.Level.Label.Text)
+		if not tonumber_result1_2 then
+		else
+			for _, v_18 in pairs(var203_upvw) do
+				if v_18 and v_18.Level and v_18.Level <= tonumber_result1_2 and v_18.TemplateInstance then
+					v_18.LevelUnlocked = true
+					v_18.TemplateInstance.Level.Visible = false
+					v_18.TemplateInstance.Price.Visible = true
+				end
+			end
+		end
+	end)
+	PurchaseConfirmation_upvr.Buy.Activated:Connect(function() -- Line 777
+		--[[ Upvalues[9]:
+			[1]: PurchaseConfirmation_upvr (copied, readonly)
+			[2]: module_upvr_3 (copied, readonly)
+			[3]: MarketplaceService_upvr (copied, readonly)
+			[4]: LocalPlayer_upvr (copied, readonly)
+			[5]: SoundService_upvr (copied, readonly)
+			[6]: var203_upvw (copied, read and write)
+			[7]: TweenInfo_new_result1_upvr (copied, readonly)
+			[8]: TweenService_upvr (copied, readonly)
+			[9]: TweenInfo_new_result1_upvr_2 (copied, readonly)
+		]]
+		local ToBuy = workspace:GetAttribute("ToBuy")
+		if ToBuy == "" then
+		else
+			if PurchaseConfirmation_upvr:GetAttribute("Type") ~= "Loadout" then return end
+			if module_upvr_3.PurchaseWeapon:Fire(ToBuy) == false then
+				MarketplaceService_upvr:PromptProductPurchase(LocalPlayer_upvr, 3506671887)
+				SoundService_upvr.Menu.Error:Play()
+				return
+			end
+			var203_upvw[ToBuy].Owned = true
+			var203_upvw[ToBuy].TemplateInstance.Price.Text = "Owned"
+			workspace:SetAttribute("ToBuy", "")
+			SoundService_upvr.Menu.Buy:Play()
+			task.wait(0.3)
+			local var423 = TweenInfo_new_result1_upvr
+			if not var423 then
+				var423 = TweenInfo_new_result1_upvr_2
+			end
+			TweenService_upvr:Create(PurchaseConfirmation_upvr, var423, {
+				Position = UDim2.new(-1, 0, 0, 0);
+			}):Play()
+		end
+	end)
+	PurchaseConfirmation_upvr.Cancel.Activated:Connect(function() -- Line 798
+		--[[ Upvalues[4]:
+			[1]: PurchaseConfirmation_upvr (copied, readonly)
+			[2]: TweenInfo_new_result1_upvr (copied, readonly)
+			[3]: TweenService_upvr (copied, readonly)
+			[4]: TweenInfo_new_result1_upvr_2 (copied, readonly)
+		]]
+		workspace:SetAttribute("ToBuy", "")
+		PurchaseConfirmation_upvr:SetAttribute("Type", "")
+		local var426 = TweenInfo_new_result1_upvr
+		if not var426 then
+			var426 = TweenInfo_new_result1_upvr_2
+		end
+		TweenService_upvr:Create(PurchaseConfirmation_upvr, var426, {
+			Position = UDim2.new(-1, 0, 0, 0);
+		}):Play()
+	end)
+	for _, v_7_upvr in pairs(Tabs_upvr.Loadout.PrimaryButtons:GetChildren()) do
+		if v_7_upvr:IsA("ImageButton") then
+			local Label_upvr = v_7_upvr:FindFirstChild("Label")
+			if workspace:GetAttribute(v_7_upvr.Name) and v_7_upvr:FindFirstChild("ViewportFrame") then
+				local tbl_8_upvr = {}
+				workspace:GetAttributeChangedSignal(v_7_upvr.Name):Connect(function() -- Line 812
+					--[[ Upvalues[4]:
+						[1]: v_7_upvr (readonly)
+						[2]: Client_upvr (copied, readonly)
+						[3]: tbl_8_upvr (readonly)
+						[4]: module_upvr (copied, readonly)
+					]]
+					local attribute = workspace:GetAttribute(v_7_upvr.Name)
+					if attribute == "N/A" then
+					else
+						if tbl_8_upvr[v_7_upvr.Name] then
+							tbl_8_upvr[v_7_upvr.Name]:Destroy()
+						end
+						tbl_8_upvr[v_7_upvr.Name] = module_upvr.new(v_7_upvr.ViewportFrame, Client_upvr:FindFirstChild(attribute), 10)
+					end
+				end)
+			end
+			v_7_upvr.MouseEnter:Connect(function() -- Line 824
+				--[[ Upvalues[4]:
+					[1]: v_7_upvr (readonly)
+					[2]: TweenService_upvr (copied, readonly)
+					[3]: TweenInfo_new_result1_upvr_2 (copied, readonly)
+					[4]: Label_upvr (readonly)
+				]]
+				TweenService_upvr:Create(v_7_upvr, TweenInfo_new_result1_upvr_2, {
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+				}):Play()
+				TweenService_upvr:Create(Label_upvr, TweenInfo_new_result1_upvr_2, {
+					TextColor3 = Color3.fromRGB(0, 0, 0);
+				}):Play()
+			end)
+			v_7_upvr.MouseLeave:Connect(function() -- Line 829
+				--[[ Upvalues[4]:
+					[1]: v_7_upvr (readonly)
+					[2]: TweenService_upvr (copied, readonly)
+					[3]: TweenInfo_new_result1_upvr_2 (copied, readonly)
+					[4]: Label_upvr (readonly)
+				]]
+				TweenService_upvr:Create(v_7_upvr, TweenInfo_new_result1_upvr_2, {
+					BackgroundColor3 = Color3.fromRGB(0, 0, 0);
+				}):Play()
+				TweenService_upvr:Create(Label_upvr, TweenInfo_new_result1_upvr_2, {
+					TextColor3 = Color3.fromRGB(255, 255, 255);
+				}):Play()
+			end)
+			if v_7_upvr.Name ~= "Drone" then
+				v_7_upvr.Activated:Connect(function() -- Line 836
+					--[[ Upvalues[2]:
+						[1]: Tabs_upvr (copied, readonly)
+						[2]: v_7_upvr (readonly)
+					]]
+					for _, v_8 in pairs(Tabs_upvr.Loadout:GetChildren()) do
+						local var448
+						if v_7_upvr.Name ~= v_8.Name then
+							var448 = false
+						else
+							var448 = true
+						end
+						v_8.Visible = var448
+					end
+				end)
+			end
+		end
+	end
+	local Loadouts_upvr = Tabs_upvr.Loadout.PrimaryButtons.Loadouts
+	local function _() -- Line 847, Named "updateLoadoutLabel"
+		--[[ Upvalues[2]:
+			[1]: Loadouts_upvr (readonly)
+			[2]: var20_upvw (copied, read and write)
+		]]
+		Loadouts_upvr.TextL.Text = string.upper("LOADOUT "..var20_upvw)
+	end
+	Label_upvr = string.upper("LOADOUT "..var20_upvw)
+	Loadouts_upvr.TextL.Text = Label_upvr
+	Loadouts_upvr.ArrowLeft.Activated:Connect(function() -- Line 853
+		--[[ Upvalues[4]:
+			[1]: var205_upvw (copied, read and write)
+			[2]: var20_upvw (copied, read and write)
+			[3]: Loadouts_upvr (readonly)
+			[4]: RefreshLoadout_upvr (copied, readonly)
+		]]
+		if var205_upvw then
+		else
+			var205_upvw = true
+			var20_upvw = math.clamp(var20_upvw - 1, 1, 3)
+			Loadouts_upvr.TextL.Text = string.upper("LOADOUT "..var20_upvw)
+			RefreshLoadout_upvr()
+			task.delay(1, function() -- Line 859
+				--[[ Upvalues[1]:
+					[1]: var205_upvw (copied, read and write)
+				]]
+				var205_upvw = false
+			end)
+		end
+	end)
+	Loadouts_upvr.ArrowRight.Activated:Connect(function() -- Line 862
+		--[[ Upvalues[4]:
+			[1]: var205_upvw (copied, read and write)
+			[2]: var20_upvw (copied, read and write)
+			[3]: Loadouts_upvr (readonly)
+			[4]: RefreshLoadout_upvr (copied, readonly)
+		]]
+		if var205_upvw then
+		else
+			var205_upvw = true
+			var20_upvw = math.clamp(var20_upvw + 1, 1, 3)
+			Loadouts_upvr.TextL.Text = string.upper("LOADOUT "..var20_upvw)
+			RefreshLoadout_upvr()
+			task.delay(1, function() -- Line 868
+				--[[ Upvalues[1]:
+					[1]: var205_upvw (copied, read and write)
+				]]
+				var205_upvw = false
+			end)
+		end
+	end)
+	Label_upvr = Tabs_upvr.Loadout.PrimaryButtons.Save
+	Label_upvr.Activated:Connect(function() -- Line 871
+		--[[ Upvalues[5]:
+			[1]: var205_upvw (copied, read and write)
+			[2]: HttpService_upvr (copied, readonly)
+			[3]: tbl_upvr_2 (copied, readonly)
+			[4]: var20_upvw (copied, read and write)
+			[5]: module_upvr_3 (copied, readonly)
+		]]
+		if var205_upvw then
+		else
+			var205_upvw = true
+			if not module_upvr_3.SaveLoadout:Fire(tostring(HttpService_upvr:JSONEncode(tbl_upvr_2[var20_upvw])), tostring(var20_upvw)) then
+				warn("Failed to save loadout")
+			end
+			task.delay(0.25, function() -- Line 875
+				--[[ Upvalues[1]:
+					[1]: var205_upvw (copied, read and write)
+				]]
+				var205_upvw = false
+			end)
+		end
+	end)
+	function Label_upvr() -- Line 878
+		--[[ Upvalues[2]:
+			[1]: MarketplaceService_upvr (copied, readonly)
+			[2]: LocalPlayer_upvr (copied, readonly)
+		]]
+		return MarketplaceService_upvr:UserOwnsGamePassAsync(LocalPlayer_upvr.UserId, 1406003009)
+	end
+	local _, pcall_result2_upvw = pcall(Label_upvr)
+	if any_IsStudio_result1_upvr then
+		pcall_result2_upvw = true
+	end
+	if module_upvr_3.OwnsSpecificGamepass:Fire("1406003009") == true then
+		pcall_result2_upvw = true
+	end
+	if module_upvr_3.OwnsSpecificGamepass:Fire("1663036633") == true then
+		pcall_result2_upvw = true
+	end
+	if true and pcall_result2_upvw then
+		Tabs_upvr.Loadout.PrimaryButtons.Drone.Visible = true
+	else
+		Tabs_upvr.Loadout.PrimaryButtons.Drone.Visible = false
+	end
+	local var460_upvw = true
+	Tabs_upvr.Loadout.PrimaryButtons.Drone.Activated:Connect(function() -- Line 903
+		--[[ Upvalues[6]:
+			[1]: module_upvr_3 (copied, readonly)
+			[2]: pcall_result2_upvw (read and write)
+			[3]: var460_upvw (read and write)
+			[4]: var205_upvw (copied, read and write)
+			[5]: PlayerGui_upvr (copied, readonly)
+			[6]: InitializeDroneEditor_upvr (copied, readonly)
+		]]
+		if module_upvr_3.OwnsSpecificGamepass:Fire("1406003009") == true then
+			pcall_result2_upvw = true
+			var460_upvw = true
+		end
+		if module_upvr_3.OwnsSpecificGamepass:Fire("1663036633") == true then
+			pcall_result2_upvw = true
+			var460_upvw = true
+		end
+		if var460_upvw and pcall_result2_upvw then
+			if var205_upvw then return end
+			local DroneEdit = PlayerGui_upvr:WaitForChild("DroneEdit", 10)
+			if DroneEdit then
+				InitializeDroneEditor_upvr(DroneEdit)
+			end
+			task.delay(0.25, function() -- Line 920
+				--[[ Upvalues[1]:
+					[1]: var205_upvw (copied, read and write)
+				]]
+				var205_upvw = false
+			end)
+		end
+	end)
+	local tbl_9_upvr = {
+		Primary = {};
+		Secondary = {};
+		Equipment = {};
+	}
+	for i_9_upvr, v_9_upvr in pairs(var203_upvw) do
+		task.spawn(function() -- Line 931
+			--[[ Upvalues[5]:
+				[1]: Tabs_upvr (copied, readonly)
+				[2]: v_9_upvr (readonly)
+				[3]: SetupWeaponButton_upvr (copied, readonly)
+				[4]: i_9_upvr (readonly)
+				[5]: tbl_9_upvr (readonly)
+			]]
+			local var468 = "Primary"
+			local Primary_2 = Tabs_upvr.Loadout.Primary.WeaponsHolder.Weapons.Primary
+			if v_9_upvr.Secondary then
+				var468 = "Secondary"
+				Primary_2 = Tabs_upvr.Loadout.Secondary.WeaponsHolder.Weapons.Secondary
+			elseif v_9_upvr.Equipment then
+				var468 = "Equipment"
+				Primary_2 = Tabs_upvr.Loadout.Equipment.WeaponsHolder.Weapons.Equipment
+			end
+			local SetupWeaponButton_upvr_result1 = SetupWeaponButton_upvr(i_9_upvr, v_9_upvr, var468, Primary_2)
+			if SetupWeaponButton_upvr_result1 then
+				table.insert(tbl_9_upvr[var468], SetupWeaponButton_upvr_result1)
+			end
+		end)
+		local var471_upvr
+	end
+	for _, v_10_upvr in {"Primary", "Secondary", "Equipment"} do
+		if Tabs_upvr.Loadout:FindFirstChild(v_10_upvr) then
+			local var473 = Tabs_upvr.Loadout[v_10_upvr]
+			local SearchBox_upvr_2 = var473:FindFirstChild("SearchBox")
+			local Filter_upvr = var473:FindFirstChild("Filter")
+			Filter_upvr:SetAttribute("Type", "Price")
+			Filter_upvr.Label.Text = "Filter -> $"
+			local var515_upvr = var473.WeaponsHolder.Weapons[v_10_upvr]
+			local function sortWeapons_upvr() -- Line 961, Named "sortWeapons"
+				--[[ Upvalues[3]:
+					[1]: var515_upvr (readonly)
+					[2]: Filter_upvr (readonly)
+					[3]: var203_upvw (copied, read and write)
+				]]
+				local tbl_13 = {}
+				local _, pairs_result2, pairs_result3_14 = pairs(var515_upvr:GetChildren())
+				local var490_upvw
+				for _, v_11 in var490_upvw, pairs_result2, pairs_result3_14 do
+					if v_11:IsA("ImageButton") then
+						table.insert(tbl_13, v_11)
+					end
+				end
+				var490_upvw = nil
+				if Filter_upvr:GetAttribute("Type") == "Price" then
+					function var490_upvw(arg1) -- Line 971
+						--[[ Upvalues[1]:
+							[1]: var203_upvw (copied, read and write)
+						]]
+						return var203_upvw[arg1.Name].Price or 0
+					end
+				else
+					var490_upvw = function(arg1) -- Line 973
+						return arg1.Name
+					end
+				end
+				table.sort(tbl_13, function(arg1, arg2) -- Line 976
+					--[[ Upvalues[1]:
+						[1]: var490_upvw (read and write)
+					]]
+					local var493
+					if var490_upvw(arg1) >= var490_upvw(arg2) then
+						var493 = false
+					else
+						var493 = true
+					end
+					return var493
+				end)
+				for i_12, v_12 in ipairs(tbl_13) do
+					v_12.LayoutOrder = i_12
+				end
+			end
+			SearchBox_upvr_2:GetPropertyChangedSignal("Text"):Connect(function() -- Line 983
+				--[[ Upvalues[4]:
+					[1]: SearchBox_upvr_2 (readonly)
+					[2]: var471_upvr (readonly)
+					[3]: v_10_upvr (readonly)
+					[4]: sortWeapons_upvr (readonly)
+				]]
+				local string_lower_result1_2 = string.lower(SearchBox_upvr_2.Text)
+				for _, v_13 in pairs(var471_upvr[v_10_upvr]) do
+					local var506 = true
+					if string_lower_result1_2 ~= "" then
+						if string.lower(v_13.Name):find(string_lower_result1_2) == nil then
+							var506 = false
+						else
+							var506 = true
+						end
+					end
+					v_13.Visible = var506
+				end
+				sortWeapons_upvr()
+			end)
+			Filter_upvr.Activated:Connect(function() -- Line 991
+				--[[ Upvalues[2]:
+					[1]: Filter_upvr (readonly)
+					[2]: sortWeapons_upvr (readonly)
+				]]
+				if Filter_upvr:GetAttribute("Type") == "Price" then
+					Filter_upvr:SetAttribute("Type", "Name")
+					Filter_upvr.Label.Text = "Filter -> A-Z"
+				else
+					Filter_upvr:SetAttribute("Type", "Price")
+					Filter_upvr.Label.Text = "Filter -> $"
+				end
+				sortWeapons_upvr()
+			end)
+			local EditAttachments_2 = var473:FindFirstChild("EditAttachments")
+			if EditAttachments_2 then
+				EditAttachments_2.Activated:Connect(function() -- Line 1004
+					--[[ Upvalues[4]:
+						[1]: v_10_upvr (readonly)
+						[2]: Client_upvr (copied, readonly)
+						[3]: Framework_upvr (copied, readonly)
+						[4]: LocalPlayer_upvr (copied, readonly)
+					]]
+					local attribute_4 = workspace:GetAttribute(v_10_upvr)
+					if not attribute_4 then
+					else
+						local SOME_7 = Client_upvr:FindFirstChild(tostring(attribute_4))
+						if SOME_7 and SOME_7:FindFirstChild("Attachments") then
+							require(Framework_upvr.Modules.AttachmentsHandler):loadgun(LocalPlayer_upvr, tostring(attribute_4))
+						end
+					end
+				end)
+			end
+			sortWeapons_upvr()
+		end
+	end
+	for _, v_14_upvr in pairs(Tabs_upvr.Loadout:GetChildren()) do
+		Filter_upvr = "Frame"
+		if v_14_upvr:IsA(Filter_upvr) then
+			Filter_upvr = "Back"
+			if v_14_upvr:FindFirstChild(Filter_upvr) and v_14_upvr.Name ~= "Outfit" then
+				Filter_upvr = "Back"
+				SearchBox_upvr_2 = v_14_upvr:FindFirstChild(Filter_upvr).Activated
+				function var515_upvr() -- Line 1022
+					--[[ Upvalues[2]:
+						[1]: Tabs_upvr (copied, readonly)
+						[2]: v_14_upvr (readonly)
+					]]
+					Tabs_upvr.Loadout.PrimaryButtons.Visible = true
+					v_14_upvr.Visible = false
+					Tabs_upvr.Loadout.Points.Visible = true
+				end
+				SearchBox_upvr_2 = SearchBox_upvr_2:Connect
+				SearchBox_upvr_2(var515_upvr)
+			end
+		end
+	end
+	RefreshLoadout_upvr()
+end
