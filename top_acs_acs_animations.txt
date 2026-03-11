@@ -1,0 +1,837 @@
+local TS = game:GetService('TweenService')
+local Data = require(script.Parent.ACS_Settings)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local AnimationsFolder = ReplicatedStorage.ACS_Engine:WaitForChild("Animations"):WaitForChild("GunAnimations")
+local gameRules = require(ReplicatedStorage.ACS_Engine.GameRules.Config)
+local AnimMod
+local self = {}
+
+local GunPlatform = Data.Animations.GunPlatform
+
+
+self.MainCFrame 	= CFrame.new(0,0,0)
+self.JammedChamberDelay = 0.5 -- Delay of shell during chamber animation
+self.GunModelFixed 	= true
+self.GunCFrame 		= CFrame.new(0, 0, 0) * CFrame.Angles(math.rad(90),math.rad(0),math.rad(0))
+self.LArmCFrame 	= CFrame.new(-.5,0.05,-0.45) * CFrame.Angles(math.rad(100),math.rad(22),math.rad(20))
+self.RArmCFrame 	= CFrame.new(0.05,-0.15,1) * CFrame.Angles(math.rad(90),math.rad(0),math.rad(0))
+self.LoadedAnims 	= {}
+
+local ReturnToIdle = function(VMHuman,WeaponInHand)
+	if not self.LoadedAnims["Idle"] then
+		self.LoadedAnims["Idle"] = VMHuman:LoadAnimation(WeaponInHand.ViewmodelAnims["Idle"])
+		self.LoadedAnims["Idle"].Looped = true
+		self.LoadedAnims["Idle"]:Play()
+	else
+		self.LoadedAnims["Idle"].Looped = true
+		self.LoadedAnims["Idle"]:Play()
+	end
+end
+
+local InitiateAnim = function(VMHuman, AnimName, WeaponInHand, WaitTillStopped, Loop)
+	local FADE_TIME = gameRules.StanceTransitionTime
+
+	local function smoothStopAnimation(anim)
+		if anim.IsPlaying then
+			anim:Stop(FADE_TIME)
+		end
+	end
+
+	for _, playinganim in pairs(self.LoadedAnims) do
+		smoothStopAnimation(playinganim)
+	end
+	
+	if not self.LoadedAnims[AnimName] then
+		local animationTrack
+		if Data.Animations.NewSystem then
+			animationTrack = VMHuman:LoadAnimation(AnimationsFolder:FindFirstChild(GunPlatform.."Platform").ViewmodelAnims[AnimName])
+		else
+			animationTrack = VMHuman:LoadAnimation(WeaponInHand.ViewmodelAnims[AnimName])
+		end
+		self.LoadedAnims[AnimName] = animationTrack
+	end
+
+	local animationTrack = self.LoadedAnims[AnimName]
+
+	if Loop then
+		animationTrack.Looped = true
+	end
+
+	animationTrack:Play(FADE_TIME)
+
+	if (WaitTillStopped and not Loop) and animationTrack then
+		animationTrack.Stopped:Wait()
+		ReturnToIdle(VMHuman, WeaponInHand)
+	end
+end
+
+self.PreloadAnims = function(VMHuman,WeaponInHand,AnimFolder,ShellEjection,springs)
+	
+	for _,allanims in pairs(AnimFolder:GetChildren()) do
+		
+		if allanims:IsA("Animation") then
+			
+			if not self.LoadedAnims[allanims.Name] then
+				self.LoadedAnims[allanims.Name] = VMHuman:LoadAnimation(allanims)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("Shift1"):Connect(function()
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(0, 0,3))
+					end
+					
+					WeaponInHand.Handle.Shift:Play()
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("Shift2"):Connect(function()
+					WeaponInHand.Handle.Shift2:Play()
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("Shift3"):Connect(function()
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(0, 0,1.5))
+					end
+					
+					WeaponInHand.Handle.Shift3:Play()
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("Shift4"):Connect(function()			
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(-.08,0,3))
+					end
+					
+					WeaponInHand.Handle.LightEquip:Play()
+					
+					if gameRules.CameraShake then
+						delay(.2,function()
+							springs[1]:accelerate(Vector3.new(.08,0,-3))
+						end)			
+					end
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("Movement1"):Connect(function()
+
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(0, 0,3))
+					end
+
+					WeaponInHand.Handle.Shift:Play()
+				end)
+
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("Movement2"):Connect(function()
+					WeaponInHand.Handle.Shift2:Play()
+				end)
+
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("Movement3"):Connect(function()
+
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(0, 0,1.5))
+					end
+
+					WeaponInHand.Handle.Shift3:Play()
+				end)
+
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("Movement4"):Connect(function()			
+
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(-.08,0,3))
+					end
+
+					WeaponInHand.Handle.LightEquip:Play()
+
+					if gameRules.CameraShake then
+						delay(.2,function()
+							springs[1]:accelerate(Vector3.new(.08,0,-3))
+						end)			
+					end
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("MagOut"):Connect(function()
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(0, 0,-4.5))
+					end
+					
+					WeaponInHand.Handle.MagOut:Play()
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("MagOutExtra"):Connect(function()
+					WeaponInHand.Handle.MagOutRustle:Play()
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("MagPouch"):Connect(function()
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(-.2,0,-.8))
+					end
+					
+					WeaponInHand.Handle.MagPouch:Play()
+					
+					if gameRules.CameraShake then
+						delay(.1,function()
+							springs[1]:accelerate(Vector3.new(.2,0,.8))
+						end)
+					end
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("MagPouchRustle"):Connect(function()
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(-.2,0,-.8))
+					end
+					WeaponInHand.Handle.PouchRustle:Play()
+					
+					if gameRules.CameraShake then
+						delay(.1,function()
+							springs[1]:accelerate(Vector3.new(.2,0,.8))
+						end)
+					end
+					
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("MagIn"):Connect(function()
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(0, 0,-1))
+					end
+					
+					WeaponInHand.Handle.MagIn:Play()
+					
+					if gameRules.CameraShake then
+						delay(.08,function()
+							springs[1]:accelerate(Vector3.new(0,0,2))
+						end)
+					end
+					
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("PullBolt"):Connect(function()
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(-0.2,-0.2,-1))
+						springs[2]:accelerate(Vector3.new(-1.2,-1.2,-2))
+					end
+					
+					WeaponInHand.Bolt.SlidePull:Play()
+					TS:Create(WeaponInHand.Handle.Slide, TweenInfo.new(.15,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+					TS:Create(WeaponInHand.Handle.Bolt, TweenInfo.new(.15,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("ReleaseBolt"):Connect(function()
+					TS:Create(WeaponInHand.Handle.Slide, TweenInfo.new(.07,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse() }):Play()
+					TS:Create(WeaponInHand.Handle.Bolt, TweenInfo.new(.07,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse() }):Play()
+					WeaponInHand.Bolt.SlideRelease:Play()
+					
+					if gameRules.CameraShake then
+						springs[1]:accelerate(Vector3.new(0.2,0.2,1))
+						springs[2]:accelerate(Vector3.new(1.2,1.2,2))
+					end
+				end)
+				
+				self.LoadedAnims[allanims.Name]:GetMarkerReachedSignal("EjectShell"):Connect(function()
+					if Data.HasEquip and Data.AmmoInGun > 0 then
+						ShellEjection[1]:Eject(ShellEjection[2],ShellEjection[3],ShellEjection[4],ShellEjection[5],ShellEjection[6],ShellEjection[7],ShellEjection[8],ShellEjection[9],ShellEjection[10])
+					end
+				end)
+				
+			end
+		end
+	end
+end
+
+self.EquipAnim = function(objs)
+	repeat task.wait() until _G.AnimDebounce == false
+	if Data.Keyframebased then
+		objs[1].Handle.GunFiddle:Play()
+		delay(.2,function()
+			objs[1].Handle.AimUp:Play()
+		end)
+		delay(.3,function()
+			objs[1].Handle.ShoulderTapEquip:Play()
+		end)
+		if gameRules.CameraShake then
+			objs[2]:accelerate(Vector3.new(0, 0, 5))
+		end
+		InitiateAnim(objs[4],"Equip",objs[1],true,false)
+	else
+	objs[4].Handle.GunFiddle:Play()
+	TS:Create(objs[1], TweenInfo.new(0.1,Enum.EasingStyle.Linear), {C1 = (CFrame.new(1,-1,1) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(0.1,Enum.EasingStyle.Linear), {C1 = (CFrame.new(-1,-1,1) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	wait(0.25)
+	TS:Create(objs[1],TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(0.2,0.1,0.4) * CFrame.Angles(math.rad(90), math.rad(65), math.rad(-25))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-.7,-0.75,-0.9) * CFrame.Angles(math.rad(85),math.rad(15),math.rad(-15))):Inverse() }):Play()	
+	wait(0.2)
+	objs[4].Handle.AimUp:Play()	
+	objs[6]:accelerate(Vector3.new(0,0,1))
+	objs[7]:accelerate(Vector3.new(0,2,2))
+	TS:Create(objs[1], TweenInfo.new(.4,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.3,-0.35,0.4) * CFrame.Angles(math.rad(85),math.rad(15),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.4,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.2,-0.4,-1.1) * CFrame.Angles(math.rad(95),math.rad(15),math.rad(18))):Inverse() }):Play()
+	wait(0.3)
+	objs[4].Handle.ShoulderTapEquip:Play()	
+	TS:Create(objs[1], TweenInfo.new(0.25,Enum.EasingStyle.Back), {C1 = self.RArmCFrame:Inverse()}):Play()
+	TS:Create(objs[2], TweenInfo.new(0.25,Enum.EasingStyle.Back), {C1 = self.LArmCFrame:Inverse()}):Play()
+	objs[6]:accelerate(Vector3.new(-0.05,-0.05,-0.4))
+	objs[7]:accelerate(Vector3.new(-0.5,-0.5,-0.5))
+	wait(0.1)
+	objs[6]:accelerate(Vector3.new(0.05,0.05,0.4))
+	objs[7]:accelerate(Vector3.new(0.5,0.5,0.5))
+	wait(0.3)
+	end
+end;
+self.SightAnim = function(objs)
+	if Data.Keyframebased then
+		if objs[5] then
+			TS:Create(objs[1].Handle:WaitForChild("FlipSight"),TweenInfo.new(0.3),{C0 = CFrame.new(0.035, 0.79, 0.083)*CFrame.Angles(math.rad(0), math.rad(0), math.rad(95))}):Play()
+		else
+			TS:Create(objs[1].Handle:WaitForChild("FlipSight"),TweenInfo.new(0.3),{C0 = CFrame.new(0.27, 0.705, 0.083)*CFrame.Angles(math.rad(0), math.rad(0), math.rad(0))}):Play()
+		end
+	end
+	wait(.3)
+end
+self.UnequipAnim = function(objs)
+	repeat task.wait() until _G.AnimDebounce == false
+	if Data.Keyframebased then
+		objs[1].Handle.ShoulderTapEquip:Play()
+		objs[1].Handle.AimUp:Play()	
+		delay(.2,function()
+			objs[1].Handle.GunFiddle:Play()
+		end)
+		if gameRules.CameraShake then
+			objs[2]:accelerate(Vector3.new(0, 0, -2.5))
+		end
+		InitiateAnim(objs[4],"Unequip",objs[1],true,false)
+	else
+	TS:Create(objs[1], TweenInfo.new(0.25,Enum.EasingStyle.Back), {C1 = self.RArmCFrame:Inverse()}):Play()
+	TS:Create(objs[2], TweenInfo.new(0.25,Enum.EasingStyle.Back), {C1 = self.LArmCFrame:Inverse()}):Play()
+	objs[4].Handle.ShoulderTapEquip:Play()
+	objs[4].Handle.AimUp:Play()	
+	objs[6]:accelerate(Vector3.new(0,0,1))
+	objs[7]:accelerate(Vector3.new(0,2,2))
+	TS:Create(objs[1], TweenInfo.new(.4,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.3,-0.35,0.4) * CFrame.Angles(math.rad(85),math.rad(15),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.4,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.2,-0.4,-1.1) * CFrame.Angles(math.rad(95),math.rad(15),math.rad(18))):Inverse() }):Play()
+	wait(0.2)
+	objs[4].Handle.GunFiddle:Play()
+	TS:Create(objs[1],TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(0.2,-.2,.75) * CFrame.Angles(math.rad(90), math.rad(65), math.rad(-25))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-.7,-1,.3) * CFrame.Angles(math.rad(85),math.rad(15),math.rad(-15))):Inverse() }):Play()	
+	task.wait(.25)
+	TS:Create(objs[1], TweenInfo.new(0.1,Enum.EasingStyle.Linear), {C1 = (CFrame.new(1,-1.5,5) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(0.1,Enum.EasingStyle.Linear), {C1 = (CFrame.new(-1,-1.5,5) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(-0.05,-0.05,-0.4))
+	objs[7]:accelerate(Vector3.new(-0.5,-0.5,-0.5))
+	wait(0.1)
+	objs[6]:accelerate(Vector3.new(0.05,0.05,0.4))
+	objs[7]:accelerate(Vector3.new(0.5,0.5,0.5))
+	wait(0.2)
+	end
+end;
+
+self.AimAnim = function(objs)
+	TS:Create(objs[1],TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(0.05,-0.15,1) * CFrame.Angles(math.rad(90),math.rad(0),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-.3,-0.04,-0.7) * CFrame.Angles(math.rad(95),math.rad(45),math.rad(15))):Inverse() }):Play()	
+end;
+
+self.IdleAnim = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"Idle",objs[1],false,true)
+	else
+	TS:Create(objs[1], TweenInfo.new(0.3,Enum.EasingStyle.Sine), {C1 = self.RArmCFrame:Inverse()}):Play()
+	TS:Create(objs[2], TweenInfo.new(0.3,Enum.EasingStyle.Sine), {C1 = self.LArmCFrame:Inverse()}):Play()
+	end
+end;
+
+self.LowReady = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"Low Ready",objs[1],false,true)
+	else
+	objs[4].Handle.GunFiddle:Play()
+	objs[4].Handle.LightEquip:Play()
+	TS:Create(objs[1],TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(0.2,0.1,0.4) * CFrame.Angles(math.rad(90), math.rad(65), math.rad(-25))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-.7,-0.75,-0.9) * CFrame.Angles(math.rad(85),math.rad(15),math.rad(-15))):Inverse() }):Play()	
+	objs[6]:accelerate(Vector3.new(-0.05,-0.05,-0.4))
+	objs[7]:accelerate(Vector3.new(-0.5,-0.5,-0.5))
+	wait(0.15)
+	objs[6]:accelerate(Vector3.new(0.05,0.05,0.4))
+	objs[7]:accelerate(Vector3.new(0.5,0.5,0.5))
+	wait(0.25)	
+	end
+end;
+
+self.HighReady = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"High Ready",objs[1],false,true)
+	else
+	objs[4].Handle.GunFiddle:Play()
+	objs[4].Handle.ShoulderEquip:Play()
+	TS:Create(objs[1],TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(0.5,-1,.7) * CFrame.Angles(math.rad(135), math.rad(25), math.rad(-5))):Inverse() }):Play()
+	TS:Create(objs[2],TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-.2,-.2,-.25) * CFrame.Angles(math.rad(155),math.rad(35),math.rad(5))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(-0.1,-0.1,-0.7))
+	objs[7]:accelerate(Vector3.new(-0.5,-0.5,-0.5))
+	wait(0.15)
+	objs[6]:accelerate(Vector3.new(0.1,0.1,0.7))
+	objs[7]:accelerate(Vector3.new(0.5,0.5,0.5))
+	wait(0.25)
+	end
+end;
+
+self.Patrol = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"Patrol",objs[1],false,true)
+	else
+	objs[4].Handle.GunFiddle:Play()
+	objs[4].Handle.ShoulderEquip:Play()
+	TS:Create(objs[1], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(.75,-0.15,0) * CFrame.Angles(math.rad(90),math.rad(20),math.rad(-75))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.15,-0.75,0.4) * CFrame.Angles(math.rad(90),math.rad(20),math.rad(25))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(-0.2,-0.2,-1))
+	objs[7]:accelerate(Vector3.new(-1,-1,-1))
+	wait(0.15)
+	objs[6]:accelerate(Vector3.new(0.2,0.2,1))
+	objs[7]:accelerate(Vector3.new(1,1,1))	
+	task.wait(.25)
+	end
+end;
+
+self.SprintAnim = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"Sprint",objs[1],false,true)
+	end
+end;
+
+self.ReloadAnim = function(objs)	
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"Reload",objs[1],true,false)
+	else
+	objs[4].Handle.GunFiddle:Play()
+	wait(0.05)
+	objs[4].Handle.AimUp:Play()
+	objs[4].Handle.MagOutRustle:Play()
+	TS:Create(objs[2], TweenInfo.new(.35,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.35,-0.7,0.1) * CFrame.Angles(math.rad(94),math.rad(-25),math.rad(5))):Inverse() }):Play()
+	TS:Create(objs[1], TweenInfo.new(.35,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.05,-0.25,0.7) * CFrame.Angles(math.rad(90.5),math.rad(-4),math.rad(0))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(0,0,-1))
+	objs[7]:accelerate(Vector3.new(0,-2,-1))
+	wait(0.05)
+	objs[4].Handle.MagOut:Play()
+	wait(0.3)
+	TS:Create(objs[1], TweenInfo.new(.2,Enum.EasingStyle.Back), {C1 = (CFrame.new(-0.05,-0.25,0.7) * CFrame.Angles(math.rad(90.5),math.rad(3),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.35,-0.9,0.1) * CFrame.Angles(math.rad(94),math.rad(-25),math.rad(5))):Inverse() }):Play()
+	TS:Create(objs[4].Handle.Mag, TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0,0.3,0) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	wait(0.1)
+	objs[4].Mag.Transparency = 1
+	objs[4].Handle.MagOut:Play()
+	objs[6]:accelerate(Vector3.new(0,0,-1))
+	objs[7]:accelerate(Vector3.new(0,-1,-1))
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.8,0.1) * CFrame.Angles(math.rad(94),math.rad(5),math.rad(5))):Inverse() }):Play()
+	
+	
+	local fakeloadmag = objs[4].Mag:Clone()
+	fakeloadmag.Name = "TemporaryMag"
+	fakeloadmag.Parent = objs[4]
+	fakeloadmag.Transparency = 0
+	fakeloadmag.CanCollide = false
+
+	local MagCW = Instance.new("Motor6D")
+	MagCW.Part0 = fakeloadmag
+	MagCW.Part1 = objs[3].Parent.Parent:WaitForChild("Left Arm")
+	MagCW.Parent = fakeloadmag
+	MagCW.C1 = fakeloadmag.CFrame:toObjectSpace(objs[4].Parent:WaitForChild("LeftHand").CFrame) * CFrame.new(0.1, -0.2, -0.15) * CFrame.Angles(math.rad(-90),math.rad(0),math.rad(0)):Inverse()
+	wait(0.2)
+	
+	objs[6]:accelerate(Vector3.new(0,0,2))
+	objs[7]:accelerate(Vector3.new(0,2,2))
+	objs[4].Handle.AimUp:Play()
+	TS:Create(objs[2], TweenInfo.new(.35,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.5,0) * CFrame.Angles(math.rad(90),math.rad(0),math.rad(90))):Inverse() }):Play()
+	wait(0.3)
+	objs[4].Handle.PouchRustle:Play()
+	objs[6]:accelerate(Vector3.new(0,0,2))
+	objs[7]:accelerate(Vector3.new(0,2,2))
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.3,0) * CFrame.Angles(math.rad(70),math.rad(10),math.rad(90))):Inverse() }):Play()
+	task.wait(.25)
+	TS:Create(objs[1], TweenInfo.new(.3,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.05,-0.25,0.7) * CFrame.Angles(math.rad(90.5),math.rad(-5),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.9,0) * CFrame.Angles(math.rad(90),math.rad(0),math.rad(90))):Inverse() }):Play()
+	task.wait(.25)
+	objs[4].Handle.AimDown:Play()
+	objs[6]:accelerate(Vector3.new(0,0,2))
+	objs[7]:accelerate(Vector3.new(0,2,2))
+	objs[4].Handle.MagPouch:Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.3,0) * CFrame.Angles(math.rad(70),math.rad(10),math.rad(90))):Inverse() }):Play()
+	wait(0.25)
+	TS:Create(objs[2], TweenInfo.new(.5,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.9,0) * CFrame.Angles(math.rad(90),math.rad(10),math.rad(90))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(0,0,-1))
+	objs[7]:accelerate(Vector3.new(0,-1,-1))
+	task.wait(.1)
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.3,0) * CFrame.Angles(math.rad(70),math.rad(10),math.rad(90))):Inverse() }):Play()
+	
+	
+	wait(0.2)
+	TS:Create(objs[2], TweenInfo.new(.4,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.5,-1.4,-0.5) * CFrame.Angles(math.rad(100),math.rad(10),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[1], TweenInfo.new(.5,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.25,-0.25,0.7) * CFrame.Angles(math.rad(91),math.rad(-15),math.rad(0))):Inverse() }):Play()
+	task.wait(.35)
+	objs[4].Handle.GunFiddle:Play()
+	wait(0.1)
+	objs[6]:accelerate(Vector3.new(0,0,-1))
+	objs[7]:accelerate(Vector3.new(0,-1,-1))
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.8,0.1) * CFrame.Angles(math.rad(94),math.rad(5),math.rad(5))):Inverse() }):Play()
+	wait(0.3)
+	fakeloadmag:Remove()
+	objs[4].Mag.Transparency = 0
+	objs[4].Handle.AimUp:Play()
+	objs[4].Handle.MagOutRustle:Play()
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.9,0.1) * CFrame.Angles(math.rad(94),math.rad(-25),math.rad(5))):Inverse() }):Play()
+	wait(0.15)
+	objs[4].Handle.GunFiddle:Play()
+	objs[6]:accelerate(Vector3.new(0.15,0.15,-1))
+	objs[7]:accelerate(Vector3.new(0,-1,-1))
+	wait(0.1)
+	TS:Create(objs[4].Handle.Mag, TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0,0,0) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.7,0.1) * CFrame.Angles(math.rad(94),math.rad(-25),math.rad(5))):Inverse() }):Play()
+	TS:Create(objs[1], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.25,-0.25,0.7) * CFrame.Angles(math.rad(90.5),math.rad(-4),math.rad(0))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(-0.15,-0.15,1))
+	objs[7]:accelerate(Vector3.new(0,1,1))
+	objs[4].Handle.MagIn:Play()
+	
+	wait(0.25)
+	objs[4].Handle.AimUp:Play()	
+	TS:Create(objs[1], TweenInfo.new(.4,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.3,-0.35,0.4) * CFrame.Angles(math.rad(85),math.rad(15),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.4,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.2,-0.4,-1.1) * CFrame.Angles(math.rad(95),math.rad(15),math.rad(18))):Inverse() }):Play()
+	wait(0.45)
+	TS:Create(objs[1], TweenInfo.new(0.25,Enum.EasingStyle.Back), {C1 = self.RArmCFrame:Inverse()}):Play()
+	TS:Create(objs[2], TweenInfo.new(0.25,Enum.EasingStyle.Back), {C1 = self.LArmCFrame:Inverse()}):Play()
+	objs[6]:accelerate(Vector3.new(-0.2,-0.2,-1))
+	objs[7]:accelerate(Vector3.new(-1,-1,-1))
+	wait(0.15)
+	objs[6]:accelerate(Vector3.new(0.2,0.2,1))
+	objs[7]:accelerate(Vector3.new(1,1,1))
+	objs[4].Handle.ShoulderTapEquip:Play()	
+	end	
+end;
+
+self.TacticalReloadAnim = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"EmptyReload",objs[1],true,false)
+	else
+	objs[4].Handle.AimUp:Play()
+	objs[4].Handle.MagOut:Play()
+	objs[4].Handle.MagOutRustle:Play()
+	TS:Create(objs[4].Handle.Mag, TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0,0.5,0) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	
+	objs[6]:accelerate(Vector3.new(-0.2,-0.2,-1))
+	objs[7]:accelerate(Vector3.new(-1.2,-1.2,-2))
+	
+	TS:Create(objs[1], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.25,-0.3,0.7) * CFrame.Angles(math.rad(95),math.rad(-20),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.5,Enum.EasingStyle.Back), {C1 = (CFrame.new(-.75,-0.15,.5) * CFrame.Angles(math.rad(60),math.rad(-5),math.rad(15))):Inverse() }):Play()
+	wait(0.05)
+	objs[6]:accelerate(Vector3.new(0.2,0.2,1))
+	objs[7]:accelerate(Vector3.new(1.2,1.2,2))
+	wait(0.2)
+	objs[4].Mag.Transparency = 1
+	
+	local fakedropmag = objs[4].Mag:Clone()
+	fakedropmag.Name = "TemporaryMag"
+	fakedropmag.Parent = objs[4]
+	fakedropmag.Transparency = 0
+	fakedropmag.CanCollide = true
+	fakedropmag.CollisionGroupId = 2
+	
+	objs[4].Handle.AimUp:Play()
+	TS:Create(objs[1], TweenInfo.new(.2,Enum.EasingStyle.Back), {C1 = (CFrame.new(-0.08,-0.25,0.7) * CFrame.Angles(math.rad(94),math.rad(-7),math.rad(0))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(-0.1,-0.1,-0.5))
+	objs[7]:accelerate(Vector3.new(-0.7,-0.7,-1))
+	wait(0.2)
+	TS:Create(objs[1], TweenInfo.new(.5,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.25,-0.3,0.7) * CFrame.Angles(math.rad(93),math.rad(-20),math.rad(0))):Inverse() }):Play()
+	wait(0.2)
+	
+	
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.5,0) * CFrame.Angles(math.rad(90),math.rad(0),math.rad(90))):Inverse() }):Play()
+	wait(0.2)
+	TS:Create(objs[1], TweenInfo.new(.5,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0,-0.3,0.7) * CFrame.Angles(math.rad(95),math.rad(5),math.rad(0))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(0,0,2))
+	objs[7]:accelerate(Vector3.new(0,2,2))
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.3,0) * CFrame.Angles(math.rad(70),math.rad(10),math.rad(90))):Inverse() }):Play()
+	task.wait(.25)
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.8,0) * CFrame.Angles(math.rad(90),math.rad(0),math.rad(90))):Inverse() }):Play()
+	task.wait(.25)
+	
+	
+	
+
+	local fakeloadmag = objs[4].Mag:Clone()
+	fakeloadmag.Name = "TemporaryMag"
+	fakeloadmag.Parent = objs[4]
+	fakeloadmag.Transparency = 0
+	fakeloadmag.CanCollide = false
+
+	local MagCW = Instance.new("Motor6D")
+	MagCW.Part0 = fakeloadmag
+	MagCW.Part1 = objs[3].Parent.Parent:WaitForChild("Left Arm")
+	MagCW.Parent = fakeloadmag
+	MagCW.C1 = fakeloadmag.CFrame:toObjectSpace(objs[4].Parent:WaitForChild("LeftHand").CFrame) * CFrame.new(0.1, -0.2, -0.15) * CFrame.Angles(math.rad(-90),math.rad(0),math.rad(0)):Inverse() 
+	
+	
+	
+	
+	objs[4].Handle.MagPouch:Play()
+	objs[6]:accelerate(Vector3.new(0,0,2))
+	objs[7]:accelerate(Vector3.new(0,2,2))
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.3,0) * CFrame.Angles(math.rad(70),math.rad(10),math.rad(90))):Inverse() }):Play()
+	wait(0.25)
+
+	TS:Create(objs[2], TweenInfo.new(.5,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-1.7,-0.5,0) * CFrame.Angles(math.rad(90),math.rad(10),math.rad(90))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(0,0,-1))
+	objs[7]:accelerate(Vector3.new(0,-1,-1))
+	wait(0.2)
+	TS:Create(objs[2], TweenInfo.new(.4,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.5,-1.4,-0.5) * CFrame.Angles(math.rad(100),math.rad(10),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[1], TweenInfo.new(.5,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.25,-0.25,0.7) * CFrame.Angles(math.rad(91),math.rad(-15),math.rad(0))):Inverse() }):Play()
+	task.wait(.35)
+	objs[4].Handle.GunFiddle:Play()
+	wait(0.1)
+	objs[6]:accelerate(Vector3.new(0,0,-1))
+	objs[7]:accelerate(Vector3.new(0,-1,-1))
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.8,0.1) * CFrame.Angles(math.rad(94),math.rad(5),math.rad(5))):Inverse() }):Play()
+	wait(0.3)
+	fakeloadmag:Remove()
+	objs[4].Mag.Transparency = 0
+	objs[4].Handle.AimUp:Play()
+	objs[4].Handle.MagOutRustle:Play()
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.9,0.1) * CFrame.Angles(math.rad(94),math.rad(-25),math.rad(5))):Inverse() }):Play()
+	wait(0.15)
+	objs[4].Handle.GunFiddle:Play()
+	objs[6]:accelerate(Vector3.new(0,0,-1))
+	objs[7]:accelerate(Vector3.new(0,-1,-1))
+	wait(0.3)
+	TS:Create(objs[4].Handle.Mag, TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0,0,0) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.7,0.1) * CFrame.Angles(math.rad(94),math.rad(-25),math.rad(5))):Inverse() }):Play()
+	TS:Create(objs[1], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-0.25,-0.25,0.7) * CFrame.Angles(math.rad(90.5),math.rad(-4),math.rad(0))):Inverse() }):Play()
+	objs[6]:accelerate(Vector3.new(0,0,-1))
+	objs[7]:accelerate(Vector3.new(0,-2,-1))
+	objs[4].Handle.MagIn:Play()
+	wait(0.22)
+		TS:Create(objs[1], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(88),math.rad(25),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+		wait(0.16)
+		objs[6]:accelerate(Vector3.new(-0.2,-0.2,-1))
+		objs[7]:accelerate(Vector3.new(-1.2,-1.2,-2))
+		objs[4].Bolt.SlidePull:Play()
+		objs[4].Bolt.CycleOutRound:Play()
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(45),math.rad(0))):Inverse() }):Play()
+
+		TS:Create(objs[4].Handle.Slide, TweenInfo.new(.15,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+		TS:Create(objs[4].Handle.Bolt, TweenInfo.new(.15,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+
+		wait(0.05)
+		TS:Create(objs[2], TweenInfo.new(.1,Enum.EasingStyle.Elastic),{C1 = (CFrame.new(-0.3,0.1,1.1) * CFrame.Angles(math.rad(88),math.rad(38),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[1], TweenInfo.new(.1,Enum.EasingStyle.Elastic), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(89),math.rad(27),math.rad(0))):Inverse() }):Play()
+		wait(0.05)
+		TS:Create(objs[2], TweenInfo.new(.1,Enum.EasingStyle.Elastic),{C1 = (CFrame.new(-0.3,0.1,1.4) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[1], TweenInfo.new(.1,Enum.EasingStyle.Elastic), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(88),math.rad(25),math.rad(0))):Inverse() }):Play()
+		wait(0.3)
+
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+
+		TS:Create(objs[4].Handle.Slide, TweenInfo.new(.07,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse() }):Play()
+		TS:Create(objs[4].Handle.Bolt, TweenInfo.new(.07,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse() }):Play()
+
+		objs[4].Bolt.SlideRelease:Play()
+		objs[4].Bolt.CycleInRound:Play()
+		objs[6]:accelerate(Vector3.new(0.2,0.2,1))
+		objs[7]:accelerate(Vector3.new(1.2,1.2,2))
+		wait(0.15)
+		TS:Create(objs[1], TweenInfo.new(.3,Enum.EasingStyle.Quad), {C1 = self.RArmCFrame:Inverse()}):Play()
+		TS:Create(objs[2], TweenInfo.new(.3,Enum.EasingStyle.Quad), {C1 = self.LArmCFrame:Inverse()}):Play()
+		task.wait(.25)
+	end
+end;
+
+self.JammedAnim = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"Chamber",objs[1],true,false)
+	else
+	if objs[8] > 1 then
+		TS:Create(objs[1], TweenInfo.new(.35,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.3,-0.15,0.3) * CFrame.Angles(math.rad(88),math.rad(25),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-.4,-0.04,-0.4) * CFrame.Angles(math.rad(92),math.rad(45),math.rad(22))):Inverse() }):Play()
+		objs[6]:accelerate(Vector3.new(0,0,-1))	
+		task.wait(.25)
+		TS:Create(objs[1], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(88),math.rad(25),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+		wait(0.2)
+		objs[6]:accelerate(Vector3.new(-0.2,-0.2,-1))
+		objs[7]:accelerate(Vector3.new(-1.2,-1.2,-2))
+		objs[4].Bolt.SlidePull:Play()
+		objs[4].Bolt.CycleOutRound:Play()
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(45),math.rad(0))):Inverse() }):Play()
+
+		TS:Create(objs[4].Handle.Slide, TweenInfo.new(.15,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+		TS:Create(objs[4].Handle.Bolt, TweenInfo.new(.15,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+
+		wait(0.05)
+		TS:Create(objs[2], TweenInfo.new(.1,Enum.EasingStyle.Elastic),{C1 = (CFrame.new(-0.3,0.1,1.1) * CFrame.Angles(math.rad(88),math.rad(38),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[1], TweenInfo.new(.1,Enum.EasingStyle.Elastic), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(89),math.rad(27),math.rad(0))):Inverse() }):Play()
+		wait(0.05)
+		TS:Create(objs[2], TweenInfo.new(.1,Enum.EasingStyle.Elastic),{C1 = (CFrame.new(-0.3,0.1,1.4) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[1], TweenInfo.new(.1,Enum.EasingStyle.Elastic), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(88),math.rad(25),math.rad(0))):Inverse() }):Play()
+		wait(0.3)
+
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+
+		TS:Create(objs[4].Handle.Slide, TweenInfo.new(.07,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse() }):Play()
+		TS:Create(objs[4].Handle.Bolt, TweenInfo.new(.07,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse() }):Play()
+
+		objs[4].Bolt.SlideRelease:Play()
+		objs[4].Bolt.CycleInRound:Play()
+		objs[6]:accelerate(Vector3.new(0.2,0.2,1))
+		objs[7]:accelerate(Vector3.new(1.2,1.2,2))
+		wait(0.15)
+		TS:Create(objs[1], TweenInfo.new(.4,Enum.EasingStyle.Quad), {C1 = self.RArmCFrame:Inverse()}):Play()
+		TS:Create(objs[2], TweenInfo.new(.4,Enum.EasingStyle.Quad), {C1 = self.LArmCFrame:Inverse()}):Play()
+		task.wait(.3)
+	else
+		TS:Create(objs[1], TweenInfo.new(.35,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.3,-0.15,0.3) * CFrame.Angles(math.rad(88),math.rad(25),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-.4,-0.04,-0.4) * CFrame.Angles(math.rad(92),math.rad(45),math.rad(22))):Inverse() }):Play()
+		objs[6]:accelerate(Vector3.new(0,0,-1))	
+		task.wait(.25)
+		TS:Create(objs[1], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(88),math.rad(25),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+		wait(0.2)
+		objs[6]:accelerate(Vector3.new(-0.2,-0.2,-1))
+		objs[7]:accelerate(Vector3.new(-1.2,-1.2,-2))
+		objs[4].Bolt.SlidePull:Play()
+		objs[4].Bolt.CycleOutRound:Play()
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(45),math.rad(0))):Inverse() }):Play()
+
+		TS:Create(objs[4].Handle.Slide, TweenInfo.new(.15,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+		TS:Create(objs[4].Handle.Bolt, TweenInfo.new(.15,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+
+		wait(0.05)
+		TS:Create(objs[2], TweenInfo.new(.1,Enum.EasingStyle.Elastic),{C1 = (CFrame.new(-0.3,0.1,1.1) * CFrame.Angles(math.rad(88),math.rad(38),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[1], TweenInfo.new(.1,Enum.EasingStyle.Elastic), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(89),math.rad(27),math.rad(0))):Inverse() }):Play()
+		wait(0.05)
+		TS:Create(objs[2], TweenInfo.new(.1,Enum.EasingStyle.Elastic),{C1 = (CFrame.new(-0.3,0.1,1.4) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+		TS:Create(objs[1], TweenInfo.new(.1,Enum.EasingStyle.Elastic), {C1 = (CFrame.new(0.3,-0.15,0.5) * CFrame.Angles(math.rad(88),math.rad(25),math.rad(0))):Inverse() }):Play()
+		wait(0.3)
+
+		TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine),{C1 = (CFrame.new(-0.3,0.1,1) * CFrame.Angles(math.rad(90),math.rad(35),math.rad(0))):Inverse() }):Play()
+
+		TS:Create(objs[4].Handle.Bolt, TweenInfo.new(.07,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse()}):Play()
+
+		objs[4].Bolt.SlideRelease:Play()
+		objs[6]:accelerate(Vector3.new(0.2,0.2,1))
+		objs[7]:accelerate(Vector3.new(1.2,1.2,2))
+		wait(0.15)
+		TS:Create(objs[1], TweenInfo.new(.4,Enum.EasingStyle.Quad), {C1 = self.RArmCFrame:Inverse()}):Play()
+		TS:Create(objs[2], TweenInfo.new(.4,Enum.EasingStyle.Quad), {C1 = self.LArmCFrame:Inverse()}):Play()
+		task.wait(.3)
+		end
+	end
+end;
+
+self.PumpAnim = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"Chamber",objs[1],true,false)
+	else
+	TS:Create(objs[1], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.05,-0.15,.75) * CFrame.Angles(math.rad(90),math.rad(0),math.rad(0))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.35,0.45) * CFrame.Angles(math.rad(160),math.rad(0),math.rad(0))):Inverse() }):Play()
+	task.wait(.25)
+	objs[4].Bolt.SlidePull:Play()
+	TS:Create(objs[4].Handle.Slide, TweenInfo.new(.2,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+	TS:Create(objs[4].Handle.Bolt, TweenInfo.new(.2,Enum.EasingStyle.Sine), {C0 =  CFrame.new(0,0,-0.4):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.2,Enum.EasingStyle.Sine), {C1 = (CFrame.new(-.5,-0.35,0.45) * CFrame.Angles(math.rad(180),math.rad(0),math.rad(0))):Inverse() }):Play()
+	task.wait(.3)
+	TS:Create(objs[4].Handle.Slide, TweenInfo.new(.1,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse() }):Play()
+	TS:Create(objs[4].Handle.Bolt, TweenInfo.new(.1,Enum.EasingStyle.Linear), {C0 =  CFrame.new():Inverse() }):Play()
+	objs[4].Bolt.SlideRelease:Play()
+	end
+end;
+
+self.MagCheck = function(objs)
+	if Data.Keyframebased then
+		InitiateAnim(objs[4],"Mag Check",objs[1],true,false)
+	else
+	objs[4].Handle.AimUp:Play()
+	TS:Create(objs[1], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.5,-0.15,0) * CFrame.Angles(math.rad(100),math.rad(0),math.rad(-45))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Linear), {C1 = (CFrame.new(-1,-1,1) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	wait(2.5)
+	objs[4].Handle.AimDown:Play()
+	TS:Create(objs[1], TweenInfo.new(.25,Enum.EasingStyle.Sine), {C1 = (CFrame.new(0.5,-0.15,0) * CFrame.Angles(math.rad(160),math.rad(60),math.rad(-45))):Inverse() }):Play()
+	TS:Create(objs[2], TweenInfo.new(.25,Enum.EasingStyle.Linear), {C1 = (CFrame.new(-1,-1,1) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))):Inverse() }):Play()
+	wait(2.5)
+	objs[4].Handle.AimUp:Play()
+	end
+end;
+
+self.PlayFireAnim = function(objs)
+	InitiateAnim(objs[4],"Fire",objs[1])
+	ReturnToIdle(objs[4],objs[1])
+end
+self.PlayAimFire = function(objs)
+	InitiateAnim(objs[4],"AimFire",objs[1])
+	ReturnToIdle(objs[4],objs[1])
+end
+
+self.meleeAttack = function(objs)
+
+end;
+
+self.GrenadeReady = function(objs)
+
+end;
+
+self.GrenadeThrow = function(objs)
+
+end;
+
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+--//Server Animations
+------//Idle Position
+self.SV_GunPos = CFrame.new(-.3, -.2, -0.4) * CFrame.Angles(math.rad(-90), math.rad(0), math.rad(0))
+
+self.SV_RightArmPos = CFrame.new(-.9, 1.25, -0.35) * CFrame.Angles(math.rad(-30), math.rad(0), math.rad(0))	--Server
+self.SV_LeftArmPos = CFrame.new(1,1,-1) * CFrame.Angles(math.rad(-80),math.rad(30),math.rad(-10))	--server
+
+self.SV_RightElbowPos = CFrame.new(0,-0.45,-.25) * CFrame.Angles(math.rad(-80), math.rad(0), math.rad(0))		--Client
+self.SV_LeftElbowPos = CFrame.new(0,0, -0.1) * CFrame.Angles(math.rad(-15),math.rad(0),math.rad(0))	--Client
+
+self.SV_RightWristPos = CFrame.new(0,0,0.15) * CFrame.Angles(math.rad(20), math.rad(0), math.rad(0))		--Client
+self.SV_LeftWristPos = CFrame.new(0,0,0) * CFrame.Angles(math.rad(0),math.rad(-15),math.rad(0))	
+
+------//High Ready Animations
+self.RightHighReady = CFrame.new(-1.1, .5, -1.1) * CFrame.Angles(math.rad(-90), math.rad(0), math.rad(0));
+self.LeftHighReady = CFrame.new(0.65,0.4,-1.3) * CFrame.Angles(math.rad(-140),math.rad(30),math.rad(30));
+
+self.RightElbowHighReady = CFrame.new(0,-0.25,-.35) * CFrame.Angles(math.rad(-45), math.rad(0), math.rad(0));
+self.LeftElbowHighReady = CFrame.new(0,0, -0.1) * CFrame.Angles(math.rad(-15),math.rad(0),math.rad(0));
+
+self.RightWristHighReady = CFrame.new(0,0,0) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0));
+self.LeftWristHighReady = CFrame.new(0,0,0) * CFrame.Angles(math.rad(0),math.rad(-15),math.rad(0));	
+
+------//Low Ready Animations
+self.RightLowReady = CFrame.new(-.9, 1.25, 0) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0));
+self.LeftLowReady = CFrame.new(1,1,-0.6) * CFrame.Angles(math.rad(-45),math.rad(15),math.rad(-25));
+
+self.RightElbowLowReady = CFrame.new(0,-0.45,-.25) * CFrame.Angles(math.rad(-80), math.rad(0), math.rad(0));
+self.LeftElbowLowReady = CFrame.new(0,0,0)  * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0));
+
+self.RightWristLowReady = CFrame.new(0,0,0.15) * CFrame.Angles(math.rad(20), math.rad(0), math.rad(0));
+self.LeftWristLowReady = CFrame.new(0,0,0)  * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0));	
+
+------//Patrol Animations
+self.RightPatrol = CFrame.new(-.85, 0.75, -1.3) * CFrame.Angles(math.rad(-30), math.rad(-90), math.rad(0));
+self.LeftPatrol = CFrame.new(1.5,1.1,0) * CFrame.Angles(math.rad(0),math.rad(0),math.rad(0));
+
+self.RightElbowPatrol = CFrame.new(0,-0.2,-.1) * CFrame.Angles(math.rad(-40), math.rad(0), math.rad(0));
+self.LeftElbowPatrol = CFrame.new(0,-0.15,-0.25)  * CFrame.Angles(math.rad(-50), math.rad(0), math.rad(0));
+
+self.RightWristPatrol = CFrame.new(0,0,0) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(-15));
+self.LeftWristPatrol = CFrame.new(0,0,0)  * CFrame.Angles(math.rad(0), math.rad(-90), math.rad(0));
+
+------//Aim Animations
+self.RightAim = CFrame.new(-.6, 0.85, -0.5) * CFrame.Angles(math.rad(-50), math.rad(0), math.rad(0));
+self.LeftAim = CFrame.new(1.6,0.6,-0.85) * CFrame.Angles(math.rad(-95),math.rad(35),math.rad(-25));
+
+self.RightElbowAim = CFrame.new(0,-0.2,-.25) * CFrame.Angles(math.rad(-60), math.rad(0), math.rad(0));
+self.LeftElbowAim = CFrame.new(0,0,0)  * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0));
+
+self.RightWristAim = CFrame.new(0,0,0.15) * CFrame.Angles(math.rad(20), math.rad(0), math.rad(0));
+self.LeftWristAim = CFrame.new(0,0,0)  * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0));
+
+return self

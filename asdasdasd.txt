@@ -1,0 +1,14 @@
+local proxiservice = game:GetService("ProximityPromptService")
+local player = game.Players.LocalPlayer
+
+proxiservice.PromptShown:Connect(function(prompt)
+	local char = player.Character
+	prompt.Parent.Beam.Attachment1 = char.HumanoidRootPart.RootAttachment
+	
+end)
+
+proxiservice.PromptHidden:Connect(function(prompt)
+	local char = player.Character
+	prompt.Parent.Beam.Attachment1 = nil
+	
+end)

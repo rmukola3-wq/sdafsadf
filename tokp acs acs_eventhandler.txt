@@ -1,0 +1,1880 @@
+repeat task.wait() until game:IsLoaded()
+
+local plr 			= game:GetService("Players").LocalPlayer
+local mouse 		= plr:GetMouse()
+local cam 			= workspace.CurrentCamera
+
+local User 			= game:GetService("UserInputService")
+local CAS 			= game:GetService("ContextActionService")
+local Run 			= game:GetService("RunService")
+local TS 			= game:GetService('TweenService')
+local Debris 		= game:GetService("Debris")
+local PhysicsService= game:GetService("PhysicsService")
+local RS 			= game.ReplicatedStorage
+local ACS_Workspace = workspace:WaitForChild("ACS_WorkSpace")
+local Engine 		= RS:WaitForChild("ACS_Engine")
+local Mods 			= Engine:WaitForChild("Modules")
+local Network		= require(Mods.Network)
+local HUDs 			= Engine:WaitForChild("HUD")
+local ArmModel 		= Engine:WaitForChild("ArmModel")
+local GunModels 	= Engine:WaitForChild("GunModels")
+local AttModels 	= Engine:WaitForChild("AttModels")
+local AttModules  	= Engine:WaitForChild("AttModules")
+local Rules			= Engine:WaitForChild("GameRules")
+local PastaFx		= Engine:WaitForChild("FX")
+
+local gameRules		= require(Rules:WaitForChild("Config"))
+local CasingConfig = require(Rules:WaitForChild("CasingConfig"))
+local SpringMod 	= require(Mods:WaitForChild("Spring"))
+local HitMod 		= require(Mods:WaitForChild("Hitmarker"))
+local Ultil			= require(Mods:WaitForChild("Utilities"))
+local cameraShaker = require(Mods:WaitForChild('CameraShaker'))
+local NVGhander = require(Mods.ACSM:WaitForChild("NVGhandler"))
+local Calibers = require(Mods.ACSM:WaitForChild("Calibers"))
+local ShellEjection = require(Mods.ACSM:WaitForChild("EjectShell"))
+local NVGconfig = require(Rules:WaitForChild("NVGconfig"))
+Thread = require(Mods:WaitForChild("Thread"))
+
+local WhizzSound = {"4872110675"; "5303773495"; "5303772965"; "5303773495"; "5303772257"; "342190005"; "342190012"; "342190017"; "342190024";}
+local Ignore_Model = {cam, plr.Character, ACS_Workspace.Client, ACS_Workspace.Server}
+local ActiveAnimations = {}
+
+----------//Local Events\\----------
+
+function Throttle(step)
+	local c = 0
+	repeat
+		if step < (c+2)/60 then
+			return c
+		end
+		c = c + 1
+	until c > 5
+	return c
+end
+
+local WhizzSounds = {
+	subsonic= {6691178335,6691183026,6691183569,6691183785,6691184034,6691184356,6691184523,6691178516,6691178719,6691178929,6691179268,6691179801,6691179966,6691180134,6691180352},
+	supersonic = {4927237740,4927237352,4927236859,4927235588,4927235094,4927234734,4927234432,4927242067,4927242740,4927243312,4927243733,4927244204,4927244613,4927244613,4927244999,4927245515,4927246133,4927247016,4927247447,4927247935,4927248385,6691178335,6691183026,6691183569,6691183785,6691184034,6691184356,6691184523,6691178516,6691178719,6691178929,6691179268,6691179801,6691179966,6691180134,6691180352},
+	rocket = {
+		"9449086965",
+		"9449086755",
+		"9449086625",
+		"9449086464",
+		"9449087156",
+		"4684378963",
+		"4684379278",
+		"4684379620",
+		"4684380141",
+		"4684380623",
+		"4684381348",
+	}
+}
+
+local DevID = {1550024308, 72413525}
+
+local TextChatService = game:GetService("TextChatService")
+
+TextChatService.OnIncomingMessage = function(message: TextChatMessage)
+	local props = Instance.new("TextChatMessageProperties")
+
+	if message.TextSource then
+		local player = game:GetService("Players"):GetPlayerByUserId(message.TextSource.UserId)
+		if table.find(DevID, player.UserId) then
+			props.PrefixText = "<font color='#ff5500'>[Developer]</font> " .. message.PrefixText
+		end
+	end
+
+	return props	
+end
+
+InstanceSound = function(Parent,Type,PlayOnRemove)
+	if not Parent:FindFirstChild(Type) then
+		local Sound = PastaFx.StanceFX[Type]:Clone()
+		Sound.Parent = Parent
+		if not PlayOnRemove then
+			Sound:Play()
+			Debris:AddItem(Sound,Sound.TimeLength)
+		else
+			Sound.PlayOnRemove = true
+			Sound:Destroy()
+		end
+	else return end;
+end
+
+WhizzVolFunction = function(maxdist,dist)
+	return (dist - maxdist / maxdist) ^ 2
+end
+
+checkCasingLimit = function(Shell)
+	if CasingConfig.CasingSettings.CasingLimit then
+		local CasingContainer = ACS_Workspace.Casings:GetChildren()
+		local CasingCount = #CasingContainer
+		task.wait()
+
+		if CasingCount >= CasingConfig.CasingSettings.CasingAmountLimit then
+			Shell:Destroy()
+			CasingCount = 0
+			return true
+		else
+			Shell.Parent = ACS_Workspace.Casings
+			Debris:AddItem(Shell, CasingConfig.CasingSettings.CasingLifetime)
+			CasingCount = 0
+			return false
+		end
+	end
+end
+
+inFOV = function(p0, p1)
+	local x1, y1, z1 = p0:ToOrientation()
+	local cf = CFrame.new(p0.p, p1.p)
+	local x2, y2, z2 = cf:ToOrientation()
+	return Vector3.new(math.deg(x1-x2), math.deg(y1-y2), math.deg(z1-z2))
+end
+
+local camShake = cameraShaker.new(Enum.RenderPriority.Camera.Value, function(shakeCFrame)
+	cam.CFrame = cam.CFrame * shakeCFrame
+end)
+
+
+local function lerp(v0,v1,t)
+	return (1 - t) * v0 + t * v1
+end
+local function cframe(p,c)
+	if p then
+		if p:IsA('BasePart') then
+			if c then
+				p.CFrame = c
+			end
+			return p.CFrame
+		elseif p:IsA('Attachment') then
+			if c then
+				p.WorldCFrame = c
+			end
+			return p.WorldCFrame
+		end
+	end
+end
+
+local function insertlightvals(Par1,LightGlare,WeaponData)
+	local Light = Instance.new("SpotLight",Par1)
+	Light.Name = "Light"
+	Light.Angle = WeaponData[1]
+	Light.Brightness = WeaponData[2]
+	Light.Color = WeaponData[3]
+	Light.Face = "Front"
+	Light.Range = WeaponData[4]
+	Light.Enabled = true
+	Light.Shadows = true
+	local LightShadow = Instance.new("SpotLight",Par1)
+	LightShadow.Name = "LightShadow"
+	LightShadow.Angle = Light.Angle*2.6
+	LightShadow.Brightness = Light.Brightness/1.5
+	LightShadow.Color = WeaponData[5]
+	LightShadow.Face = "Front"
+	LightShadow.Range = Light.Range*1.6
+	LightShadow.Enabled = true
+	LightShadow.Shadows = true
+	local From = Instance.new("Attachment",Par1)
+	From.Name = 'From'
+	local To = Instance.new("Attachment",Par1)
+	To.Name = 'To'
+	To.Position = Vector3.new(0,0,-12)
+	local Beam = PastaFx:WaitForChild('FlashlightBeam'):Clone()
+	Beam.Name = "FlashBeam"
+	Beam.Parent = Par1
+	Beam.Attachment0 = From
+	Beam.Attachment1 = To
+	Beam.Enabled = true
+	if LightGlare then
+		if WeaponData[7] then
+			local angle,size = Instance.new("NumberValue",Par1),Instance.new("NumberValue",Par1)
+			size.Name = "FlashGlareSize"
+			size.Value = WeaponData[8]
+			angle.Name = "FlashGlareAngle"
+			angle.Value = WeaponData[9]
+			local Glare = Instance.new('BillboardGui',Par1)
+			Glare.Name = "FlashGlare"
+			Glare.MaxDistance = 100
+			Glare.Size = UDim2.new(0,0,0,0)
+			Glare.StudsOffset = Vector3.new(-.1,.05,0)
+			Glare.Enabled = true
+			Glare.AlwaysOnTop = true
+			local Frame = Instance.new('Frame',Glare)
+			Frame.Size = UDim2.new(1,0,1,0)
+			Frame.BackgroundTransparency = 1
+			Frame.Visible = true
+			local LightGlareSource = Instance.new('ImageLabel',Glare)
+			LightGlareSource.BackgroundTransparency = 1
+			LightGlareSource.ImageTransparency = 1
+			LightGlareSource.Size = UDim2.new(1,0,1,0)
+			LightGlareSource.Image = "http://www.roblox.com/asset/?id=9431136412"
+			LightGlareSource.Visible = true
+		end
+	end
+	if Par1:FindFirstChild("strobe") then
+		Par1.strobe:Destroy()
+	end
+end
+
+local TransferAccessories = function(Char,Mode)
+	if Mode == "Remove" then
+		if not Engine.Archive:FindFirstChild(Char.Name) then
+			local CharFldr = Instance.new("Folder",Engine.Archive)
+			CharFldr.Name = Char.Name
+
+			for _,accessories in pairs(Char:GetChildren()) do
+				if accessories:IsA("Accessory") then
+					accessories.Parent = Engine.Archive[Char.Name]
+				end
+			end
+		else
+			for _,accessories in pairs(Char:GetChildren()) do
+				if accessories:IsA("Accessory") then
+					accessories.Parent = Engine.Archive[Char.Name]
+				end
+			end
+		end
+	elseif Mode == "Add" then
+		if Engine.Archive:FindFirstChild(Char.Name) then
+			for _,accessories in pairs(Engine.Archive[Char.Name]:GetChildren()) do
+				if accessories:IsA("Accessory") then
+					accessories.Parent = Char
+				end
+			end	
+		end
+	end
+end;
+
+local CastratedPart
+if gameRules.RigType == Enum.HumanoidRigType.R15 then
+	CastratedPart = 'UpperTorso'
+else
+	CastratedPart = 'Torso'
+end
+
+local strobelights = function(on,Fpoint)
+	if on then
+		for _,lightvals in pairs(Fpoint:GetChildren()) do
+			if lightvals:IsA("Beam") or lightvals:IsA("Light") then
+				lightvals.Enabled = true
+			end
+		end
+	else
+		for _,lightvals in pairs(Fpoint:GetChildren()) do
+			if lightvals:IsA("Beam") or lightvals:IsA("Light") then
+				lightvals.Enabled = false
+			end
+		end
+	end
+end
+
+function StrobeLight(TorchMode,Weapon,Dat)
+	if not Weapon:FindFirstChild("FlashPoint") then return end;
+	if TorchMode == "Strobe" and Dat and Dat[6] then
+		if not Weapon.FlashPoint:FindFirstChild("strobe") then
+			local strobe = Instance.new('BoolValue',Weapon.FlashPoint)
+			strobe.Name = "strobe"
+			strobe.Value = true
+			repeat
+				strobelights(false,Weapon.FlashPoint)
+				task.wait(.06)
+				strobelights(true,Weapon.FlashPoint)
+				task.wait(.06)
+			until not Weapon.FlashPoint:FindFirstChild("strobe")
+		end
+	elseif TorchMode ~= "Strobe" then
+		if Dat and Dat[6] then
+			if Weapon.FlashPoint:FindFirstChild("strobe") then
+				Weapon.FlashPoint.strobe:Destroy()
+			end
+		end
+		task.wait()
+		for _,lightvals in pairs(Weapon['FlashPoint']:GetChildren()) do
+			if lightvals:IsA("Attachment") or lightvals:IsA("Beam") or lightvals:IsA("BillboardGui") or lightvals:IsA("Light") or lightvals:IsA("NumberValue") or lightvals.Name == "strobe" then
+				lightvals:Destroy()
+			end
+		end
+	end
+end
+
+function Weld(Main, Target, Type, Data)
+	local Motor6D = Instance.new("Motor6D", Main)
+	Motor6D.Part0 = Main
+	Motor6D.Part1 = Target
+	Motor6D.Name = Main.Name
+	Motor6D.C0 = Type or Main.CFrame:Inverse() * Target.CFrame
+	Motor6D.C1 = Data or CFrame.new()
+	return Motor6D
+end
+
+function CastRay(Bullet,Lethal)
+	if Bullet then
+
+		local Bpos = Bullet.Position
+		local Bpos2 = Bpos
+		local recast = false
+		local raycastResult
+
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterDescendantsInstances = Ignore_Model
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+		raycastParams.IgnoreWater = true
+
+		while Bullet do
+			Run.Heartbeat:Wait()
+			if Bullet.Parent ~= nil then
+				Bpos = Bullet.Position
+
+				-- Set an origin and directional vector
+				raycastResult = workspace:Raycast(Bpos2, (Bpos - Bpos2) * 1, raycastParams)
+
+
+				recast = false
+
+				if raycastResult then
+					local Hit2 = raycastResult.Instance
+
+					if Hit2 and (Hit2.Parent:IsA('Accessory') or Hit2.Parent:IsA('Hat') or Hit2.Transparency >= 1 or Hit2.CanCollide == false or Hit2.Name == "Ignorable" or Hit2.Name == "Glass" or Hit2.Name == "Ignore" or Hit2.Parent.Name == "Top" or Hit2.Parent.Name == "Helmet" or Hit2.Parent.Name == "Up" or Hit2.Parent.Name == "Down" or Hit2.Parent.Name == "Face" or Hit2.Parent.Name == "Olho" or Hit2.Parent.Name == "Headset" or Hit2.Parent.Name == "Numero" or Hit2.Parent.Name == "Vest" or Hit2.Parent.Name == "Chest" or Hit2.Parent.Name == "Waist" or Hit2.Parent.Name == "Back" or Hit2.Parent.Name == "Belt" or Hit2.Parent.Name == "Leg1" or Hit2.Parent.Name == "Leg2" or Hit2.Parent.Name == "Arm1"  or Hit2.Parent.Name == "Arm2") and Hit2.Name ~= 'Right Arm' and Hit2.Name ~= 'Left Arm' and Hit2.Name ~= 'Right Leg' and Hit2.Name ~= 'Left Leg' and Hit2.Name ~= "UpperTorso" and Hit2.Name ~= "LowerTorso" and Hit2.Name ~= "RightUpperArm" and Hit2.Name ~= "RightLowerArm" and Hit2.Name ~= "RightHand" and Hit2.Name ~= "LeftUpperArm" and Hit2.Name ~= "LeftLowerArm" and Hit2.Name ~= "LeftHand" and Hit2.Name ~= "RightUpperLeg" and Hit2.Name ~= "RightLowerLeg" and Hit2.Name ~= "RightFoot" and Hit2.Name ~= "LeftUpperLeg" and Hit2.Name ~= "LeftLowerLeg" and Hit2.Name ~= "LeftFoot" and Hit2.Name ~= 'Armor' and Hit2.Name ~= 'EShield' then
+						table.insert(Ignore_Model, Hit2)
+						recast = true
+						CastRay(Bullet)
+						break
+					end
+				end
+
+				if raycastResult and not recast then
+
+					Bullet:Destroy()
+					break
+				end
+
+				Bpos2 = Bpos
+			else
+				break
+			end
+		end
+	end
+end
+
+local DoorsFolder = ACS_Workspace:FindFirstChild("Doors")
+local CAS = game:GetService("ContextActionService")
+
+local mDistance = 5
+local Key = nil
+
+function getNearest()
+	local nearest = nil
+	local minDistance = mDistance
+	local Character = plr.Character or plr.CharacterAdded:Wait()
+
+	for I,Door in pairs (DoorsFolder:GetChildren()) do
+		if not Door.Destroyed.Value and Door.Door:FindFirstChild("Knob") ~= nil then
+			local distance = (Door.Door.Knob.Position - Character[CastratedPart].Position).magnitude
+
+			if distance < minDistance then
+				nearest = Door
+				minDistance = distance
+			end
+		end
+	end
+	--print(nearest)
+	return nearest
+end
+
+function Interact(actionName, inputState, inputObj)
+	if inputState ~= Enum.UserInputState.Begin then return end
+
+	local nearestDoor = getNearest()
+	local Character = plr.Character or plr.CharacterAdded:Wait()
+	local TorsoPart
+
+	if nearestDoor == nil then return end
+
+	if (nearestDoor.Door.Knob.Position - Character[CastratedPart].Position).magnitude <= mDistance then
+		if nearestDoor ~= nil then
+			if nearestDoor:FindFirstChild("RequiresKey") then
+				Key = nearestDoor.RequiresKey.Value
+			else
+				Key = nil
+			end
+			Network:FireServer("DoorEvent", {nearestDoor,1,Key,false})
+		end
+	end
+end
+
+function Interact2(actionName, inputState, inputObj)
+	if inputState ~= Enum.UserInputState.Begin then return end
+
+	local nearestDoor = getNearest()
+	local Character = plr.Character or plr.CharacterAdded:Wait()
+	local TorsoPart
+
+	if nearestDoor == nil then return end
+
+	if (nearestDoor.Door.Knob.Position - Character[CastratedPart].Position).magnitude <= mDistance then
+		if nearestDoor ~= nil then
+			if nearestDoor:FindFirstChild("RequiresKey") then
+				Key = nearestDoor.RequiresKey.Value
+			else
+				Key = nil
+			end
+			Network:FireServer("DoorEvent", {nearestDoor,1,Key,true})
+		end
+	end
+end
+
+
+function GetNearest(parts, maxDistance,Part)
+	local closestPart
+	local minDistance = maxDistance
+	for _, partToFace in ipairs(parts) do
+		local distance = (Part.Position - partToFace.Position).magnitude
+		if distance < minDistance then
+			closestPart = partToFace
+			minDistance = distance
+		end
+	end
+	return closestPart
+end
+
+CAS:BindAction("Interact", Interact, false, gameRules.Keybinds.OpenDoorKeybind)
+CAS:BindAction("Interact2", Interact2, false, gameRules.Keybinds.SlightlyOpenDoorKeybind)
+
+if gameRules.WaterMark then
+	local StarterGui = game:GetService("StarterGui")
+	
+	if _G.Initialized ~= true then
+		StarterGui:SetCore("ChatMakeSystemMessage", {
+			Text = "Advanced Combat System (Mod)";
+			Color = Color3.fromRGB(255, 175, 0); 
+			Font = Enum.Font.Roboto; 
+			TextSize = 14
+		})
+		_G.Initialized = true
+	end
+
+	plr.Chatted:Connect(function(Message)
+		if string.lower(Message) == "/acs" then
+			StarterGui:SetCore("ChatMakeSystemMessage", {
+				Text = "------------------------------------------------";
+				Color = Color3.fromRGB(0, 0, 35); 
+				Font = Enum.Font.RobotoCondensed; 
+				TextSize = 20
+			})
+
+			StarterGui:SetCore("ChatMakeSystemMessage", {
+				Text = "Advanced Combat System (Mod)";
+				Color = Color3.fromRGB(255, 175, 0); 
+				Font = Enum.Font.RobotoCondensed; 
+				TextSize = 20
+			})
+
+			StarterGui:SetCore("ChatMakeSystemMessage", {
+				Text = "ACS By: 00Scorpion00";
+				Color = Color3.fromRGB(255, 255, 255); 
+				Font = Enum.Font.RobotoCondensed; 
+				TextSize = 14
+			})
+			StarterGui:SetCore("ChatMakeSystemMessage", {
+				Text = "Mod By: 440obama";
+				Color = Color3.fromRGB(150, 190, 225); 
+				Font = Enum.Font.RobotoCondensed; 
+				TextSize = 14
+			})
+
+			StarterGui:SetCore("ChatMakeSystemMessage", {
+				Text = "Version: "..gameRules.Version;
+				Color = Color3.fromRGB(255, 255, 255); 
+				Font = Enum.Font.RobotoCondensed; 
+				TextSize = 14
+			})
+
+			StarterGui:SetCore("ChatMakeSystemMessage", {
+				Text = "------------------------------------------------";
+				Color = Color3.fromRGB(0, 0, 35); 
+				Font = Enum.Font.RobotoCondensed; 
+				TextSize = 20
+			})
+		end
+	end)
+end
+
+--Evt.CombatLog.OnClientEvent:Connect(function(CombatLog)
+--	local CL = plr.PlayerGui:FindFirstChild("CombatLog")
+--	if CL then
+--		CL.Refresh:Fire(CombatLog)
+--	else
+--		local CL = HUDs.CombatLog:Clone()
+--		CL.Parent = plr.PlayerGui
+--		CL.CLS.Disabled = false
+--		CL.Refresh:Fire(CombatLog)
+--	end
+--end)
+
+function getCF(WeaponInHand)
+	--local plane = WeaponInHand.AimPart.CFrame:ToObjectSpace(WeaponInHand.Handle.Muzzle.WorldCFrame)
+	--return WeaponInHand.AimPart.CFrame * ((CFrame.new(plane.X,plane.Y,0)) * (plane-plane.p))
+	return WeaponInHand.Handle.CFrame
+end
+
+function quickwait(timeamount)
+	timeamount = timeamount or 0
+	local tc = 0
+	repeat
+		local c = Run.RenderStepped:Wait()
+		tc = tc+c
+	until
+	tc >= timeamount
+	return tc
+end
+
+Network:BindEvents({
+
+	HitEffect = function(Data)
+		if Data[1] ~= plr then 
+			
+			HitMod.CreateEffect(Data[1], Data[4], Data[5], Data[6], Data[7], "Bullet", Data[8])
+		end
+	end,
+	
+	Collapse = function(Data)
+		Network:FireServer("Collapse", {})
+	end,
+		
+	Queue = function(Data)
+		if Data[2] and Data[3] and Data[4] then
+			local s = Instance.new('Sound',Data[4])
+			s.Name,s.Volume,s.SoundId,s.TimePosition = 'footstep_sound',Data[3],Data[2],0
+			s:Play()
+			quickwait(s.TimeLength)
+			s:Destroy()
+		end
+	end,
+
+	Atirar = function(Data)
+		if Data[1] ~= plr and Data[2] and Data[1].Character and Data[1].Character:FindFirstChild("Humanoid") and Data[1].Character.Humanoid.Health > 0 then
+			if Data[1].Character:FindFirstChild("S"..Data[2].Name) and Data[1].Character:FindFirstChild('S'..Data[2].Name):FindFirstChild("Handle") and Data[1].Character:FindFirstChild('S'..Data[2].Name).Handle:FindFirstChild("Muzzle") then
+				local GunForServer = Data[1].Character:FindFirstChild("S"..Data[2].Name)
+				local Muzzle = GunForServer.Handle.Muzzle
+				local Dat = require(Data[2]:WaitForChild("ACS_Settings"))
+	
+				if (Muzzle:FindFirstChild("Loops") and Data[11] ~= 3 and not Dat.Cutoff) or (not Muzzle:FindFirstChild("Loops") and Data[11] ~= 6) then
+					if Data[3] then
+						Muzzle.Suppressor:Play()
+					else
+						for _,gunshots in pairs(Muzzle:GetChildren()) do
+							if gunshots.Name == "Close" then
+								if Data[10] then
+									gunshots.Volume = gunshots.Volume + (gunshots.Volume*.3)
+								end
+								gunshots:Play()
+							end
+							if gunshots.Name == "Medium" then
+								gunshots:Play()
+							end
+							if gunshots.Name == "Far" then
+								gunshots:Play()
+							end
+						end	
+					end
+				elseif Data[11] == 6 then
+					Muzzle.Fire2:Play()
+				end
+
+				if Data[4] or Data[3] then
+					for _,search in pairs(Muzzle:GetChildren()) do
+						if search:IsA("ParticleEmitter") and search.Name:sub(1, 7) == "Smoke" then
+							search:Emit(10)
+						end
+					end
+				else
+					for _,search in pairs(Muzzle:GetChildren()) do
+						if search.Name:sub(1, 7) == "Smoke" then
+							search.Enabled = true
+							delay(1/30,function()
+								search.Enabled = false
+							end)
+						end
+					end
+					if Data[6] == 3 then
+						for _,search in pairs(Muzzle:GetChildren()) do
+							if search.Name:sub(1, 7) == "FlashFX" then
+								search.Enabled = true
+								delay(1/30,function()
+									search.Enabled = false
+								end)
+							end
+						end
+					end
+				end
+
+				if GunForServer.Handle:FindFirstChild("Slide") then
+					if Data[9] <= 1 and Dat.SlideLock then
+						GunForServer.Handle.Slide.C0 = Dat.SlideEx:Inverse()
+					elseif Data[9] > 1 and (Dat.SlideLock or not Dat.SlideLock) then
+						TS:Create(GunForServer.Handle.Slide, TweenInfo.new(25/Dat.ShootRate,Enum.EasingStyle.Linear,Enum.EasingDirection.InOut,0,true,0), {C0 =  Dat.SlideEx:Inverse()}):Play()
+						wait(25/Dat.ShootRate)
+						if not GunForServer.Handle:FindFirstChild("Slide") then return end;
+						TS:Create(GunForServer.Handle.Slide, TweenInfo.new(10/Dat.ShootRate,Enum.EasingStyle.Linear,Enum.EasingDirection.InOut,0,true,0), {C0 = Dat.SlideEx}):Play()
+						wait(10/Dat.ShootRate)
+						if not GunForServer.Handle:FindFirstChild("Slide") then return end;
+						GunForServer.Handle.Slide.C0 = CFrame.new()
+					elseif Data[9] <= 1 and not Dat.SlideLock then
+						GunForServer.Handle.Slide.C0 = CFrame.new()
+					end
+					for _,v in pairs(GunForServer.Handle.Chamber:GetChildren()) do
+						if v:IsA("ParticleEmitter") and v.Name ~= "Shell" then
+							v:Emit(10)	
+						end				
+					end
+				end
+
+				if gameRules.RigType == Enum.HumanoidRigType.R6 then
+					if Data[1].Character:FindFirstChild("AnimBase") ~= nil and Data[1].Character.AnimBase:FindFirstChild("AnimBaseW") then
+						local AnimBase = Data[1].Character:WaitForChild("AnimBase"):WaitForChild("AnimBaseW")
+						TS:Create(AnimBase, TweenInfo.new(.3,Enum.EasingStyle.Elastic), {C1 = CFrame.new(0,-.1,.15) * CFrame.fromEulerAnglesXYZ(math.rad(3), math.rad(0), math.rad(-2))}):Play()
+						delay(.1,function()
+							TS:Create(AnimBase, TweenInfo.new(.4,Enum.EasingStyle.Bounce), {C1 = CFrame.new()} ):Play()
+						end)
+					end				
+				end
+
+				if Dat.BackBlastConfigs.BackBlast then
+					if GunForServer:FindFirstChild("BackBlast") then
+						for _,disperseFX in pairs(GunForServer.BackBlast:GetChildren()) do
+							if disperseFX and disperseFX:IsA('ParticleEmitter') then
+								disperseFX.Enabled = true
+								delay(1/10,function()
+									disperseFX.Enabled = false
+								end)
+							end
+						end
+
+						for i,v in pairs(game:GetService('Players'):GetPlayers()) do
+							local char = v.Character
+
+							if char:FindFirstChild("Humanoid") then
+								local Humanoid = char:FindFirstChild("Humanoid")
+
+								if char:FindFirstChild("Head") then
+									local m = (char.Head.Position - GunForServer.BackBlast.Position).Magnitude
+									--if m <= Dat.BackBlastConfigs.BackBlastStunWave then 
+									--	camShake:Start()
+									--	camShake:ShakeOnce(2, 5, 0, 1.5)
+									--end
+
+									local Head = char:FindFirstChild("Head")
+									local v = inFOV(GunForServer.BackBlast.CFrame,Head.CFrame)
+									local S = math.abs(v.Y+v.X)*2
+									if (S)<(200) and (Head.Position - GunForServer.BackBlast.Position).Magnitude <= Dat.BackBlastConfigs.BackBlastRange then
+										Humanoid:TakeDamage(Dat.BackBlastConfigs.BackBlastDamage)
+									end
+								end
+							end
+						end
+					end
+				end
+
+				if Data[11] ~= 4 and Data[11] ~= 5 and Data[11] ~= 6 then
+					if CasingConfig.CasingSettings.ReplicatedCasings and Dat.DropCasings then
+						ShellEjection:Eject(Data[12][2],GunForServer,Data[12][4],Data[12][5],Data[12][6],Data[12][7],Data[12][8],Data[12][9],Data[12][10])
+					end
+				end
+			end
+		elseif Data[1] == plr and Data[2] and Data[5] and Data[1].Character and Data[1].Character:FindFirstChild("Humanoid") and Data[1].Character.Humanoid.Health > 0 then
+			local GunForClient = Data[1].Character:FindFirstChild("S"..Data[2].Name)
+			local Muzzle = GunForClient.Handle.Muzzle
+			local Dat = require(Data[2]:WaitForChild("ACS_Settings"))
+
+			if Data[11] ~= 4 and Data[11] ~= 5 and Data[11] ~= 6 then
+				if CasingConfig.CasingSettings.ReplicatedCasings and Dat.DropCasings then
+					if _G.ThirdPerson then
+						ShellEjection:Eject(Data[12][2],GunForClient,Data[12][4],Data[12][5],Data[12][6],Data[12][7],Data[12][8],Data[12][9],Data[12][10],true)
+					end						
+				end
+			end
+
+			if Dat.BackBlastConfigs.BackBlast then
+				if GunForClient:FindFirstChild("BackBlast") then
+					for _,disperseFX in pairs(GunForClient.BackBlast:GetChildren()) do
+						if disperseFX and disperseFX:IsA('ParticleEmitter') then
+							disperseFX.Enabled = true
+							delay(1/10,function()
+								disperseFX.Enabled = false
+							end)
+						end
+					end
+				end
+			end
+		end
+
+		if plr == Data[1] and Data[2] and Data[1].Character and Data[1].Character:FindFirstChild("Humanoid") and Data[1].Character.Humanoid.Health > 0 then
+			local GunForClient = Data[1].Character:FindFirstChild("S"..Data[2].Name)
+			local Dat = require(Data[2]:WaitForChild("ACS_Settings"))
+			if not Data[5] then
+				if Dat.BackBlastConfigs.BackBlast then
+					if GunForClient:FindFirstChild("BackBlast") then
+						for _,disperseFX in pairs(GunForClient.BackBlast:GetChildren()) do
+							if disperseFX and disperseFX:IsA('ParticleEmitter') then
+								disperseFX.Enabled = true
+								delay(1/15,function()
+									disperseFX.Enabled = false
+								end)
+							end
+						end
+					end
+				end
+			end
+
+			if gameRules.RigType == Enum.HumanoidRigType.R15 then
+				if Data[1].Character and Data[1].Character:FindFirstChild("ACS_Client") then
+					local CharAnimMod = require(Data[1].Character.ACS_Client.ACSM_Framework.Modules.CharacterAnims)
+					CharAnimMod.KeyframeEvent("PlayAnims","Fire",Data[2],false,false,"Idle",true,Data[12])
+				end
+			else
+				if Data[1].Character:FindFirstChild("AnimBase") ~= nil and Data[1].Character.AnimBase:FindFirstChild("AnimBaseW") then
+					local AnimBase = Data[1].Character:WaitForChild("AnimBase"):WaitForChild("AnimBaseW")
+					TS:Create(AnimBase, TweenInfo.new(.3,Enum.EasingStyle.Elastic), {C1 = CFrame.new(0,-.1,.15) * CFrame.fromEulerAnglesXYZ(math.rad(3), math.rad(0), math.rad(-2))}):Play()
+					delay(.1,function()
+						TS:Create(AnimBase, TweenInfo.new(.4,Enum.EasingStyle.Bounce), {C1 = CFrame.new()} ):Play()
+					end)
+				end
+			end
+		end
+	end,
+	
+	RestObject = function(Data)
+		local Player = Data[1]
+		local ArmaName = Data[2]
+		local BeltModel = Data[3]
+		local Settings = Data[4]
+		local Remove = Data[5]
+		
+		if not Remove then
+			if not BeltModel then
+				local GunClone
+				if not Settings.Keyframebased then
+					GunClone = GunModels:FindFirstChild(ArmaName):Clone()
+				else
+					GunClone = GunModels:FindFirstChild(ArmaName)[ArmaName]:Clone()
+				end
+				GunClone.PrimaryPart = GunClone.Handle
+				GunClone.Name = 'H'.. ArmaName
+				if Player.Character:FindFirstChild(GunClone.Name) then Player.Character[GunClone.Name]:Destroy() end
+				GunClone.Parent = Player.Character
+				local MakeVisible = Instance.new('BoolValue',GunClone)
+				MakeVisible.Name = 'MakeVisible'
+				MakeVisible.Value = true
+
+				for _, Parts in pairs(GunClone:GetDescendants()) do
+					if Parts:IsA('BasePart') and Parts.Name ~= 'Handle' then
+						Weld(Parts, GunClone.Handle)
+					end
+
+					if Parts:IsA('BasePart') and Parts.Name == 'Handle' then
+						if Settings.HolsterConfigs.HolsterEnabled == true then					
+							Weld(Parts, Player.Character[Settings.HolsterConfigs.HolsterJoint], CFrame.new(), Settings.HolsterConfigs.HolsterCFrame)
+						end
+					end
+					if Parts:IsA('Folder') then
+						Parts:Destroy()
+					end
+
+					if Parts.Name == 'SightMark' or Parts.Name == 'ProjectorSight' then
+						Parts:Destroy()
+					end
+					
+					if Parts:FindFirstChild("Hide") then
+						Parts.Transparency = 1
+					end
+				end
+
+				for _, BPs in pairs(GunClone:GetDescendants()) do
+					if BPs:IsA('BasePart') then
+						BPs.Anchored = false
+						BPs.CanCollide = false
+					end
+				end
+
+				if Settings.HolsterConfigs.HolsterEnabled == true and Settings.HolsterConfigs.RealisticPhysicsHolster and (Player == plr) then
+					delay(1,function()
+						if not GunClone then return end;
+						if not GunClone:FindFirstChild("Handle") then if GunClone then GunClone:Destroy() end return end;
+						local Att0 = Instance.new("Attachment",GunClone.Handle)
+						Att0.Name = "Holster0"
+						local Att1 = Instance.new("Attachment",Player.Character:WaitForChild(CastratedPart))
+						Att1.Name = "Holster1"
+						Att1.CFrame = Settings.HolsterConfigs.HolsterCFrame
+						local BallJoint = Instance.new("BallSocketConstraint",GunClone.Handle)
+						BallJoint.Enabled = false
+						BallJoint.Name = "BallJoint"
+						BallJoint.Attachment0 = Att0
+						BallJoint.Attachment1 = Att1
+						BallJoint.LimitsEnabled = true
+						BallJoint.TwistLimitsEnabled = true
+						BallJoint.MaxFrictionTorque = 200
+						BallJoint.Restitution = Settings.HolsterConfigs.PhysicsJiggle
+						BallJoint.UpperAngle = Settings.HolsterConfigs.PhysicsSideAngleRestriction
+						BallJoint.TwistLowerAngle = (Settings.HolsterConfigs.PhysicsHorizontalAngleRestriction + 10)
+						BallJoint.TwistUpperAngle = BallJoint.TwistLowerAngle - 10
+						BallJoint.Enabled = true
+						BallJoint.MaxFrictionTorque = Settings.HolsterConfigs.PhysicsSensitivity
+						GunClone.Handle.Handle.Enabled = false
+					end)
+				end
+			end
+		else
+			if Player.Character:FindFirstChild('H'..ArmaName) then
+				Player.Character['H'..ArmaName]:Destroy()
+			end
+		end
+	end,
+
+	NVG = function(Data)
+	
+		if Data[4] and Data[1] == nil and Data[3] == plr then
+			_G.NVG = false
+			return
+		end
+
+		if Data[1] and Data[1]:FindFirstChild("twistjoint") then
+			local twistjoint = Data[1].twistjoint
+			local info = TweenInfo.new(.35,Enum.EasingStyle.Quad,Enum.EasingDirection.InOut)
+			
+			for _,v in pairs(Data[1]:GetChildren()) do
+				if v:IsA("BasePart") and v.Name == "Lens" then
+					if Data[2] then
+						v.Material = Enum.Material.Neon
+						if v:FindFirstChild("LensLight") then
+							v.LensLight.Enabled = true
+						end
+					else
+						v.Material = Enum.Material.SmoothPlastic
+						if v:FindFirstChild("LensLight") then
+							v.LensLight.Enabled = false
+						end
+					end
+				end
+			end
+			
+			if Data[2] then
+				if gameRules.NVGanimations then
+					local Anim = Data[3].Character:FindFirstChildOfClass("Humanoid"):LoadAnimation(Engine.Animations.NVGdown)
+					Anim:Play()
+					Anim:GetMarkerReachedSignal("NVGtoggle"):Connect(function(paramString)
+						TS:Create(twistjoint,info,{C0 = Data[1]:WaitForChild("downvalue").Value}):Play()		
+					end)
+					if Data[3] == plr then
+						Anim.Stopped:Wait()
+						if Data[3] == plr then
+							_G.NVG = Data[2]
+						end
+						if Data[1]:FindFirstChild("NVG_Settings") then
+							NVGhander.ActivateNVGs(plr,plr.PlayerGui:WaitForChild("StatusUI"),NVGconfig,true,Data[1].NVG_Settings)
+						else
+							NVGhander.ActivateNVGs(plr,plr.PlayerGui:WaitForChild("StatusUI"),NVGconfig)
+						end
+					end
+				else
+					TS:Create(twistjoint,info,{C0 = Data[1]:WaitForChild("downvalue").Value}):Play()
+					task.wait(.35)
+					if Data[3] == plr then
+						_G.NVG = Data[2]
+					end
+					if Data[1]:FindFirstChild("NVG_Settings") then
+						NVGhander.ActivateNVGs(plr,plr.PlayerGui:WaitForChild("StatusUI"),NVGconfig,true,Data[1].NVG_Settings)
+					else
+						NVGhander.ActivateNVGs(plr,plr.PlayerGui:WaitForChild("StatusUI"),NVGconfig)
+					end
+				end
+			else
+				if gameRules.NVGanimations then
+					local Anim = Data[3].Character:FindFirstChildOfClass("Humanoid"):LoadAnimation(Engine.Animations.NVGup)
+					Anim:Play()
+					Anim:GetMarkerReachedSignal("NVGtoggle"):Connect(function(paramString)
+						TS:Create(twistjoint,info,{C0 = Data[1]:WaitForChild("upvalue").Value}):Play()
+					end)
+
+					if Data[3] == plr then
+						Anim.Stopped:Wait()
+						if Data[3] == plr then
+							_G.NVG = Data[2]
+						end
+						if Data[1]:FindFirstChild("NVG_Settings") then
+							NVGhander.DisableNVGs(plr,plr.PlayerGui:WaitForChild("StatusUI"),NVGconfig)
+						else
+							NVGhander.DisableNVGs(plr,plr.PlayerGui:WaitForChild("StatusUI"),NVGconfig)
+						end
+					end
+				else
+					TS:Create(twistjoint,info,{C0 = Data[1]:WaitForChild("upvalue").Value}):Play()
+					task.wait(.35)
+					if Data[3] == plr then
+						_G.NVG = Data[2]
+					end
+					if Data[3] == plr then
+						if Data[1]:FindFirstChild("NVG_Settings") then
+							NVGhander.DisableNVGs(plr,plr.PlayerGui:WaitForChild("StatusUI"),NVGconfig)
+						else
+							NVGhander.DisableNVGs(plr,plr.PlayerGui:WaitForChild("StatusUI"),NVGconfig)
+						end
+					end
+				end
+			end
+		end
+
+	end,
+
+	SVLaser = function(Data)
+
+		if Data[3] == 2 then
+			if ACS_Workspace.Server:FindFirstChild(Data[1].Name.."_Laser") then
+				ACS_Workspace.Server:FindFirstChild(Data[1].Name.."_Laser"):Destroy()
+			end
+		end
+
+		if not Data[7] and Data[1] ~= plr and Data[1].Character and Data[6] and Data[3] ~= 2 then
+
+			if ACS_Workspace.Server:FindFirstChild(Data[1].Name.."_Laser") == nil then
+				local Dot = Instance.new('Part')
+				Dot.Parent = ACS_Workspace.Server
+				local Att0 = Instance.new('Attachment')
+				Att0.Parent = Dot
+				Att0.Name = "Att0"
+				Dot.Name = Data[1].Name.."_Laser"
+				Dot.Transparency = 1
+				local LaserEP = Instance.new('Attachment')
+				LaserEP.Parent = Dot
+				LaserEP.Name = 'To'
+				local LaserLight = Instance.new('PointLight')
+				LaserLight.Parent = LaserEP
+				LaserLight.Brightness = 5
+				LaserLight.Color = Data[4]
+				LaserLight.Enabled = true
+				LaserLight.Range = 1.5
+				LaserLight.Shadows = true
+				local billboard = Instance.new('BillboardGui')
+				billboard.Parent = LaserEP
+				billboard.Brightness = 10
+				billboard.LightInfluence = 0
+				billboard.MaxDistance = math.huge
+				billboard.Size = UDim2.new(0.2, 0,0.2, 0)
+				billboard.StudsOffset = Vector3.new(0,0,0.2)
+				local point = Instance.new('ImageLabel')
+				point.Parent = billboard
+				point.Image = 'http://www.roblox.com/asset/?id=184532759'
+				point.ImageColor3 = Data[4]
+				point.Size = UDim2.new(1,0,1,0)
+				point.BackgroundTransparency = 1
+
+				if Data[1].Character:FindFirstChild("S"..Data[6].Name) and Data[1].Character:FindFirstChild('S'..Data[6].Name).Handle:FindFirstChild("Muzzle") then
+
+					local Muzzle = Data[1].Character:FindFirstChild("S"..Data[6].Name).LaserPoint.Connect
+
+					local Laser = Instance.new('Beam')
+					Laser.Parent = Dot
+					Laser.Transparency = NumberSequence.new(.7)
+					Laser.LightEmission = 1
+					Laser.LightInfluence = 0
+					Laser.Texture = 'http://www.roblox.com/asset/?id=5656506389'
+					Laser.TextureLength = .5
+					Laser.TextureMode = Enum.TextureMode.Stretch
+					Laser.TextureSpeed = 1000
+					Laser.Attachment0 = Muzzle
+					Laser.Attachment1 = LaserEP
+					Laser.Color = ColorSequence.new(Data[4])
+					Laser.FaceCamera = true
+					Laser.Segments = 1
+					Laser.Width0 = 1.5
+					Laser.Width1 = 1
+
+					if not _G.NVG then
+						Laser.Enabled = false
+					end
+
+				end
+			end
+
+			if Data[3] == 1 then
+				if ACS_Workspace.Server:FindFirstChild(Data[1].Name.."_Laser") then
+					local LA = ACS_Workspace.Server:FindFirstChild(Data[1].Name.."_Laser")
+					LA.Shape = 'Ball'
+					LA.Size = Vector3.new(0.2, 0.2, 0.2)
+					LA.CanCollide = false
+					LA.Anchored = true
+					LA.Color = Data[4]
+					LA.Material = Enum.Material.Neon
+					LA.Transparency = 1
+					LA.Data[2] = Data[2]
+
+					if _G.NVG then
+						LA.To.BillboardGui.Enabled = true
+
+						if LA:FindFirstChild("Beam") then
+							LA.Beam.Enabled = true
+						end
+					else
+						if Data[5] then
+							LA.To.BillboardGui.Enabled = false
+						else
+							LA.To.BillboardGui.Enabled = true
+						end
+
+						if LA:FindFirstChild("Beam") then
+							LA.Beam.Enabled = false
+						end
+					end
+				end
+			end
+		elseif Data[7] and Data[1].Character and Data[6] and Data[3] ~= 2 then
+
+			if ACS_Workspace.Server:FindFirstChild(Data[1].Name.."_Laser") == nil then
+				local Dot = Instance.new('Part')
+				Dot.Parent = ACS_Workspace.Server
+				local Att0 = Instance.new('Attachment')
+				Att0.Parent = Dot
+				Att0.Name = "Att0"
+				Dot.Name = Data[1].Name.."_Laser"
+				Dot.Transparency = 1
+				local LaserEP = Instance.new('Attachment')
+				LaserEP.Parent = Dot
+				LaserEP.Name = 'To'
+				local LaserLight = Instance.new('PointLight')
+				LaserLight.Parent = LaserEP
+				LaserLight.Brightness = 5
+				LaserLight.Color = Data[4]
+				LaserLight.Enabled = true
+				LaserLight.Range = 1.5
+				LaserLight.Shadows = true
+				local billboard = Instance.new('BillboardGui')
+				billboard.Parent = LaserEP
+				billboard.Brightness = 10
+				billboard.LightInfluence = 0
+				billboard.MaxDistance = math.huge
+				billboard.Size = UDim2.new(0.2, 0,0.2, 0)
+				billboard.StudsOffset = Vector3.new(0,0,0.2)
+				local point = Instance.new('ImageLabel')
+				point.Parent = billboard
+				point.Image = 'http://www.roblox.com/asset/?id=184532759'
+				point.ImageColor3 = Data[4]
+				point.Size = UDim2.new(1,0,1,0)
+				point.BackgroundTransparency = 1
+
+				if Data[1].Character:FindFirstChild("S"..Data[6].Name) and Data[1].Character:FindFirstChild('S'..Data[6].Name).Handle:FindFirstChild("Muzzle") then
+					local Muzzle = Data[1].Character:FindFirstChild("S"..Data[6].Name).LaserPoint.Connect
+
+					local Laser = Instance.new('Beam')
+					Laser.Parent = Dot
+					Laser.Transparency = NumberSequence.new(.7)
+					Laser.LightEmission = 1
+					Laser.LightInfluence = 0
+					Laser.Texture = 'http://www.roblox.com/asset/?id=5656506389'
+					Laser.TextureLength = .5
+					Laser.TextureMode = Enum.TextureMode.Stretch
+					Laser.TextureSpeed = 1000
+					Laser.Attachment0 = Muzzle
+					Laser.Attachment1 = LaserEP
+					Laser.Color = ColorSequence.new(Data[4])
+					Laser.FaceCamera = true
+					Laser.Segments = 1
+					Laser.Width0 = 1.5
+					Laser.Width1 = 1
+
+					if not _G.NVG then
+						Laser.Enabled = false
+					end
+				end
+			end
+
+			if Data[3] == 1 then
+				if ACS_Workspace.Server:FindFirstChild(Data[1].Name.."_Laser") then
+					local LA = ACS_Workspace.Server:FindFirstChild(Data[1].Name.."_Laser")
+					LA.Shape = 'Ball'
+					LA.Size = Vector3.new(0.2, 0.2, 0.2)
+					LA.CanCollide = false
+					LA.Anchored = true
+					LA.Color = Data[4]
+					LA.Material = Enum.Material.Neon
+					LA.Transparency = 1
+					LA.Data[2] = Data[2]
+
+					if _G.NVG then
+						LA.To.BillboardGui.Enabled = true
+
+						if LA:FindFirstChild("Beam") then
+							LA.Beam.Enabled = true
+						end
+					else
+						if Data[5] then
+							LA.To.BillboardGui.Enabled = false
+						else
+							LA.To.BillboardGui.Enabled = true
+						end
+
+						if LA:FindFirstChild("Beam") then
+							LA.Beam.Enabled = false
+						end
+					end
+				end
+			end
+		end
+
+	end,
+
+	BagHead = function(Data)
+
+		if not (Data[2] and Data[2].Character and Data[2].Character:FindFirstChildOfClass("Humanoid") and Data[2].Character.Humanoid.Health > 0 and Data[1] and Data[1].Character and Data[1].Character:FindFirstChildOfClass("Humanoid")) then return end;
+
+		local Pchar = Data[1].Character
+		local Hum = Pchar.Humanoid
+		Pchar.HumanoidRootPart.Anchored = true
+		local InteractAnim = Hum:LoadAnimation(Engine.Animations.Interact)
+		InteractAnim:Play()
+		InteractAnim.Stopped:Wait()
+		Pchar.HumanoidRootPart.Anchored = false
+
+		local Vchar = Data[2].Character
+
+		if not Vchar:FindFirstChild("HeadCover") then
+			if plr == Data[2] then
+				local HeadCoverUI = plr.PlayerGui.StatusUI.HeadCover
+				HeadCoverUI.Enabled = true
+			end
+
+			TransferAccessories(Vchar,"Remove")
+			local HeadCover = Engine.FX.HeadCover:Clone()
+			HeadCover.Parent = Vchar
+			local bagweld = Instance.new('Weld',Vchar.Head)
+			bagweld.Part0 = Vchar.Head
+			bagweld.Part1 = HeadCover.Middle
+			bagweld.C0 = CFrame.new()
+		else
+			if plr == Data[2] then
+				local HeadCoverUI = plr.PlayerGui.StatusUI.HeadCover
+				HeadCoverUI.Enabled = false
+			end
+			TransferAccessories(Vchar,"Add")
+			Vchar.HeadCover:Destroy()
+		end
+
+	end,
+
+	Surrender = function(Data)
+
+		if plr == Data[1] then
+			local HeadCoverUI = plr.PlayerGui.StatusUI.HeadCover
+			HeadCoverUI.Enabled = false
+		end
+
+		if Data[1].Character:FindFirstChild("HeadCover") then 
+			TransferAccessories(Data[1].Character,Data[2]) 
+			Data[1].Character.HeadCover:Destroy() 
+		end
+
+	end,
+
+	SVFlash = function(Data)
+
+		if Data[3] == "Remove" and Data[1].Character and Data[2] then
+			local Weapon = Data[1].Character:FindFirstChild(Data[2].Name)
+			for _,lightvals in pairs(Weapon['FlashPoint']:GetChildren()) do
+				if lightvals:IsA("Attachment") or lightvals:IsA("Beam") or lightvals:IsA("BillboardGui") or lightvals:IsA("Light") or (lightvals:IsA("BoolValue") and lightvals.Name == "strobe") then
+					lightvals:Destroy()
+				end
+			end
+		end
+
+		if Data[1].Character and Data[2] then
+			if not (not Data[4] and plr == Data[1]) then
+				local Weapon
+				Weapon = Data[1].Character:FindFirstChild("S"..Data[2].Name)
+				if Weapon and Weapon:FindFirstChild("FlashPoint") then
+					if Data[3] == 'Norm' then
+						insertlightvals(Weapon.FlashPoint,true,Data[5])
+					elseif Data[3] == 'Strobe' then
+						StrobeLight(Data[3],Weapon,Data[5])
+					elseif Data[3] == 'Off' then
+						StrobeLight(Data[3],Weapon)
+					end
+				end
+			end
+		end
+
+	end,
+	
+	Whizz = function()
+		
+		local Som = Instance.new('Sound')
+		Som.Parent = plr.PlayerGui
+		Som.SoundId = "rbxassetid://"..WhizzSound[math.random(1,#WhizzSound)]
+		Som.Volume = 2
+		Som.PlayOnRemove = true
+		Som:Destroy()
+		
+	end,
+	
+	MedHandler = function(Data)
+
+		if Data[1] == 4 then
+			local FX = Instance.new('ColorCorrectionEffect')
+			FX.Parent = cam
+
+			TS:Create(FX,TweenInfo.new(.15,Enum.EasingStyle.Linear),{Contrast = -.25}):Play()
+			delay(.15,function()
+				TS:Create(FX,TweenInfo.new(1.5,Enum.EasingStyle.Sine,Enum.EasingDirection.In,0,false,0.15),{Contrast = 0}):Play()
+				Debris:AddItem(FX,1.5)
+			end)
+
+		elseif Data[1] == 5 then
+			local FX = Instance.new('ColorCorrectionEffect')
+			FX.Parent = cam
+
+			TS:Create(FX,TweenInfo.new(.15,Enum.EasingStyle.Linear),{Contrast = .5}):Play()
+			delay(.15,function()
+				TS:Create(FX,TweenInfo.new(1.5,Enum.EasingStyle.Sine,Enum.EasingDirection.In,0,false,0.15),{Contrast = 0}):Play()
+				Debris:AddItem(FX,1.5)
+			end)
+
+		elseif Data[1] == 6 then
+			local FX = Instance.new('ColorCorrectionEffect')
+			FX.Parent = cam
+
+			TS:Create(FX,TweenInfo.new(.15,Enum.EasingStyle.Linear),{Contrast = -.25}):Play()
+			delay(.15,function()
+				TS:Create(FX,TweenInfo.new(60,Enum.EasingStyle.Sine,Enum.EasingDirection.In,0,false,0.15),{Contrast = 0}):Play()
+				Debris:AddItem(FX,60)
+			end)
+
+		elseif Data[1] == 7 then
+			local FX = Instance.new('ColorCorrectionEffect')
+			FX.Parent = cam
+
+			TS:Create(FX,TweenInfo.new(.15,Enum.EasingStyle.Linear),{Contrast = .5}):Play()
+			delay(.15,function()
+				TS:Create(FX,TweenInfo.new(30,Enum.EasingStyle.Sine,Enum.EasingDirection.In,0,false,0.15),{Contrast = 0}):Play()
+				Debris:AddItem(FX,30)
+			end)
+		end
+		
+	end,
+	
+	Loope = function(Data)
+		
+		if (Data[1] and plr) and (Data[1] ~= plr) and (Data[1].Character and plr.Character) and (Data[1].Character:FindFirstChildOfClass("Humanoid") and plr.Character:FindFirstChildOfClass("Humanoid")) and (Data[1].Character:FindFirstChildOfClass("Humanoid").Health > 0 and plr.Character:FindFirstChildOfClass("Humanoid").Health > 0) then
+
+			local WeaponInHand = Data[1].Character['S'..Data[3]]
+			if not WeaponInHand or not WeaponInHand:FindFirstChild("Handle") and Data[1].Character and Data[1].Character:FindFirstChild(Data[3]) then return end;
+
+			local Suppressor
+			if WeaponInHand:FindFirstChild("Silencer") then 
+				Suppressor = WeaponInHand.Silencer.Transparency == 0 -- boolean: true or false
+			else
+				Suppressor = false
+			end
+			local WeaponTool = Data[1].Character[Data[3]] -- tools gets parented to the player's character when equipped
+			local WeaponData = require(WeaponTool.ACS_Settings)
+
+			local Muzzle = WeaponInHand.Handle.Muzzle
+			if not Muzzle:FindFirstChild("Loops") then return end
+			local Loops = Muzzle.Loops
+			local Folder = nil
+			local Type = nil
+
+			if Data[4] then
+				Folder = Loops.Indoor
+				if Suppressor then
+					Type = "Indoor_S"
+				else
+					Type = "Indoor"
+				end
+			else
+				Folder = Loops.Outdoor
+				if Suppressor then
+					Type = "Outdoor_S"
+				else
+					Type = "Outdoor"
+				end
+			end
+
+			if Data[2] == 3 then
+				for _,v in pairs(Muzzle:GetChildren()) do
+					if v:IsA("Sound") and (v.Name == ("Outdoor") or v.Name ==("Outdoor_S") or v.Name ==("Indoor") or v.Name ==("Indoor_S")) then
+						v:Stop()
+						v:Destroy()
+						for _,x in pairs(Folder:GetDescendants()) do
+							if x.Name == v.Name then
+								if x.Parent:FindFirstChild(v.Name.."_Tail") then
+									local TailSound = x.Parent[v.Name.."_Tail"]:Clone()
+									if Muzzle and not Muzzle:FindFirstChild(TailSound.Name) then
+										TailSound.Looped = false
+										TailSound.Parent = Muzzle
+										TailSound:Play()
+										Debris:AddItem(TailSound,TailSound.TimeLength)
+									else
+										Muzzle[TailSound.Name]:Destroy()
+										TailSound.Looped = false
+										TailSound.Parent = Muzzle
+										TailSound:Play()
+										Debris:AddItem(TailSound,TailSound.TimeLength)
+									end
+								end
+							end
+						end
+
+					end
+				end
+			end
+
+			if WeaponData ~= nil then
+				if WeaponData.ShootType == 6 or WeaponData.ShootType == 7 then return end;
+				for _,gunsound in pairs(Folder:GetDescendants()) do
+					if gunsound:IsA("Sound") then
+						if gunsound.Name == Type and plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") and plr.Character.Humanoid.Health > 0 then
+							local m = (plr.Character.Head.Position - Muzzle.WorldPosition).Magnitude
+							if  (m > gunsound.RollOffMinDistance and m < gunsound.RollOffMaxDistance) then
+								if Data[2] == 1 then
+									local sgunsound = gunsound:Clone()
+									sgunsound.Looped = true
+									sgunsound.PlaybackSpeed = (WeaponData.ShootRate/.85)/WeaponData.ShootRate
+									sgunsound.Parent = Muzzle
+									sgunsound:Play()
+
+								elseif Data[2] == 2 then
+									if WeaponData.ShootType ~= 3 then
+										local sgunsound = gunsound:Clone()
+										sgunsound.Looped = false
+										sgunsound.PlaybackSpeed = (WeaponData.ShootRate/.85)/WeaponData.ShootRate
+										sgunsound.Parent = Muzzle
+										sgunsound:Play()
+
+										delay(Data[5], function()
+											sgunsound:Stop()
+											sgunsound:Destroy()
+											if gunsound.Parent:FindFirstChild(gunsound.Name.."_Tail") then
+												local TailSound = gunsound.Parent[gunsound.Name.."_Tail"]:Clone()
+												TailSound.Looped = false
+												TailSound.Parent = Muzzle
+												TailSound:Play()			
+												Debris:AddItem(TailSound,TailSound.TimeLength)
+											end
+										end)
+									end		
+								end
+							end
+						end
+					end
+				end 	
+			end
+		end
+		
+	end,
+	
+	Suppresion = function(Data)
+		
+		local SE_GUI = plr.PlayerGui:FindFirstChild("StatusUI")
+		if plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") and plr.Character.Humanoid.Health > 0 and SE_GUI then
+			if Data[1] == 1 then
+
+				TS:Create(SE_GUI.Efeitos.Suppress,TweenInfo.new(.1),{ImageTransparency = 0, Size = UDim2.fromScale(1,1.15)}):Play()
+				delay(.1,function()
+					TS:Create(SE_GUI.Efeitos.Suppress,TweenInfo.new(1,Enum.EasingStyle.Exponential,Enum.EasingDirection.InOut,0,false,0.15),{ImageTransparency = 1,Size = UDim2.fromScale(2,2)}):Play()
+				end)
+			elseif Data[1] == 2 then
+
+				local ring = PastaFx.EarRing:Clone()
+				ring.Parent = plr.PlayerGui
+				ring.Volume = 0
+				ring:Play()
+				Debris:AddItem(ring,Data[3])
+
+				TS:Create(ring,TweenInfo.new(.1),{Volume = 2}):Play()
+				delay(.1,function()
+					TS:Create(ring,TweenInfo.new(Data[4],Enum.EasingStyle.Linear,Enum.EasingDirection.InOut,0,false,0.15),{Volume = 0}):Play()
+				end)
+
+				TS:Create(SE_GUI.Efeitos.Suppress,TweenInfo.new(.1),{ImageTransparency = 0, Size = UDim2.fromScale(1,1.15)}):Play()
+				delay(.1,function()
+					TS:Create(SE_GUI.Efeitos.Suppress,TweenInfo.new(Data[3],Enum.EasingStyle.Exponential,Enum.EasingDirection.InOut,0,false,0.15),{ImageTransparency = 1,Size = UDim2.fromScale(2,2)}):Play()
+				end)
+
+			else
+
+				local ring = PastaFx.EarRing:Clone()
+				ring.Parent = plr.PlayerGui
+				ring.Volume = 0
+				ring:Play()
+				Debris:AddItem(ring,Data[3])
+
+				TS:Create(ring,TweenInfo.new(.1),{Volume = 2}):Play()
+				delay(.1,function()
+					TS:Create(ring,TweenInfo.new(Data[3],Enum.EasingStyle.Linear,Enum.EasingDirection.InOut,0,false,0.15),{Volume = 0}):Play()
+				end)
+			end
+		end
+		
+	end,
+	
+	Stance = function(Data)
+		
+		pcall(function()
+			if Data[1].Character and Data[1].Character:FindFirstChild("Humanoid") ~= nil and Data[1].Character.Humanoid.Health > 0 then
+
+				local char		= Data[1].Character
+				local Human 	= char:WaitForChild("Humanoid")
+				local ACS_Client= char:WaitForChild("ACS_Client")
+
+				if gameRules.RigType == Enum.HumanoidRigType.R15 then
+					local LowerTorso= char:FindFirstChild("LowerTorso")
+					local UpperTorso= char:FindFirstChild("UpperTorso")
+					local RootJoint = char["LowerTorso"]:FindFirstChild("Root")
+					local WaistJ 	= char["UpperTorso"]:FindFirstChild("Waist")
+					local RS 		= char["RightUpperArm"]:FindFirstChild("RightShoulder")
+					local LS 		= char["LeftUpperArm"]:FindFirstChild("LeftShoulder")
+					local RH 		= char["RightUpperLeg"]:FindFirstChild("RightHip")
+					local RK 		= char["RightLowerLeg"]:FindFirstChild("RightKnee")
+					local LH 		= char["LeftUpperLeg"]:FindFirstChild("LeftHip")
+					local LK 		= char["LeftLowerLeg"]:FindFirstChild("LeftKnee")
+
+					local RightArm	= char["RightUpperArm"]
+					local LeftArm 	= char["LeftUpperArm"]
+					local LeftLeg 	= char["LeftUpperLeg"]
+					local RightLeg 	= char["RightUpperLeg"]
+
+					if Data[3] == 1 and RootJoint and WaistJ and RH and LH and RK and LK then
+						InstanceSound(UpperTorso,'lean2',false)
+						if Data[2] == 0 then
+							InstanceSound(UpperTorso,'Stand',false)
+							TS:Create(WaistJ, TweenInfo.new(.4), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0) * CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							if gameRules.Dogu15 then 
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-(Human.HipHeight/4),0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							else
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-(Human.HipHeight/2),0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()							
+							end
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -RightLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+
+						elseif Data[2] == 1 then
+							InstanceSound(UpperTorso,'Crouch',false)
+							TS:Create(WaistJ, TweenInfo.new(.4), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							if gameRules.Dogu15 then 
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-Human.HipHeight/1.8,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							else
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-Human.HipHeight/1.05,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()					
+							end
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(75),math.rad(-10),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -RightLeg.Size.Y/2,0)* CFrame.Angles(math.rad(-90),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3.5,0)* CFrame.Angles(math.rad(-60),math.rad(0),math.rad(0))} ):Play()
+
+						elseif Data[2] == 2 then
+							InstanceSound(UpperTorso,'Prone',false)
+							TS:Create(RootJoint, TweenInfo.new(.8), {C0 = CFrame.new(0,-Human.HipHeight - LowerTorso.Size.Y,Human.HipHeight)* CFrame.Angles(math.rad(-90),0,math.rad(0))} ):Play()
+							TS:Create(WaistJ, TweenInfo.new(.45), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0)* CFrame.Angles(math.rad(0),0,math.rad(-25))} ):Play()
+							TS:Create(RH, TweenInfo.new(.8), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(.8), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(20),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(.8), {C0 = CFrame.new(0, -RightLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(.8), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+
+						end
+					elseif Data[3] == -1 and RootJoint and WaistJ and RH and LH and RK and LK then
+						InstanceSound(UpperTorso,'lean1',false)
+						if Data[2] == 0 then
+							InstanceSound(UpperTorso,'Stand',false)
+							TS:Create(WaistJ, TweenInfo.new(.4), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0) * CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							if gameRules.Dogu15 then
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-(Human.HipHeight/4),0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							else
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-(Human.HipHeight/2),0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()		
+							end
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -RightLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+
+						elseif Data[2] == 1 then
+							InstanceSound(UpperTorso,'Crouch',false)
+							TS:Create(WaistJ, TweenInfo.new(.4), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							if gameRules.Dogu15 then
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-Human.HipHeight/1.8,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							else
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-Human.HipHeight/1.05,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							end
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(75),math.rad(-10),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -RightLeg.Size.Y/2,0)* CFrame.Angles(math.rad(-90),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3.5,0)* CFrame.Angles(math.rad(-60),math.rad(0),math.rad(0))} ):Play()
+
+						elseif Data[2] == 2 then
+							InstanceSound(UpperTorso,'Prone',false)
+							TS:Create(RootJoint, TweenInfo.new(.8), {C0 = CFrame.new(0,-Human.HipHeight - LowerTorso.Size.Y,Human.HipHeight)* CFrame.Angles(math.rad(-90),0,math.rad(0))} ):Play()
+							TS:Create(WaistJ, TweenInfo.new(.45), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0)* CFrame.Angles(math.rad(0),0,math.rad(25))} ):Play()
+							TS:Create(RH, TweenInfo.new(.8), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(20),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(.8), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(.8), {C0 = CFrame.new(0, -RightLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(.8), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+
+						end
+					elseif Data[3] == 0 and RootJoint and WaistJ and RH and LH and RK and LK then
+						if Data[2] == 0 then
+							InstanceSound(UpperTorso,'Stand',false)
+							TS:Create(WaistJ, TweenInfo.new(.3), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0)* CFrame.Angles(math.rad(-0),0,math.rad(0))} ):Play()
+							if gameRules.Dogu15 then
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-(Human.HipHeight/4),0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							else
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-(Human.HipHeight/2),0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							end
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -RightLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+
+						elseif Data[2] == 1 then
+							InstanceSound(UpperTorso,'Crouch',false)
+							TS:Create(WaistJ, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							if gameRules.Dogu15 then
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-Human.HipHeight/1.8,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							else
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-Human.HipHeight/1.05,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							end
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(75),math.rad(-10),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -RightLeg.Size.Y/2,0)* CFrame.Angles(math.rad(-90),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3.5,0)* CFrame.Angles(math.rad(-60),math.rad(0),math.rad(0))} ):Play()
+
+						elseif Data[2] == 2 then
+							InstanceSound(UpperTorso,'Prone',false)
+							if gameRules.Dogu15 then
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-Human.HipHeight - LowerTorso.Size.Y,Human.HipHeight/1.25)* CFrame.Angles(math.rad(-90),0,math.rad(0))} ):Play()
+								--TS:Create(RootJoint, TweenInfo.new(.8), {C0 = CFrame.new(0,-Human.HipHeight - LowerTorso.Size.Y,Human.HipHeight)* CFrame.Angles(math.rad(-90),0,math.rad(0))} ):Play()
+							else
+								TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-Human.HipHeight - LowerTorso.Size.Y,Human.HipHeight/1.25)* CFrame.Angles(math.rad(-90),0,math.rad(0))} ):Play()
+							end
+							TS:Create(WaistJ, TweenInfo.new(.8), {C0 = CFrame.new(0,LowerTorso.Size.Y/2.5,0)* CFrame.Angles(math.rad(0),0,math.rad(0))} ):Play()
+							TS:Create(RH, TweenInfo.new(.8), {C0 = CFrame.new(RightLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(.8), {C0 = CFrame.new(-LeftLeg.Size.X/2, -LowerTorso.Size.Y/2,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(RK, TweenInfo.new(.8), {C0 = CFrame.new(0, -RightLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+							TS:Create(LK, TweenInfo.new(.8), {C0 = CFrame.new(0, -LeftLeg.Size.Y/3,0)* CFrame.Angles(math.rad(0),math.rad(0),math.rad(0))} ):Play()
+						end
+					end
+
+					if Data[3] == "Valor" and Data[1] == plr and plr.PlayerGui:FindFirstChild("StatusUI") then
+						local CharAnimMod = require(plr.PlayerGui.StatusUI.Main.CharacterAnims)
+						
+						if ACS_Client:GetAttribute("Surrender") and ACS_Client:GetAttribute("Arrested") and CharAnimMod ~= nil then
+							CharAnimMod.StopAnims(Data[1],"Surrender")
+							CharAnimMod.KeyframeEventExtra(Data[1],"PlayAnims","Detained",Engine.Animations,false,true)
+						elseif not ACS_Client:GetAttribute("Surrender") then
+							CharAnimMod.StopAnims(Data[1],"Surrender")
+							CharAnimMod.StopAnims(Data[1],"Detained")
+						end
+					end
+				else
+					local Torso = Data[1].Character:FindFirstChild("Torso")
+					local RootJoint = Data[1].Character:FindFirstChild("HumanoidRootPart"):FindFirstChild("RootJoint")
+					local RS 		= Torso:FindFirstChild("Right Shoulder")
+					local LS 		= Torso:FindFirstChild("Left Shoulder")
+					local RH 		= Torso:FindFirstChild("Right Hip")
+					local LH 		= Torso:FindFirstChild("Left Hip")
+
+					if not RootJoint or not RS or not LS or not RH or not LH then return; end; --// Joints doesn't exist
+
+					if Data[2] == 2 then
+						TS:Create(RootJoint, TweenInfo.new(.7), {C0 = CFrame.new(0,-2.5,1.35)* CFrame.Angles(math.rad(0),math.rad(180),math.rad(0))} ):Play()
+						TS:Create(RH, TweenInfo.new(.7), {C0 = CFrame.new(1,-.8,0)* CFrame.Angles(math.rad(-52),math.rad(70),math.rad(50))} ):Play()
+						TS:Create(LH, TweenInfo.new(.7), {C0 = CFrame.new(-1,-.8,0)* CFrame.Angles(math.rad(-52),math.rad(-70),math.rad(-50))} ):Play()
+						TS:Create(RS, TweenInfo.new(.7), {C0 = CFrame.new(0.9,1.1,0)* CFrame.Angles(math.rad(-180),math.rad(90),math.rad(0))} ):Play()
+						TS:Create(LS, TweenInfo.new(.7), {C0 = CFrame.new(-0.9,1.1,0)* CFrame.Angles(math.rad(-180),math.rad(-90),math.rad(0))} ):Play()
+
+					end
+					if Data[3] == 1 then
+						InstanceSound(Torso,'0',false)
+						if Data[2] == 0 then
+							InstanceSound(Torso,'Stand',false)
+							TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,0,0) * CFrame.Angles(math.rad(-90),math.rad(15),math.rad(180))} ):Play()
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,-.8,-.05)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))* CFrame.fromEulerAnglesXYZ(math.rad(-9),math.rad(0),math.rad(0))}):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,-1.05,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))* CFrame.fromEulerAnglesXYZ(math.rad(5),math.rad(0),math.rad(0))}):Play()
+							TS:Create(RS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))} ):Play()
+
+						elseif Data[2] == 1 then
+							InstanceSound(Torso,'Crouch',false)
+							TS:Create(RootJoint, TweenInfo.new(.45), {C0 = CFrame.new(1,-1,0.25)* CFrame.Angles(math.rad(-90),math.rad(8),math.rad(180))} ):Play()
+							TS:Create(RH, TweenInfo.new(.45), {C0 = CFrame.new(1,-1.3,-0.625)* CFrame.Angles(math.rad(-71),math.rad(90),math.rad(0))* CFrame.fromEulerAnglesXYZ(math.rad(-3),math.rad(-9),math.rad(-15))}):Play()
+							TS:Create(LH, TweenInfo.new(.45), {C0 = CFrame.new(-1,-0.3,-0.5)* CFrame.Angles(math.rad(20),math.rad(-90),math.rad(0))* CFrame.fromEulerAnglesXYZ(math.rad(-5),math.rad(0),math.rad(0))}):Play()
+							TS:Create(RS, TweenInfo.new(.45), {C0 = CFrame.new(1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LS, TweenInfo.new(.45), {C0 = CFrame.new(-1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))} ):Play()
+
+						end
+					elseif Data[3] == -1 then
+						InstanceSound(Torso,'0',false)
+						if Data[2] == 0 then
+							InstanceSound(Torso,'Stand',false)
+							TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,0,0) * CFrame.Angles(math.rad(-90),math.rad(-15),math.rad(180))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,-.8,-.05)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))* CFrame.fromEulerAnglesXYZ(math.rad(-9),math.rad(0),math.rad(0))}):Play()
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,-1.05,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))* CFrame.fromEulerAnglesXYZ(math.rad(5),math.rad(0),math.rad(0))}):Play()	
+							TS:Create(RS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))} ):Play()
+
+						elseif Data[2] == 1 then
+							InstanceSound(Torso,'Crouch',false)
+							TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,-1,0.25)* CFrame.Angles(math.rad(-90),math.rad(-8),math.rad(180))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1.1,-1.3,-0.625)* CFrame.Angles(math.rad(-71),math.rad(-90),math.rad(0))* CFrame.fromEulerAnglesXYZ(math.rad(-3),math.rad(9),math.rad(15))}):Play()
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(.95,-0.2,-0.5)* CFrame.Angles(math.rad(20),math.rad(90),math.rad(0))* CFrame.fromEulerAnglesXYZ(math.rad(-5),math.rad(0),math.rad(-5))}):Play()
+							TS:Create(RS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))} ):Play()
+						end
+					elseif Data[3] == 0 then
+						if Data[2] == 0 then
+							InstanceSound(Torso,'Stand',false)
+							TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,0,0)* CFrame.Angles(math.rad(-90),0,math.rad(180))} ):Play()
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,-1,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,-1,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))} ):Play()
+							TS:Create(RS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))} ):Play()
+
+						elseif Data[2] == 1 then
+							InstanceSound(Torso,'Crouch',false)
+							TS:Create(RootJoint, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(0,-1.35,0.25)* CFrame.Angles(math.rad(-90),0,math.rad(180))} ):Play()
+							TS:Create(RH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,-1,-0.625)* CFrame.Angles(math.rad(-71),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LH, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,0.3,-0.625)* CFrame.Angles(math.rad(20),math.rad(-90),math.rad(0))} ):Play()
+							TS:Create(RS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LS, TweenInfo.new(gameRules.StanceSpeed), {C0 = CFrame.new(-1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))} ):Play()
+						end
+					end
+
+					if Data[3] == "Valor" then
+						if ACS_Client:GetAttribute("Surrender") then
+							TS:Create(RS, TweenInfo.new(gameRules.StanceSpeed/1.35), {C0 = CFrame.new(.6,0.75,0)* CFrame.Angles(math.rad(240),math.rad(120),math.rad(100))} ):Play()
+							TS:Create(LS, TweenInfo.new(gameRules.StanceSpeed/1.35), {C0 = CFrame.new(-.6,0.75,0)* CFrame.Angles(math.rad(240),math.rad(-120),math.rad(-100))} ):Play()
+						else
+							TS:Create(RS, TweenInfo.new(gameRules.StanceSpeed/1.35), {C0 = CFrame.new(1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(90),math.rad(0))} ):Play()
+							TS:Create(LS, TweenInfo.new(gameRules.StanceSpeed/1.35), {C0 = CFrame.new(-1,0.5,0)* CFrame.Angles(math.rad(0),math.rad(-90),math.rad(0))} ):Play()
+						end
+					end
+				end
+			end
+		end)
+		
+	end,
+	
+	HeadRot = function(Data)
+		
+		if not (Data[1] and Data[1] ~= plr and Data[1].Character and Data[1].Character:FindFirstChild("Head") and Data[1].Character:FindFirstChild("ACS_Client")) then return; end;
+		local character = Data[1].Character
+		local client = character.ACS_Client
+		local mouse = Data[1]:GetMouse()
+
+		if gameRules.RigType == Enum.HumanoidRigType.R15 then
+			local Neck = Data[1].Character.Head:FindFirstChild("Neck")
+			local Right_Shoulder = Data[1].Character.RightUpperArm:FindFirstChild("RightShoulder")
+			local Left_Shoulder = Data[1].Character.LeftUpperArm:FindFirstChild("LeftShoulder")
+
+			if not Neck then return; end;
+			TS:Create(Neck, TweenInfo.new(.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, 0), {C0 = Data[2]}):Play()
+
+			if Data[3] and Data[4] and not client:GetAttribute("Surrender") then
+				TS:Create(Right_Shoulder, TweenInfo.new(.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, 0), {C0 = Data[3]}):Play()
+				TS:Create(Left_Shoulder, TweenInfo.new(.35, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, 0), {C0 = Data[4]}):Play()
+			end
+		else
+			local Neck = Data[1].Character.Torso:FindFirstChild("Neck");
+			if not Neck then return; end;
+			TS:Create(Neck, TweenInfo.new(.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, 0), {C1 = Data[2]}):Play()
+		end
+		
+	end,
+	
+	MoveEvent = function(Data)
+		
+		if gameRules.RigType == Enum.HumanoidRigType.R15 then
+			if Data[1] and Data[1].Character and Data[1].Character:FindFirstChild("Humanoid").Health > 0 then
+				if not Data[1].Character:FindFirstChild("UpperTorso") then return end;
+				local Waist = Data[1].Character.UpperTorso:FindFirstChild("Waist")
+
+				if Waist then
+					TS:Create(Waist, TweenInfo.new(gameRules.StanceSpeed, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0, false, 0), {C0 = Data[2]}):Play()
+				end
+			end
+		end	
+		
+	end,
+	
+	SVSilencer = function(Data)
+		
+		if Data[2] and Data[2].Name == "Silencer" then
+			Data[2].Transparency = Data[3]
+		end
+		
+	end,
+	
+	ServerBullet = function(Data)
+		if Data[1] ~= plr and Data[1].Character then 
+			local Bullet = Instance.new("Part")
+			Bullet.Parent = ACS_Workspace.Server
+			Bullet.Name = Data[1].Name.."_Bullet"
+			Bullet.CanCollide = false
+			Bullet.Shape = Enum.PartType.Ball
+			Bullet.Transparency = 1
+			Bullet.Size = Vector3.new(1,1,1)
+
+			local BulletCF 		= CFrame.new(Data[2], Data[3]) 
+			local WalkMul 		= Data[4].WalkMult * Data[5].WalkMult
+			local BColor 		= Color3.fromRGB(255,255,255)
+
+			if Data[4].RainbowMode then
+				BColor = Color3.fromRGB(math.random(0,255),math.random(0,255),math.random(0,255))
+			else
+				BColor = Data[4].TracerColor
+			end
+
+			if Data[4].Tracer == true and Data[1].Character:FindFirstChild("S"..Data[6].Name) then
+				local Muzzle = Data[1].Character["S"..Data[6].Name].Handle.Muzzle
+				
+				local Bullet2 = PastaFx.TracerFXTrail:Clone()
+				Bullet2.Name = Data[1].Name.."_TracerPart"
+				Bullet2.Anchored = false
+				Bullet2.Parent = ACS_Workspace.Server
+				Bullet2.CFrame = Muzzle.WorldCFrame
+				Bullet2.TracerTrail.Color = ColorSequence.new(BColor)
+				Bullet2.TracerTrail.LightEmission = Data[4].TracerLightEmission
+				Bullet2.TracerTrail.LightInfluence = Data[4].TracerLightInfluence
+				Bullet2.TracerTrail.Brightness = Data[4].TracerBrightness
+				Bullet2.TracerTrail.Width0 = Data[4].TracerWidth*2
+				Bullet2.TracerTrail.Width1 = Data[4].TracerWidth*2
+				Bullet2.TracerTrail.Enabled = true
+				if Data[4].BulletLight == true then
+					Bullet2.TracerLum.Brightness = Data[4].BulletLightBrightness*1.5
+					Bullet2.TracerLum.Color = Data[4].BulletLightColor
+					Bullet2.TracerLum.Range = Data[4].BulletLightRange/2.5
+					Bullet2.TracerLum.Enabled = true
+				end
+				
+				local BM2 = Bullet2:GetMass()
+				local F2 = Vector3.new(0,BM2 * -(Data[4].MuzzleVelocity*5), 0)
+				local VForce = Instance.new("VectorForce")
+				VForce.Attachment0 = Bullet2.tracertrailat2
+				VForce.ApplyAtCenterOfMass = true
+				VForce.Force = F2
+				VForce.Parent = Bullet2
+				
+				Debris:AddItem(Bullet2,.035)
+				
+				local TracerTrailAt1 = PastaFx.TracerFX.tracertrailat1:Clone()
+				TracerTrailAt1.Parent = Bullet
+				TracerTrailAt1.Position = Vector3.new(0,0,Data[4].TracerLength)
+				local TracerTrailAt2 = PastaFx.TracerFX.tracertrailat2:Clone()
+				TracerTrailAt2.Parent = Bullet
+				TracerTrailAt2.Position = Vector3.new(0,0,-Data[4].TracerLength)
+				
+				local TracerBall = PastaFx.TracerFX.TracerBall:Clone()
+				TracerBall.Parent = Bullet
+				TracerBall.Adornee = Bullet
+				TracerBall.MaxDistance = gameRules.MaxProjectileDistance
+				local TracerTrailer = PastaFx.TracerFX.TracerTrail:Clone()
+				TracerTrailer.Parent = Bullet
+				TracerTrailer.Attachment0 = TracerTrailAt1
+				TracerTrailer.Attachment1 = TracerTrailAt2
+				TracerTrailer.Color = ColorSequence.new(BColor)
+				TracerTrailer.LightEmission = Data[4].TracerLightEmission
+				TracerTrailer.LightInfluence = Data[4].TracerLightInfluence
+				TracerTrailer.Brightness = Data[4].TracerBrightness
+				TracerTrailer.MaxLength = Data[4].TracerLength*1.875
+				TracerTrailer.Lifetime = gameRules.ProjectileDuration + 5
+				TracerTrailer.Enabled = true
+				
+				if (Data[4].TracerBrightness < 2 or Data[4].TracerBrightness <= 2) and Data[4].TracerBrightness < 3 then
+					local tracerBeam2 = TracerTrailer:Clone()
+					tracerBeam2.LightEmission = 1
+					tracerBeam2.Brightness = TracerTrailer.Brightness*2.5
+					tracerBeam2.Parent = Bullet
+					local tBeam2 = Bullet2.TracerTrail:Clone()
+					tBeam2.LightEmission = 1
+					tBeam2.Brightness = TracerTrailer.Brightness*2.5
+					tBeam2.Parent = Bullet2
+				elseif Data[4].TracerBrightness >= 3 and Data[4].TracerBrightness < 4 then
+					local tracerBeam2 = TracerTrailer:Clone()
+					tracerBeam2.LightEmission = 1
+					tracerBeam2.Brightness = TracerTrailer.Brightness*2.5
+					tracerBeam2.Parent = Bullet
+					local tracerBeam3 = tracerBeam2:Clone()	
+					tracerBeam3.Parent = Bullet
+					local tBeam2 = Bullet2.TracerTrail:Clone()
+					tBeam2.LightEmission = 1
+					tBeam2.Brightness = TracerTrailer.Brightness*2.5
+					tBeam2.Parent = Bullet2
+					local tBeam3 = tBeam2:Clone()
+					tBeam3.Parent = Bullet2
+				elseif Data[4].TracerBrightness >= 4 then
+					local tracerBeam2 = TracerTrailer:Clone()
+					tracerBeam2.LightEmission = 1
+					tracerBeam2.Brightness = TracerTrailer.Brightness*2.5
+					tracerBeam2.Parent = Bullet
+					local tracerBeam3 = tracerBeam2:Clone()
+					tracerBeam3.Parent = Bullet
+					local tracerBeam4 = tracerBeam2:Clone()
+					tracerBeam4.Parent = Bullet
+					local tBeam2 = Bullet2.TracerTrail:Clone()
+					tBeam2.LightEmission = 1
+					tBeam2.Brightness = TracerTrailer.Brightness*2.5
+					tBeam2.Parent = Bullet2
+					local tBeam3 = tBeam2:Clone()
+					tBeam3.Parent = Bullet2
+					local tBeam4 = tBeam2:Clone()
+					tBeam4.Parent = Bullet2
+				end
+
+				TracerBall.Frame.TracerBall_M.ImageColor3 = Data[4].TracerColor
+				TracerBall.Frame.TracerBall_M.ImageTransparency = .2
+				TracerBall.Frame.TracerBall_B.ImageColor3 = Data[4].TracerBallColor
+				TracerBall.Frame.TracerBall_B.ImageTransparency = .1
+				delay(Data[4].MuzzleVelocity*.00035,function()
+					TracerTrailer.Brightness = TracerTrailer.Brightness * 2
+					TracerBall.Enabled = true
+				end)
+			end
+			
+			if Data[4].BulletLight == true then
+				local BulletLight = Instance.new("PointLight")
+				BulletLight.Parent = Bullet
+				BulletLight.Brightness = Data[4].BulletLightBrightness
+				BulletLight.Color = Data[4].BulletLightColor
+				BulletLight.Range = Data[4].BulletLightRange
+				BulletLight.Shadows = true
+			end
+
+			if Data[4].BulletFlare == true then
+				local bg = Instance.new("BillboardGui", Bullet)
+				bg.Adornee = Bullet
+				local flashsize = math.random(275, 375)/10
+				bg.Size = UDim2.new(flashsize, 0, flashsize, 0)
+				bg.LightInfluence = 0
+				local flash = Instance.new("ImageLabel", bg)
+				flash.BackgroundTransparency = 1
+				flash.Size = UDim2.new(1, 0, 1, 0)
+				flash.Position = UDim2.new(0, 0, 0, 0)
+				flash.Image = "http://www.roblox.com/asset/?id=1047066405"
+				flash.ImageTransparency = math.random(2, 5)/15
+				flash.ImageColor3 = BColor
+			end
+
+			local BulletMass = Bullet:GetMass()
+			local Force = Vector3.new(0,BulletMass * (196.2) - (Data[4].BulletDrop) * (196.2), 0)
+			local VF = Instance.new("VectorForce")
+			VF.ApplyAtCenterOfMass = true
+
+			Bullet.CFrame = BulletCF
+			Bullet:ApplyImpulse(Data[3] * Data[4].MuzzleVelocity/1.5 * Data[5].MuzzleVelocity/1.5)
+			VF.Force = Force
+			VF.Parent = Bullet
+			
+			Debris:AddItem(Bullet, gameRules.ProjectileDuration)
+			CastRay(Bullet,Data[2])
+		end
+		
+	end,
+
+})
+
+Network:FireServer("RegAtt", {true})
