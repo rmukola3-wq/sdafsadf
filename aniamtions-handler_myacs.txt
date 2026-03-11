@@ -1,0 +1,34 @@
+
+-- AnimationHandler.lua
+local TS = game:GetService("TweenService")
+
+local AnimH = {}
+AnimH.__index = AnimH
+
+function AnimH.new()
+	return setmetatable({
+		_active = {}, -- [Instance] = Tween
+	}, AnimH)
+end
+
+function AnimH:Tween(obj, tweenInfo, props)
+	-- отменяем прошлый твин этого объекта
+	local old = self._active[obj]
+	if old then
+		pcall(function() old:Cancel() end)
+	end
+
+	local tw = TS:Create(obj, tweenInfo, props)
+	self._active[obj] = tw
+	tw:Play()
+	return tw
+end
+
+function AnimH:StopAll()
+	for obj, tw in pairs(self._active) do
+		pcall(function() tw:Cancel() end)
+		self._active[obj] = nil
+	end
+end
+
+return AnimH
