@@ -1,0 +1,1979 @@
+--[[
+╔══════════════════════════════════════════════════════════════════════╗
+║  ACS_Framework — LocalScript (РЕФАКТОРИНГ)                            ║
+║  ИСПРАВЛЕНИЕ: Out of local registers exceeded limit 200            ║
+║  Решение: Вынесение кода в модули (fACS_Modules)                     ║
+╚══════════════════════════════════════════════════════════════════════╝
+--]]
+
+-- ───────────────────────────────────────────────────────────────────
+-- 0. ОЖИДАНИЕ ПЕРСОНАЖА
+-- ───────────────────────────────────────────────────────────────────
+repeat task.wait() until game.Players.LocalPlayer.Character
+
+local plr  = game.Players.LocalPlayer
+local char = plr.Character or plr.CharacterAdded:Wait()
+local mouse = plr:GetMouse()
+local cam   = workspace.CurrentCamera
+
+-- ───────────────────────────────────────────────────────────────────
+-- 1. СЕРВИСЫ
+-- ───────────────────────────────────────────────────────────────────
+local UIS    = game:GetService("UserInputService")
+local CAS    = game:GetService("ContextActionService")
+local Run    = game:GetService("RunService")
+local TS     = game:GetService("TweenService")   -- только UI/FOV/crosshair
+local Debris = game:GetService("Debris")
+
+-- ───────────────────────────────────────────────────────────────────
+-- 2. ENGINE
+-- ───────────────────────────────────────────────────────────────────
+local RS            = game.ReplicatedStorage
+local ACS_Workspace = workspace:WaitForChild("ACS_WorkSpace")
+local Engine        = RS:WaitForChild("ACS_Engine")
+local Evt           = Engine:WaitForChild("Events")
+local Mods          = Engine:WaitForChild("Modules")
+local HUDs          = Engine:WaitForChild("HUD")
+local Essential     = Engine:WaitForChild("Essential")
+local ArmModel      = Engine:WaitForChild("ArmModel")
+local GunModels     = Engine:WaitForChild("GunModels")
+local AttModels     = Engine:WaitForChild("AttModels")
+local AttModules    = Engine:WaitForChild("AttModules")
+local Rules         = Engine:WaitForChild("GameRules")
+local PastaFx       = Engine:WaitForChild("FX")
+
+-- ───────────────────────────────────────────────────────────────────
+-- 3. МОДУЛИ
+-- ───────────────────────────────────────────────────────────────────
+local gameRules    = require(Rules:WaitForChild("Config"))
+local SpringMod    = require(Mods:WaitForChild("Spring"))
+local HitMod       = require(Mods:WaitForChild("Hitmarker"))
+local Thread       = require(Mods:WaitForChild("Thread"))
+local Ultil        = require(Mods:WaitForChild("Utilities"))
+local RecoilSystem = require(Mods:WaitForChild("RecoilSystem"))
+local ACS_Client   = char:WaitForChild("ACS_Client")
+
+local RecoilProfilesFolder = Mods:WaitForChild("RecoilProfiles")
+local _profileCache = {}
+local function GetRecoilProfile(name)
+	if _profileCache[name] then return _profileCache[name] end
+	local m = RecoilProfilesFolder:FindFirstChild(name)
+	if not m or not m:IsA("ModuleScript") then return nil end
+	local ok, p = pcall(require, m)
+	if not ok then warn("[Recoil] profile error:", name, p); return nil end
+	_profileCache[name] = p; return p
+end
+
+-- ═══════════════════════════════════════════════════════════════════
+-- ███████████  СИСТЕМА АНИМАЦИЙ  ████████████████████████████████████
+-- ═══════════════════════════════════════════════════════════════════
+
+-- Корневая папка анимаций
+local AnimFolder      = workspace:WaitForChild("Animations")
+-- Папка GunAnimations (содержит платформы: AKPlatform и т.д.)
+local GunAnimFolder   = AnimFolder:WaitForChild("GunAnimations")
+
+-- [ИСПРАВЛЕНИЕ 1] Текущая папка платформы и ViewmodelAnims — задаются в setup()
+local CurrentPlatformFolder = nil   -- workspace.Animations.GunAnimations.<platformName>
+local CurrentVMAnimFolder   = nil   -- CurrentPlatformFolder.ViewmodelAnims (или сама платформа)
+
+-- [ИСПРАВЛЕНИЕ 2] Таблица алиасов: логическое имя → реальное имя Animation-инстанса
+-- Позволяет вызывать PlayVMAnim("HighReady") когда объект называется "High Ready"
+local ANIM_ALIASES = {
+	HighReady      = "High Ready",
+	LowReady       = "Low Ready",
+	MagCheck       = "Mag Check",
+	TacticalReload = "EmptyReload",
+	Pump           = "Chamber",
+	Jammed         = "Chamber",
+	-- Остальные совпадают: Equip, Unequip, Idle, Sprint, Reload, Patrol, Fire, Chamber, AimFire
+}
+
+-- Fallback-карта из корневого AnimFolder (на случай отсутствия в платформе)
+local FallbackAnimMap = {}
+local function BuildFallbackMap()
+	FallbackAnimMap = {}
+	for _, obj in ipairs(AnimFolder:GetChildren()) do
+		if obj:IsA("Animation") then FallbackAnimMap[obj.Name] = obj end
+	end
+end
+BuildFallbackMap()
+
+--- Получить Animation-объект по логическому имени.
+--- Сначала ищет в CurrentVMAnimFolder, потом в FallbackAnimMap.
+local function FindAnimObject(logicalName)
+	-- Разрешаем алиас
+	local realName = ANIM_ALIASES[logicalName] or logicalName
+
+	-- Ищем в текущей папке платформы
+	if CurrentVMAnimFolder then
+		local obj = CurrentVMAnimFolder:FindFirstChild(realName)
+		if obj and obj:IsA("Animation") then return obj end
+	end
+
+	-- Fallback: корневой AnimFolder
+	local obj = FallbackAnimMap[realName]
+	if obj then return obj end
+
+	-- Последняя попытка: по логическому имени без алиаса
+	if realName ~= logicalName then
+		local obj2 = FallbackAnimMap[logicalName]
+		if obj2 then return obj2 end
+	end
+
+	warn("[ACS Anim] Анимация не найдена:", logicalName, "→", realName)
+	return nil
+end
+
+-- AnimationController/Animator (живут в ViewModel, создаются в setup)
+local VMAnimController = nil
+local VMAnimator       = nil
+
+-- Кеш загруженных треков: логическое_имя → AnimationTrack
+local AnimTrackCache = {}
+-- Активные треки по логическому имени
+local ActiveTracks   = {}
+-- [ИСПРАВЛЕНИЕ 3] Каналы: имя_канала → AnimationTrack
+local ActiveChannels = {}
+
+--- Инициализировать AnimationController+Animator в ViewModel.
+-- [ИСПРАВЛЕНО] Убрана необъявленная переменная VMAnimTrackCache
+local function InitVMAnimator(viewModel)
+	AnimTrackCache  = {}    -- сброс кеша треков при новом ViewModel
+	ActiveTracks    = {}
+	ActiveChannels  = {}
+
+	VMAnimController = viewModel:FindFirstChildOfClass("AnimationController")
+	if not VMAnimController then
+		VMAnimController = Instance.new("AnimationController", viewModel)
+	end
+	VMAnimator = VMAnimController:FindFirstChildOfClass("Animator")
+	if not VMAnimator then
+		VMAnimator = Instance.new("Animator", VMAnimController)
+	end
+end
+
+--- Загрузить (или взять из кеша) AnimationTrack по логическому имени.
+local function GetVMTrack(logicalName)
+	if not VMAnimator then return nil end
+
+	-- Инвалидируем протухший трек (Animator был пересоздан)
+	local cached = AnimTrackCache[logicalName]
+	if cached then
+		-- Если Animation больше не имеет родителя — трек устарел
+		local ok = pcall(function() return cached.Animation.Parent end)
+		if not ok then AnimTrackCache[logicalName] = nil; cached = nil end
+	end
+	if cached then return cached end
+
+	local animObj = FindAnimObject(logicalName)
+	if not animObj then return nil end
+
+	local ok, track = pcall(function() return VMAnimator:LoadAnimation(animObj) end)
+	if not ok then
+		warn("[ACS Anim] LoadAnimation failed:", logicalName, track)
+		return nil
+	end
+	AnimTrackCache[logicalName] = track
+	return track
+end
+
+--[[
+    PlayVMAnim(logicalName, options)
+    ────────────────────────────────
+    options:
+      FadeTime  number                  — фейд (default 0.10)
+      Speed     number                  — скорость (default 1)
+      Looped    boolean                 — зацикленность (default false)
+      Priority  Enum.AnimationPriority  — приоритет (default Action)
+      Channel   string|nil             — канал (останавливает пред. трек в канале)
+      StopPrev  boolean                 — остановить пред. трек в канале (default true)
+--]]
+local function PlayVMAnim(logicalName, options)
+	if not VMAnimator then
+		warn("[ACS Anim] VMAnimator не инициализирован, попытка:", logicalName)
+		return nil
+	end
+
+	options = options or {}
+	local fadeTime = options.FadeTime or 0.10
+	local speed    = options.Speed    or 1
+	local looped   = options.Looped   or false
+	local priority = options.Priority or Enum.AnimationPriority.Action
+	local channel  = options.Channel  -- nil = без канала
+	local stopPrev = options.StopPrev
+	if stopPrev == nil then stopPrev = true end
+
+	-- [ИСПРАВЛЕНИЕ 3] Если задан канал и StopPrev=true — останавливаем текущий трек в канале
+	if channel and stopPrev then
+		local prev = ActiveChannels[channel]
+		if prev and prev.IsPlaying then
+			prev:Stop(fadeTime)
+		end
+		ActiveChannels[channel] = nil
+	end
+
+	-- Также останавливаем активный трек с тем же логическим именем
+	local prevByName = ActiveTracks[logicalName]
+	if prevByName and prevByName.IsPlaying then
+		prevByName:Stop(fadeTime)
+	end
+
+	local track = GetVMTrack(logicalName)
+	if not track then return nil end
+
+	track.Priority = priority
+	track.Looped   = looped
+	track:AdjustSpeed(speed)
+	track:Play(fadeTime)
+
+	ActiveTracks[logicalName] = track
+	if channel then
+		ActiveChannels[channel] = track
+	end
+
+	-- Автоочистка
+	track.Stopped:Once(function()
+		if ActiveTracks[logicalName] == track  then ActiveTracks[logicalName]    = nil end
+		if channel and ActiveChannels[channel] == track then ActiveChannels[channel] = nil end
+	end)
+
+	return track
+end
+
+--- Остановить трек по логическому имени
+local function StopVMAnim(logicalName, fadeTime)
+	local t = ActiveTracks[logicalName]
+	if t and t.IsPlaying then t:Stop(fadeTime or 0.10) end
+	ActiveTracks[logicalName] = nil
+end
+
+--- Остановить все активные треки
+local function StopAllVMAnims(fadeTime)
+	fadeTime = fadeTime or 0.10
+	for _, t in pairs(ActiveTracks) do
+		if t and t.IsPlaying then t:Stop(fadeTime) end
+	end
+	for _, t in pairs(ActiveChannels) do
+		if t and t.IsPlaying then t:Stop(fadeTime) end
+	end
+	ActiveTracks   = {}
+	ActiveChannels = {}
+	AnimTrackCache = {}
+end
+
+-- [ИСПРАВЛЕНИЕ 3] Helper для базовых поз: Idle/Sprint/Patrol/HighReady/LowReady
+-- Все они используют канал "BasePose" — друг друга вытесняют автоматически
+local function PlayBasePose(logicalName, options)
+	options = options or {}
+	options.Channel  = "BasePose"
+	options.StopPrev = true
+	return PlayVMAnim(logicalName, options)
+end
+
+-- ═══════════════════════════════════════════════════════════════════
+-- ███████████  КОНЕЦ СИСТЕМЫ АНИМАЦИЙ  ██████████████████████████████
+-- ═══════════════════════════════════════════════════════════════════
+
+-- ───────────────────────────────────────────────────────────────────
+-- 4. УТИЛИТЫ
+-- ───────────────────────────────────────────────────────────────────
+local function alphaFromSpeed(s, dt) return 1 - math.exp(-s * dt) end
+local function lerpCF_dt(c, t, s, dt) return c:Lerp(t, alphaFromSpeed(s, dt)) end
+local function lerpU2_dt(c, t, s, dt) return c:Lerp(t, alphaFromSpeed(s, dt)) end
+local function RAND(mn, mx, acc)
+	local inv = 1 / (acc or 1)
+	return math.random(mn * inv, mx * inv) / inv
+end
+
+local SKP_01 = Evt.AcessId:InvokeServer(plr.UserId)
+
+-- ───────────────────────────────────────────────────────────────────
+-- 5. ПЕРЕМЕННЫЕ СОСТОЯНИЯ (В ТАБЛИЦАХ ДЛЯ УМЕНЬШЕНИЯ РЕГИСТРОВ)
+-- ─────────────────────────────────────────────────────────────────--
+-- [ИСПРАВЛЕНИЕ ЧАСТЬ A] Все переменные состояния в таблицах для избежания exceeded limit 200
+
+local EquipToken = 0
+local PendingTool = nil
+local SwitchWorkerRunning = false
+
+local State = {
+	Equipped = 0,
+	Ammo = nil,
+	StoredAmmo = nil,
+	WeaponInHand = nil,
+	WeaponTool = nil,
+	WeaponData = nil,
+	ViewModel = nil,
+	AnimPart = nil,
+	LArm = nil,
+	RArm = nil,
+	LArmWeld = nil,
+	RArmWeld = nil,
+	GunWeld = nil,
+	SightData = nil,
+	BarrelData = nil,
+	UnderBarrelData = nil,
+	OtherData = nil,
+	generateBullet = 1,
+	BSpread = nil,
+	RecoilPower = nil,
+	LastSpreadUpdate = 0,
+	SE_GUI = nil,
+	CHup = UDim2.new(),
+	CHdown = UDim2.new(),
+	CHleft = UDim2.new(),
+	CHright = UDim2.new(),
+	charspeed = 0,
+	running = false,
+	runKeyDown = false,
+	aimming = false,
+	shooting = false,
+	reloading = false,
+	CheckingMag = false,
+	mouse1down = false,
+	AnimDebounce = false,
+	CancelReload = false,
+	SafeMode = false,
+	JumpDelay = false,
+	NVG = false,
+	NVGdebounce = false,
+	GunStance = 0,
+	AimPartMode = 1,
+	UnsetVersion = 0,
+	SetupVersion = 0,
+	SightAtt = nil,
+	reticle = nil,
+	CurAimpart = nil,
+	BarrelAtt = nil,
+	Suppressor = false,
+	FlashHider = false,
+	UnderBarrelAtt = nil,
+	OtherAtt = nil,
+	LaserAtt = false,
+	LaserActive = false,
+	IRmode = false,
+	IREnable = false,
+	LaserDist = 0,
+	Pointer = nil,
+	TorchAtt = false,
+	TorchActive = false,
+	BipodAtt = false,
+	CanBipod = false,
+	BipodActive = false,
+	GRDebounce = false,
+	CookGrenade = false,
+	ToolEquip = false,
+	Sens = 50,
+	Power = 150
+}
+
+local function IsBusy() return State.reloading or State.CheckingMag end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 6. MODTABLE
+-- ───────────────────────────────────────────────────────────────────
+local ModTable = {
+	camRecoilMod = { RecoilTilt=1, RecoilUp=1, RecoilLeft=1, RecoilRight=1 },
+	gunRecoilMod = { RecoilUp=1,   RecoilTilt=1, RecoilLeft=1, RecoilRight=1 },
+	ZoomValue=70, Zoom2Value=70,
+	AimRM=1, SpreadRM=1, DamageMod=1, minDamageMod=1,
+	MinRecoilPower=1, MaxRecoilPower=1, RecoilPowerStepAmount=1,
+	MinSpread=1, MaxSpread=1, AimInaccuracyStepAmount=1, AimInaccuracyDecrease=1,
+	WalkMult=1, adsTime=1, MuzzleVelocity=1,
+}
+
+local function resetMods()
+	for k in pairs(ModTable.camRecoilMod) do ModTable.camRecoilMod[k] = 1 end
+	for k in pairs(ModTable.gunRecoilMod) do ModTable.gunRecoilMod[k] = 1 end
+	ModTable.AimRM=1; ModTable.SpreadRM=1; ModTable.DamageMod=1; ModTable.minDamageMod=1
+	ModTable.MinRecoilPower=1; ModTable.MaxRecoilPower=1; ModTable.RecoilPowerStepAmount=1
+	ModTable.MinSpread=1; ModTable.MaxSpread=1
+	ModTable.AimInaccuracyStepAmount=1; ModTable.AimInaccuracyDecrease=1
+	ModTable.WalkMult=1; ModTable.MuzzleVelocity=1
+end
+
+local function setMods(d)
+	local c, g = ModTable.camRecoilMod, ModTable.gunRecoilMod
+	c.RecoilUp    = c.RecoilUp    * d.camRecoil.RecoilUp
+	c.RecoilLeft  = c.RecoilLeft  * d.camRecoil.RecoilLeft
+	c.RecoilRight = c.RecoilRight * d.camRecoil.RecoilRight
+	c.RecoilTilt  = c.RecoilTilt  * d.camRecoil.RecoilTilt
+	g.RecoilUp    = g.RecoilUp    * d.gunRecoil.RecoilUp
+	g.RecoilTilt  = g.RecoilTilt  * d.gunRecoil.RecoilTilt
+	g.RecoilLeft  = g.RecoilLeft  * d.gunRecoil.RecoilLeft
+	g.RecoilRight = g.RecoilRight * d.gunRecoil.RecoilRight
+	ModTable.AimRM            = ModTable.AimRM            * d.AimRecoilReduction
+	ModTable.SpreadRM         = ModTable.SpreadRM         * d.AimSpreadReduction
+	ModTable.DamageMod        = ModTable.DamageMod        * d.DamageMod
+	ModTable.minDamageMod     = ModTable.minDamageMod     * d.minDamageMod
+	ModTable.MinRecoilPower        = ModTable.MinRecoilPower        * d.MinRecoilPower
+	ModTable.MaxRecoilPower        = ModTable.MaxRecoilPower        * d.MaxRecoilPower
+	ModTable.RecoilPowerStepAmount = ModTable.RecoilPowerStepAmount * d.RecoilPowerStepAmount
+	ModTable.MinSpread               = ModTable.MinSpread               * d.MinSpread
+	ModTable.MaxSpread               = ModTable.MaxSpread               * d.MaxSpread
+	ModTable.AimInaccuracyStepAmount = ModTable.AimInaccuracyStepAmount * d.AimInaccuracyStepAmount
+	ModTable.AimInaccuracyDecrease   = ModTable.AimInaccuracyDecrease   * d.AimInaccuracyDecrease
+	ModTable.WalkMult       = ModTable.WalkMult       * d.WalkMult
+	ModTable.MuzzleVelocity = ModTable.MuzzleVelocity * d.MuzzleVelocityMod
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 7. ПРУЖИНЫ И ТРАНСФОРМАЦИИ
+-- ───────────────────────────────────────────────────────────────────
+local gunRecoilState = RecoilSystem.new()
+
+local cameraspring = SpringMod.new(Vector3.new()); cameraspring.d=0.38; cameraspring.s=14
+local SwaySpring   = SpringMod.new(Vector3.new()); SwaySpring.d=0.25;   SwaySpring.s=20
+local VMKickPos    = SpringMod.new(Vector3.new()); VMKickPos.d=0.92;    VMKickPos.s=60
+local VMKickRot    = SpringMod.new(Vector3.new()); VMKickRot.d=0.96;    VMKickRot.s=75
+local LagSpring    = SpringMod.new(Vector3.new()); LagSpring.d=0.92;    LagSpring.s=24
+
+local LAG_ROT_HIP=0.0040; local LAG_POS_HIP=0.0013
+local LAG_ROT_ADS=0.00045; local LAG_POS_ADS=0.00012
+local LAG_MAX_HIP=math.rad(8); local LAG_MAX_ADS=math.rad(2.5)
+
+local maincf     = CFrame.new()
+local guncf      = CFrame.new()
+local gunbobcf   = CFrame.new()
+local recoilcf   = CFrame.new()
+local aimcf      = CFrame.new()
+local vmKickCF   = CFrame.new()
+local bumpCF     = CFrame.new()
+local bumpPushCF = CFrame.new()
+local VM_Bump    = false
+local BumpAdsCut = false
+local NearZ      = CFrame.new(0, 0, -0.5)
+local BipodCF    = CFrame.new()
+
+local BUMP_POSE = CFrame.new(-0.2, -1, 0) * CFrame.Angles(1, 0.6, 0.3)
+local AimTween  = TweenInfo.new(0.2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+
+local ModStorageFolder = plr.PlayerGui:FindFirstChild("ModStorage") or Instance.new("Folder")
+ModStorageFolder.Parent = plr.PlayerGui
+ModStorageFolder.Name   = "ModStorage"
+
+-- ───────────────────────────────────────────────────────────────────
+-- 8. ЧАСТИ ПЕРСОНАЖА
+-- ───────────────────────────────────────────────────────────────────
+local Humanoid         = char:WaitForChild("Humanoid")
+local Head             = char:WaitForChild("Head")
+local Torso            = char:WaitForChild("UpperTorso")
+local HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
+local Neck             = Head:WaitForChild("Neck")
+local YOffset          = Neck.C0.Y
+
+local CFNew, CFAng = CFrame.new, CFrame.Angles
+local Asin         = math.asin
+local Ignore_Model = {cam, char, ACS_Workspace.Client, ACS_Workspace.Server}
+
+local Stance = Evt.Stance
+local Stances=0; local Virar=0; local CameraX=0; local CameraY=0
+local Sentado=false; local Swimming=false; local falling=false
+local Crouched=false; local Proned=false; local Steady=false
+local CanLean=true; local ChangeStance=true
+
+UIS.MouseIconEnabled = true
+plr.CameraMode       = Enum.CameraMode.Classic
+cam.CameraType       = Enum.CameraType.Custom
+cam.CameraSubject    = Humanoid
+
+SE_GUI = HUDs:WaitForChild("StatusUI"):Clone()
+SE_GUI.Parent = plr.PlayerGui
+
+local BloodScreen    = TS:Create(SE_GUI.Efeitos.Health,    TweenInfo.new(1,Enum.EasingStyle.Circular,Enum.EasingDirection.InOut,-1,true), {Size=UDim2.new(1.2,0,1.4,0)})
+local BloodScreenLow = TS:Create(SE_GUI.Efeitos.LowHealth, TweenInfo.new(1,Enum.EasingStyle.Circular,Enum.EasingDirection.InOut,-1,true), {Size=UDim2.new(1.2,0,1.4,0)})
+local Crosshair      = SE_GUI.Crosshair
+
+if gameRules.TeamTags then
+	local tag = Essential.TeamTag:Clone()
+	tag.Parent = char; tag.Disabled = false
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 9. GUI HELPERS
+-- ───────────────────────────────────────────────────────────────────
+local function CrosshairShow(show, t)
+	t = t or 0.2
+	local tr = show and 0 or 1
+	for _, id in ipairs({"Up","Down","Left","Right"}) do
+		TS:Create(Crosshair[id], TweenInfo.new(t, Enum.EasingStyle.Linear), {BackgroundTransparency=tr}):Play()
+	end
+end
+local function CrosshairCenterShow(show, t)
+	TS:Create(Crosshair.Center, TweenInfo.new(t or 0.2, Enum.EasingStyle.Linear), {ImageTransparency= show and 0 or 1}):Play()
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 10. ATTACHMENTS
+-- ───────────────────────────────────────────────────────────────────
+local function loadAttachment(weapon)
+	if not weapon or not weapon:FindFirstChild("Nodes") then return end
+	local nodes = weapon.Nodes
+	local function weldAll(model)
+		for _, p in ipairs(model:GetChildren()) do
+			if p:IsA("BasePart") then
+				Ultil.Weld(weapon:WaitForChild("Handle"), p)
+				p.Anchored=false; p.CanCollide=false
+			end
+		end
+	end
+
+	if nodes:FindFirstChild("Sight") and WeaponData.SightAtt ~= "" then
+		SightData = require(AttModules[WeaponData.SightAtt])
+		SightAtt  = AttModels[WeaponData.SightAtt]:Clone()
+		SightAtt.Parent = weapon
+		SightAtt:SetPrimaryPartCFrame(nodes.Sight.CFrame)
+		weapon.AimPart.CFrame = SightAtt.AimPos.CFrame
+		reticle = SightAtt.SightMark.SurfaceGui.Border.Scope
+		if SightData.SightZoom  > 0 then ModTable.ZoomValue  = SightData.SightZoom  end
+		if SightData.SightZoom2 > 0 then ModTable.Zoom2Value = SightData.SightZoom2 end
+		setMods(SightData)
+		for _, key in ipairs(weapon:GetChildren()) do
+			if key.Name == "IS" then key.Transparency = 1 end
+		end
+		weldAll(SightAtt)
+	end
+
+	if nodes:FindFirstChild("Barrel") and WeaponData.BarrelAtt ~= "" then
+		BarrelData = require(AttModules[WeaponData.BarrelAtt])
+		BarrelAtt  = AttModels[WeaponData.BarrelAtt]:Clone()
+		BarrelAtt.Parent = weapon
+		BarrelAtt:SetPrimaryPartCFrame(nodes.Barrel.CFrame)
+		if BarrelAtt:FindFirstChild("BarrelPos") then
+			weapon.Handle.Muzzle.WorldCFrame = BarrelAtt.BarrelPos.CFrame
+		end
+		Suppressor = BarrelData.IsSuppressor
+		FlashHider = BarrelData.IsFlashHider
+		setMods(BarrelData)
+		weldAll(BarrelAtt)
+	end
+
+	if nodes:FindFirstChild("UnderBarrel") and WeaponData.UnderBarrelAtt ~= "" then
+		UnderBarrelData = require(AttModules[WeaponData.UnderBarrelAtt])
+		UnderBarrelAtt  = AttModels[WeaponData.UnderBarrelAtt]:Clone()
+		UnderBarrelAtt.Parent = weapon
+		UnderBarrelAtt:SetPrimaryPartCFrame(nodes.UnderBarrel.CFrame)
+		setMods(UnderBarrelData)
+		BipodAtt = UnderBarrelData.IsBipod
+		if BipodAtt then CAS:BindAction("ToggleBipod", handleAction, true, Enum.KeyCode.B) end
+		weldAll(UnderBarrelAtt)
+	end
+
+	if nodes:FindFirstChild("Other") and WeaponData.OtherAtt ~= "" then
+		OtherData = require(AttModules[WeaponData.OtherAtt])
+		OtherAtt  = AttModels[WeaponData.OtherAtt]:Clone()
+		OtherAtt.Parent = weapon
+		OtherAtt:SetPrimaryPartCFrame(nodes.Other.CFrame)
+		setMods(OtherData)
+		LaserAtt = OtherData.EnableLaser
+		TorchAtt = OtherData.EnableFlashlight
+		if OtherData.InfraRed then IREnable = true end
+		weldAll(OtherAtt)
+	end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 11. SETUP / UNSET
+-- ───────────────────────────────────────────────────────────────────
+local function setup(Tool)
+	local myToken   = EquipToken
+	SetupVersion   += 1
+	local myVersion = SetupVersion
+
+	-- Уничтожаем старые Viewmodel (не _OLD — те ждут своего task.delay)
+	for _, obj in ipairs(cam:GetChildren()) do
+		if obj:IsA("Model") and obj.Name == "Viewmodel" then obj:Destroy() end
+	end
+
+	if not (char and char:FindFirstChildOfClass("Humanoid") and
+		char:FindFirstChildOfClass("Humanoid").Health > 0 and Tool) then return end
+
+	State.ToolEquip            = true
+	UIS.MouseIconEnabled = false
+	plr.CameraMode       = Enum.CameraMode.LockFirstPerson
+
+	State.WeaponTool   = Tool
+	State.WeaponData   = require(Tool:WaitForChild("ACS_Settings"))
+	State.WeaponInHand = GunModels:WaitForChild(Tool.Name):Clone()
+	State.WeaponInHand.PrimaryPart = State.WeaponInHand:WaitForChild("Handle")
+
+	Evt.Equip:FireServer(Tool, 1, State.WeaponData, nil)
+
+	-- [ИСПРАВЛЕНИЕ 1] Выбираем папку платформы и ViewmodelAnims
+	do
+		local platformName = (WeaponData.AnimationPlatform)
+			or (WeaponData.Platform)
+			or Tool:GetAttribute("AnimationPlatform")
+			or "AKPlatform"
+
+		local pf = GunAnimFolder:FindFirstChild(platformName)
+		if not pf then
+			warn("[ACS Anim] Platform folder not found:", platformName, "— using AKPlatform fallback")
+			pf = GunAnimFolder:FindFirstChild("AKPlatform")
+		end
+		CurrentPlatformFolder = pf
+
+		if pf then
+			local vf = pf:FindFirstChild("ViewmodelAnims")
+			CurrentVMAnimFolder = vf or pf   -- если нет ViewmodelAnims — сама платформа
+			-- [ДИАГНОСТИКА] Печатаем выбранную платформу и путь
+			print("[ACS Anim] Platform selected:", platformName, "→", CurrentVMAnimFolder:GetFullName())
+		else
+			CurrentVMAnimFolder = nil
+			warn("[ACS Anim] No platform folder found at all, will use FallbackAnimMap only")
+		end
+	end
+
+	-- ── ViewModel ──
+	State.ViewModel = ArmModel:WaitForChild("Arms"):Clone()
+	State.ViewModel.Name = "Viewmodel"
+
+	if char:FindFirstChild("Body Colors") then char:FindFirstChild("Body Colors"):Clone().Parent = State.ViewModel end
+	if char:FindFirstChild("Shirt")        then char:FindFirstChild("Shirt"):Clone().Parent = State.ViewModel end
+
+	State.AnimPart            = Instance.new("Part", State.ViewModel)
+	State.AnimPart.Size       = Vector3.new(0.1, 0.1, 0.1)
+	State.AnimPart.Anchored   = true
+	State.AnimPart.CanCollide = false
+	State.AnimPart.Transparency = 1
+	State.ViewModel.PrimaryPart = State.AnimPart
+
+	State.LArmWeld = Instance.new("Motor6D", State.AnimPart); State.LArmWeld.Name="LeftArm";  State.LArmWeld.Part0=State.AnimPart
+	State.RArmWeld = Instance.new("Motor6D", State.AnimPart); State.RArmWeld.Name="RightArm"; State.RArmWeld.Part0=State.AnimPart
+	State.GunWeld  = Instance.new("Motor6D", State.AnimPart); State.GunWeld.Name="Handle"
+
+	-- AnimationController + Animator (VMAnimTrackCache убран)
+	InitVMAnimator(State.ViewModel)
+
+	if myVersion ~= State.SetupVersion or myToken ~= State.EquipToken then
+		pcall(function() State.ViewModel:Destroy() end)
+		State.ViewModel=nil; VMAnimController=nil; VMAnimator=nil
+		return
+	end
+
+	State.ViewModel.Parent = cam
+
+	maincf = State.WeaponData.MainCFrame or CFrame.new()
+	guncf  = State.WeaponData.GunCFrame  or CFrame.new()
+
+	if State.WeaponData.CrossHair then
+		CrosshairShow(true)
+		local rot = (State.WeaponData.Bullets or 1) > 1 and 90 or 0
+		for _, id in ipairs({"Up","Down","Left","Right"}) do Crosshair[id].Rotation = rot end
+	else
+		CrosshairShow(false)
+	end
+	CrosshairCenterShow(State.WeaponData.CenterDot == true)
+
+	State.LArm = State.ViewModel:WaitForChild("Left Arm")
+	State.LArmWeld.Part1=State.LArm; State.LArmWeld.C0=CFrame.new(); State.LArmWeld.C1=CFrame.new(1,-1,-5)
+
+	State.RArm = State.ViewModel:WaitForChild("Right Arm")
+	State.RArmWeld.Part1=State.RArm; State.RArmWeld.C0=CFrame.new(); State.RArmWeld.C1=CFrame.new(-1,-1,-5)
+	State.GunWeld.Part0=State.RArm; State.LArm.Anchored=false; State.RArm.Anchored=false
+
+	State.AnimPart.CFrame     = cam.CFrame * NearZ * maincf
+	ModTable.ZoomValue  = State.WeaponData.Zoom
+	ModTable.Zoom2Value = State.WeaponData.Zoom2
+	State.IREnable            = State.WeaponData.InfraRed
+
+	CAS:BindAction("Fire",          handleAction, true,  Enum.UserInputType.MouseButton1, Enum.KeyCode.ButtonR2)
+	CAS:BindAction("ADS",           handleAction, true,  Enum.UserInputType.MouseButton2, Enum.KeyCode.ButtonL2)
+	CAS:BindAction("Reload",        handleAction, true,  Enum.KeyCode.R, Enum.KeyCode.ButtonB)
+	CAS:BindAction("CycleAimpart",  handleAction, false, Enum.KeyCode.T)
+	CAS:BindAction("CycleLaser",    handleAction, true,  Enum.KeyCode.H)
+	CAS:BindAction("CycleLight",    handleAction, true,  Enum.KeyCode.J)
+	CAS:BindAction("CycleFiremode", handleAction, false, Enum.KeyCode.V)
+	CAS:BindAction("CheckMag",      handleAction, false, Enum.KeyCode.M)
+	CAS:BindAction("ZeroDown",      handleAction, false, Enum.KeyCode.LeftBracket)
+	CAS:BindAction("ZeroUp",        handleAction, false, Enum.KeyCode.RightBracket)
+
+	loadAttachment(State.WeaponInHand)
+
+	State.BSpread     = math.min(State.WeaponData.MinSpread*ModTable.MinSpread,       State.WeaponData.MaxSpread*ModTable.MaxSpread)
+	State.RecoilPower = math.min(State.WeaponData.MinRecoilPower*ModTable.MinRecoilPower, State.WeaponData.MaxRecoilPower*ModTable.MaxRecoilPower)
+
+	State.Ammo       = State.WeaponData.AmmoInGun
+	State.StoredAmmo = State.WeaponData.StoredAmmo
+	State.CurAimpart = State.WeaponInHand:FindFirstChild("AimPart")
+
+	for _, d in ipairs(State.WeaponInHand:GetDescendants()) do
+		if d:IsA("BasePart") then
+			if d.Name == "FlashPoint" then State.TorchAtt = true end
+			if d.Name == "LaserPoint" then State.LaserAtt  = true end
+		end
+	end
+
+	if State.WeaponData.EnableHUD then State.SE_GUI.GunHUD.Visible = true end
+	UpdateGui()
+
+	for _, key in ipairs(State.WeaponInHand:GetChildren()) do
+		if key:IsA("BasePart") and key.Name ~= "Handle" then
+			if key.Name ~= "Bolt" and key.Name ~= "Lid" and key.Name ~= "Slide" then
+				Ultil.Weld(State.WeaponInHand:WaitForChild("Handle"), key)
+			end
+			if key.Name == "Bolt" or key.Name == "Slide" then
+				Ultil.WeldComplex(State.WeaponInHand:WaitForChild("Handle"), key, key.Name)
+			end
+			if key.Name == "Lid" then
+				local hinge = State.WeaponInHand:FindFirstChild("LidHinge")
+				Ultil.Weld(key, hinge or State.WeaponInHand:WaitForChild("Handle"))
+			end
+		end
+	end
+	for _, p in ipairs(State.WeaponInHand:GetChildren()) do
+		if p:IsA("BasePart") then p.Anchored=false; p.CanCollide=false end
+	end
+	if State.WeaponInHand:FindFirstChild("Nodes") then
+		for _, p in ipairs(State.WeaponInHand.Nodes:GetChildren()) do
+			if p:IsA("BasePart") then
+				Ultil.Weld(State.WeaponInHand:WaitForChild("Handle"), p)
+				p.Anchored=false; p.CanCollide=false
+			end
+		end
+	end
+
+	State.GunWeld.Part1       = State.WeaponInHand:WaitForChild("Handle")
+	State.GunWeld.C1          = guncf
+	State.WeaponInHand.Parent = State.ViewModel
+
+	if State.Ammo <= 0 and State.WeaponData.Type == "Gun" then
+		State.WeaponInHand.Handle.Slide.C0 = State.WeaponData.SlideEx:inverse()
+	end
+
+	-- Equip-анимация → callback → Idle (через BasePose-канал)
+	State.AnimDebounce = false
+	local equipTrack = PlayVMAnim("Equip", {FadeTime=0.05, Priority=Enum.AnimationPriority.Action})
+	if equipTrack then
+		equipTrack.Stopped:Once(function()
+			State.AnimDebounce = true
+			PlayBasePose("Idle", {Looped=true, Priority=Enum.AnimationPriority.Idle, FadeTime=0.15})
+		end)
+	else
+		State.AnimDebounce = true
+		PlayBasePose("Idle", {Looped=true, Priority=Enum.AnimationPriority.Idle, FadeTime=0.15})
+	end
+
+	RunCheck()
+end
+
+-- ─────────────────────────────────────────────────────────────────
+local function unset()
+	UnsetVersion += 1
+	local myUnset = UnsetVersion
+
+	if ToolEquip and IsBusy() then
+		local waited = 0
+		while IsBusy() and waited < 3 do
+			if UnsetVersion ~= myUnset then return end
+			task.wait(0.05); waited += 0.05
+		end
+	end
+	if UnsetVersion ~= myUnset then return end
+
+	ToolEquip = false
+	Evt.Equip:FireServer(WeaponTool, 2)
+
+	CAS:UnbindAction("Fire");         CAS:UnbindAction("ADS")
+	CAS:UnbindAction("Reload");       CAS:UnbindAction("CycleLaser")
+	CAS:UnbindAction("CycleLight");   CAS:UnbindAction("CycleFiremode")
+	CAS:UnbindAction("CycleAimpart"); CAS:UnbindAction("ZeroUp")
+	CAS:UnbindAction("ZeroDown");     CAS:UnbindAction("CheckMag")
+
+	mouse1down = false; aimming = false
+
+	if WeaponInHand then
+		WeaponData.AmmoInGun  = Ammo
+		WeaponData.StoredAmmo = StoredAmmo
+
+		-- [ИСПРАВЛЕНИЕ 4a] Переименовываем ViewModel → "Viewmodel_OLD"
+		-- Это защищает его от уничтожения в следующем setup() (там ищется "Viewmodel")
+		local oldVM = ViewModel
+		if oldVM then oldVM.Name = "Viewmodel_OLD" end
+
+		-- [ИСПРАВЛЕНИЕ 4b] Останавливаем базовые/текущие треки с коротким fade
+		StopAllVMAnims(0.08)
+
+		-- [ИСПРАВЛЕНИЕ 4c] Запускаем Unequip-анимацию (теперь ViewModel жив)
+		local unequipTrack = PlayVMAnim("Unequip", {FadeTime=0.05, Priority=Enum.AnimationPriority.Action})
+
+		-- [ИСПРАВЛЕНИЕ 4d] Откладываем Destroy на длину анимации
+		local delayTime = 0.15
+		if unequipTrack then
+			-- clamp длины на безопасный диапазон (увеличен до 2.0 для длинных Unequip)
+			local ok, len = pcall(function() return unequipTrack.Length end)
+			if ok and type(len) == "number" and len > 0 then
+				delayTime = math.clamp(len, 0.15, 2.0)
+			end
+		end
+
+		-- [ИСПРАВЛЕНИЕ 4e] Планируем отложенный Destroy
+		task.delay(delayTime, function()
+			if oldVM and oldVM.Parent then
+				pcall(function() oldVM:Destroy() end)
+			end
+		end)
+
+		-- Сброс UI/камеры синхронизирован с delayTime (после завершения Unequip)
+		task.spawn(function()
+			task.wait(delayTime)
+			if UnsetVersion == myUnset and not WeaponInHand then
+				TS:Create(cam, AimTween, {FieldOfView=70}):Play()
+				CrosshairShow(false); CrosshairCenterShow(false)
+				UIS.MouseIconEnabled      = true
+				UIS.MouseDeltaSensitivity = 1
+				cam.CameraType            = Enum.CameraType.Custom
+				plr.CameraMode            = Enum.CameraMode.Classic
+			end
+		end)
+
+		-- Обнуляем переменные (oldVM уже сохранён выше, Destroy — в task.delay)
+		ViewModel=nil; VMAnimController=nil; VMAnimator=nil
+		CurrentPlatformFolder=nil; CurrentVMAnimFolder=nil
+		WeaponInHand=nil; WeaponTool=nil
+		LArm=nil; RArm=nil; LArmWeld=nil; RArmWeld=nil; GunWeld=nil
+		WeaponData=nil
+		SightAtt=nil; reticle=nil; BarrelAtt=nil; UnderBarrelAtt=nil; OtherAtt=nil
+		LaserAtt=false; LaserActive=false; IRmode=false
+		TorchAtt=false; TorchActive=false
+		BipodAtt=false; BipodActive=false
+		LaserDist=0; Pointer=nil
+		BSpread=nil; RecoilPower=nil
+		Suppressor=false; FlashHider=false
+		CancelReload=false; reloading=false
+		SafeMode=false; CheckingMag=false
+		GRDebounce=false; CookGrenade=false
+		GunStance=0; resetMods()
+		generateBullet=1; AimPartMode=1
+		SE_GUI.GunHUD.Visible       = false
+		SE_GUI.GrenadeForce.Visible = false
+		BipodCF=CFrame.new(); bumpCF=CFrame.new(); bumpPushCF=CFrame.new()
+		VM_Bump=false
+		-- AnimTrackCache/ActiveTracks уже сброшены в StopAllVMAnims выше
+		AnimTrackCache={}; ActiveTracks={}; ActiveChannels={}
+
+		if gameRules.ReplicatedLaser then Evt.SVLaser:FireServer(nil,2,nil,false,nil) end
+		if gunRecoilState then gunRecoilState:Reset() end
+	end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 12. АНИМАЦИОННЫЕ ХЕЛПЕРЫ
+-- ───────────────────────────────────────────────────────────────────
+
+-- [ИСПРАВЛЕНИЕ 3] Idle/Sprint/Patrol/HighReady/LowReady → через PlayBasePose()
+local function IdleAnim()
+	PlayBasePose("Idle", {Looped=true, Priority=Enum.AnimationPriority.Idle, FadeTime=0.15})
+	AnimDebounce = true
+end
+
+local function SprintAnim()
+	AnimDebounce = false
+	PlayBasePose("Sprint", {Looped=true, Priority=Enum.AnimationPriority.Movement, FadeTime=0.12})
+end
+
+-- [ИСПРАВЛЕНИЕ 2] "HighReady" → реальное имя "High Ready" через ANIM_ALIASES
+local function HighReady()
+	PlayBasePose("HighReady", {Priority=Enum.AnimationPriority.Action, FadeTime=0.12})
+end
+
+-- [ИСПРАВЛЕНИЕ 2] "LowReady" → "Low Ready"
+local function LowReady()
+	PlayBasePose("LowReady", {Priority=Enum.AnimationPriority.Action, FadeTime=0.12})
+end
+
+local function Patrol()
+	PlayBasePose("Patrol", {Looped=true, Priority=Enum.AnimationPriority.Movement, FadeTime=0.15})
+end
+
+-- Reload (Action-канал, Wait на завершение)
+local function ReloadAnim()
+	local t = PlayVMAnim("Reload", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.08})
+	if t then t.Stopped:Wait() end
+end
+
+-- [ИСПРАВЛЕНИЕ 2] TacticalReload → "EmptyReload" через ANIM_ALIASES
+local function TacticalReloadAnim()
+	local t = PlayVMAnim("TacticalReload", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.08})
+	if t then t.Stopped:Wait() end
+end
+
+-- [ИСПРАВЛЕНИЕ 2] Jammed — без алиаса, имя совпадает (если нет — warn и fallback)
+local function JammedAnim()
+	local t = PlayVMAnim("Jammed", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.08})
+	if t then t.Stopped:Wait() end
+end
+
+-- [ИСПРАВЛЕНИЕ 2] Pump → "Chamber" через ANIM_ALIASES
+local function PumpAnim()
+	reloading = true
+	local t = PlayVMAnim("Pump", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.05})
+	if t then t.Stopped:Wait() end
+	reloading = false
+end
+
+-- [ИСПРАВЛЕНИЕ 2] MagCheck → "Mag Check" через ANIM_ALIASES
+local function MagCheckAnim()
+	CheckingMag = true
+	local t = PlayVMAnim("MagCheck", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.08})
+	if t then t.Stopped:Wait() end
+	CheckingMag = false
+end
+
+local function meleeAttack()
+	-- [ФОЛЛБЕК] Если нет Melee — пробуем Fire, иначе пропускаем
+	local t = PlayVMAnim("Melee", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.05})
+	if not t then
+		t = PlayVMAnim("Fire", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.05})
+	end
+	if t then t.Stopped:Wait() end
+end
+
+local function GrenadeReady()
+	-- [ФОЛЛБЕК] Если нет GrenadeReady — пробуем Equip, иначе пропускаем
+	local t = PlayVMAnim("GrenadeReady", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.08})
+	if not t then
+		t = PlayVMAnim("Equip", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.08})
+	end
+	if t then t.Stopped:Wait() end
+end
+
+local function GrenadeThrow()
+	-- [ФОЛЛБЕК] Если нет GrenadeThrow — пробуем Unequip, иначе пропускаем
+	local t = PlayVMAnim("GrenadeThrow", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.05})
+	if not t then
+		t = PlayVMAnim("Unequip", {Priority=Enum.AnimationPriority.Action, Channel="Action", FadeTime=0.05})
+	end
+	if t then t.Stopped:Wait() end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 13. RUNCHECK
+-- ───────────────────────────────────────────────────────────────────
+local function RunCheck()
+	if runKeyDown then
+		mouse1down = false
+		GunStance = 3; Evt.GunStance:FireServer(GunStance, nil)
+		SprintAnim()
+	else
+		GunStance = aimming and 2 or 0
+		Evt.GunStance:FireServer(GunStance, nil)
+		IdleAnim()
+	end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 14. ADS
+-- ───────────────────────────────────────────────────────────────────
+local function ADS(aiming)
+	if not WeaponData or not WeaponInHand then return end
+	if aiming then
+		if SafeMode then
+			SafeMode=false; GunStance=0; IdleAnim(); UpdateGui()
+		end
+		UIS.MouseDeltaSensitivity = Sens/100
+		WeaponInHand.Handle.AimDown:Play()
+		GunStance=2; Evt.GunStance:FireServer(GunStance, nil)
+		CrosshairShow(false); CrosshairCenterShow(false)
+	else
+		UIS.MouseDeltaSensitivity = 1
+		WeaponInHand.Handle.AimUp:Play()
+		GunStance=0; Evt.GunStance:FireServer(GunStance, nil)
+		if WeaponData.CrossHair then CrosshairShow(true) end
+		CrosshairCenterShow(WeaponData.CenterDot == true)
+		if gunRecoilState then gunRecoilState:Reset() end
+	end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 15. HANDLEACTION
+-- ───────────────────────────────────────────────────────────────────
+function handleAction(actionName, inputState, inputObject)
+	local BEGIN = Enum.UserInputState.Begin
+	local END   = Enum.UserInputState.End
+
+	if actionName=="Fire" and inputState==BEGIN and AnimDebounce then
+		Shoot()
+		if WeaponData and WeaponData.Type=="Grenade" then CookGrenade=true; Grenade() end
+	elseif actionName=="Fire" and inputState==END then
+		mouse1down=false; CookGrenade=false
+	end
+
+	if actionName=="Reload" and inputState==BEGIN and AnimDebounce and not CheckingMag and not reloading then
+		if WeaponData and WeaponData.Jammed then Jammed() else Reload() end
+	end
+	if actionName=="Reload" and inputState==BEGIN and reloading and WeaponData and WeaponData.ShellInsert then
+		CancelReload=true
+	end
+
+	if actionName=="CycleLaser"    and inputState==BEGIN and LaserAtt then SetLaser() end
+	if actionName=="CycleLight"    and inputState==BEGIN and TorchAtt  then SetTorch() end
+	if actionName=="CycleFiremode" and inputState==BEGIN and WeaponData and WeaponData.FireModes and WeaponData.FireModes.ChangeFiremode then Firemode() end
+	if actionName=="CycleAimpart"  and inputState==BEGIN then SetAimpart() end
+
+	if actionName=="ZeroUp" and inputState==BEGIN and WeaponData and WeaponData.EnableZeroing then
+		if WeaponData.CurrentZero < WeaponData.MaxZero then
+			WeaponInHand.Handle.Click:play()
+			WeaponData.CurrentZero = math.min(WeaponData.CurrentZero+WeaponData.ZeroIncrement, WeaponData.MaxZero)
+			UpdateGui()
+		end
+	end
+	if actionName=="ZeroDown" and inputState==BEGIN and WeaponData and WeaponData.EnableZeroing then
+		if WeaponData.CurrentZero > 0 then
+			WeaponInHand.Handle.Click:play()
+			WeaponData.CurrentZero = math.max(WeaponData.CurrentZero-WeaponData.ZeroIncrement, 0)
+			UpdateGui()
+		end
+	end
+
+	if actionName=="CheckMag" and inputState==BEGIN and not CheckingMag and not reloading and not runKeyDown and AnimDebounce then
+		CheckMagFunction()
+	end
+	if actionName=="ToggleBipod" and inputState==BEGIN and CanBipod then
+		BipodActive=not BipodActive; UpdateGui()
+	end
+
+	if actionName=="NVG" and inputState==BEGIN and not NVGdebounce then
+		if plr.Character then
+			local helmet = plr.Character:FindFirstChild("Helmet")
+			if helmet and helmet:FindFirstChild("Up") then
+				NVGdebounce=true
+				task.delay(0.8, function() NVG=not NVG; Evt.NVG:Fire(NVG); NVGdebounce=false end)
+			end
+		end
+	end
+
+	if actionName=="ADS" and inputState==BEGIN and AnimDebounce then
+		if WeaponData and WeaponData.canAim and GunStance>-2 and not runKeyDown and not CheckingMag and not BumpAdsCut then
+			aimming=not aimming; ADS(aimming)
+		end
+		if WeaponData and WeaponData.Type=="Grenade" then GrenadeMode() end
+	end
+
+	if actionName=="Stand" and inputState==BEGIN and ChangeStance and not Swimming and not Sentado and not runKeyDown then
+		if Stances==2 then Crouched=true; Proned=false; Stances=1; CameraY=-1; Crouch()
+		elseif Stances==1 then Crouched=false; Stances=0; CameraY=0; Stand()
+		end
+	end
+
+	if actionName=="Crouch" and inputState==BEGIN and ChangeStance and not Swimming and not Sentado and not runKeyDown then
+		if Stances==0 then Stances=1; CameraY=-1; Crouch(); Crouched=true
+		elseif Stances==1 then Stances=2; CameraX=0; CameraY=-3.25; Virar=0; Lean(); Prone(); Crouched=false; Proned=true
+		end
+	end
+
+	if actionName=="ToggleWalk" and inputState==BEGIN and ChangeStance and not runKeyDown then
+		Steady=not Steady
+		SE_GUI.MainFrame.Poses.Steady.Visible=Steady
+		if Stances==0 then Stand() end
+	end
+
+	if actionName=="LeanLeft" and inputState==BEGIN and Stances~=2 and ChangeStance and not Swimming and not runKeyDown and CanLean then
+		if Virar==0 or Virar==1 then Virar=-1; CameraX=-1.25 else Virar=0; CameraX=0 end; Lean()
+	end
+	if actionName=="LeanRight" and inputState==BEGIN and Stances~=2 and ChangeStance and not Swimming and not runKeyDown and CanLean then
+		if Virar==0 or Virar==-1 then Virar=1; CameraX=1.25 else Virar=0; CameraX=0 end; Lean()
+	end
+
+	if actionName=="Run" and inputState==BEGIN and not script.Parent:GetAttribute("Injured") then
+		runKeyDown=true
+		if running then
+			Stand(); Stances=0; Virar=0; CameraX=0; CameraY=0; Lean()
+			char:FindFirstChildOfClass("Humanoid").WalkSpeed = gameRules.RunWalkSpeed
+			if aimming then aimming=false; ADS(false) end
+			if not CheckingMag and not reloading and WeaponData and WeaponData.Type~="Grenade"
+				and (GunStance==0 or GunStance==2 or GunStance==3) then
+				GunStance=3; Evt.GunStance:FireServer(GunStance,nil); SprintAnim()
+			end
+		end
+	elseif actionName=="Run" and inputState==END and runKeyDown then
+		runKeyDown=false; Stand()
+		if not CheckingMag and not reloading and WeaponData and WeaponData.Type~="Grenade"
+			and (GunStance==0 or GunStance==2 or GunStance==3) then
+			GunStance=0; Evt.GunStance:FireServer(GunStance,nil); IdleAnim()
+		end
+	end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 16. GUI
+-- ───────────────────────────────────────────────────────────────────
+function UpdateGui()
+	if not SE_GUI or not WeaponData then return end
+	local HUD = SE_GUI.GunHUD
+
+	HUD.B.BackgroundColor3 = WeaponData.Jammed and Color3.fromRGB(255,0,0) or Color3.fromRGB(255,255,255)
+	HUD.A.Visible = SafeMode
+	HUD.B.Visible = Ammo > 0
+
+	local fmodes = {"Semi","Burst","Auto","Pump-Action","Bolt-Action"}
+	HUD.FText.Text = fmodes[WeaponData.ShootType] or ""
+	HUD.Sens.Text  = tostring(Sens/100)
+	HUD.BText.Text = WeaponData.BulletType
+	HUD.NText.Text = WeaponData.gunName
+
+	HUD.ZeText.Visible = WeaponData.EnableZeroing
+	if WeaponData.EnableZeroing then HUD.ZeText.Text = WeaponData.CurrentZero.." m" end
+
+	if WeaponData.MagCount then
+		HUD.SAText.Text = math.ceil(StoredAmmo/WeaponData.Ammo)
+		HUD.Magazines.Visible=true; HUD.Bullets.Visible=false
+	else
+		HUD.SAText.Text = StoredAmmo
+		HUD.Magazines.Visible=false; HUD.Bullets.Visible=true
+	end
+
+	HUD.Att.Silencer.Visible = Suppressor
+	HUD.Att.Laser.Visible    = LaserAtt
+	if LaserAtt then
+		local col = LaserActive and (IRmode and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,255,255)) or Color3.fromRGB(255,0,0)
+		TS:Create(HUD.Att.Laser, TweenInfo.new(.1,Enum.EasingStyle.Linear), {ImageColor3=col, ImageTransparency=LaserActive and .123 or .5}):Play()
+	end
+	HUD.Att.Bipod.Visible = BipodAtt
+	HUD.Att.Flash.Visible = TorchAtt
+	if TorchAtt then
+		TS:Create(HUD.Att.Flash, TweenInfo.new(.1,Enum.EasingStyle.Linear),
+			{ImageColor3=TorchActive and Color3.fromRGB(255,255,255) or Color3.fromRGB(255,0,0),
+				ImageTransparency=TorchActive and .123 or .5}):Play()
+	end
+	SE_GUI.GrenadeForce.Visible = WeaponData.Type=="Grenade"
+end
+
+function CheckMagFunction()
+	if aimming then aimming=false; ADS(false) end
+	if SE_GUI then
+		local HUD = SE_GUI.GunHUD
+		TS:Create(HUD.CMText,TweenInfo.new(.25,Enum.EasingStyle.Linear,Enum.EasingDirection.InOut,0,false,0),
+			{TextTransparency=0,TextStrokeTransparency=0.75}):Play()
+		local a=Ammo; local m=WeaponData.Ammo
+		HUD.CMText.Text =
+			a>=m                                   and "Full"          or
+			a>math.floor(m*.75)                    and "Nearly full"   or
+			a>math.floor(m*.5)                     and "Almost half"   or
+			a==math.floor(m*.5)                    and "Half"          or
+			a>math.ceil(m*.25)                     and "Less than half" or
+			a>0                                    and "Almost empty"  or "Empty"
+		task.delay(.25, function()
+			TS:Create(HUD.CMText,TweenInfo.new(.25,Enum.EasingStyle.Linear,Enum.EasingDirection.InOut,0,false,5),
+				{TextTransparency=1,TextStrokeTransparency=1}):Play()
+		end)
+	end
+	mouse1down=false; SafeMode=false; GunStance=0
+	Evt.GunStance:FireServer(GunStance,nil); UpdateGui()
+	MagCheckAnim(); RunCheck()
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 17. LASER / TORCH
+-- ───────────────────────────────────────────────────────────────────
+function SetLaser()
+	if gameRules.RealisticLaser and IREnable then
+		if not LaserActive and not IRmode then LaserActive=true; IRmode=true
+		elseif LaserActive and IRmode then IRmode=false
+		else LaserActive=false; IRmode=false end
+	else LaserActive=not LaserActive end
+
+	if LaserActive then
+		if not Pointer then
+			for _, Key in ipairs(WeaponInHand:GetDescendants()) do
+				if Key:IsA("BasePart") and Key.Name=="LaserPoint" then
+					local LP=Instance.new("Part",Key); LP.Shape="Ball"; LP.Size=Vector3.new(.2,.2,.2)
+					LP.CanCollide=false; LP.Color=Key.Color; LP.Material=Enum.Material.Neon
+					local sp=Instance.new("Attachment",Key); local ep=Instance.new("Attachment",LP)
+					local beam=Instance.new("Beam",LP)
+					beam.Transparency=NumberSequence.new(0); beam.LightEmission=1; beam.LightInfluence=1
+					beam.Attachment0=sp; beam.Attachment1=ep; beam.Color=ColorSequence.new(Key.Color)
+					beam.FaceCamera=true; beam.Width0=0.01; beam.Width1=0.01
+					if gameRules.RealisticLaser then beam.Enabled=false end
+					Pointer=LP; break
+				end
+			end
+		end
+	else
+		for _, Key in ipairs(WeaponInHand:GetDescendants()) do
+			if Key:IsA("BasePart") and Key.Name=="LaserPoint" then Key:ClearAllChildren(); break end
+		end
+		Pointer=nil
+		if gameRules.ReplicatedLaser then Evt.SVLaser:FireServer(nil,2,nil,false,WeaponTool) end
+	end
+	WeaponInHand.Handle.Click:play(); UpdateGui()
+end
+
+function SetTorch()
+	TorchActive=not TorchActive
+	for _, Key in ipairs(WeaponInHand:GetDescendants()) do
+		if Key:IsA("BasePart") and Key.Name=="FlashPoint" then Key.Light.Enabled=TorchActive end
+	end
+	Evt.SVFlash:FireServer(WeaponTool,TorchActive); WeaponInHand.Handle.Click:play(); UpdateGui()
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 18. FIREMODE / AIMPART
+-- ───────────────────────────────────────────────────────────────────
+function Firemode()
+	WeaponInHand.Handle.SafetyClick:Play(); mouse1down=false
+	local st=WeaponData.ShootType; local fm=WeaponData.FireModes
+	if     st==1 and fm.Burst              then WeaponData.ShootType=2
+	elseif st==1 and not fm.Burst and fm.Auto then WeaponData.ShootType=3
+	elseif st==2 and fm.Auto               then WeaponData.ShootType=3
+	elseif st==2 and fm.Semi and not fm.Auto then WeaponData.ShootType=1
+	elseif st==3 and fm.Semi               then WeaponData.ShootType=1
+	elseif st==3 and not fm.Semi and fm.Burst then WeaponData.ShootType=2
+	end
+	UpdateGui()
+end
+
+function SetAimpart()
+	if aimming then
+		AimPartMode = AimPartMode==1 and 2 or 1
+		CurAimpart  = WeaponInHand:FindFirstChild(AimPartMode==2 and "AimPart2" or "AimPart") or CurAimpart
+	end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 19. STANCE / LEAN
+-- ───────────────────────────────────────────────────────────────────
+function Stand()
+	Stance:FireServer(Stances,Virar)
+	TS:Create(char.Humanoid,TweenInfo.new(.3),{CameraOffset=Vector3.new(CameraX,CameraY,0)}):Play()
+	SE_GUI.MainFrame.Poses.Levantado.Visible=true
+	SE_GUI.MainFrame.Poses.Agaixado.Visible=false
+	SE_GUI.MainFrame.Poses.Deitado.Visible=false
+	char.Humanoid.WalkSpeed = Steady and gameRules.SlowPaceWalkSpeed
+		or (script.Parent:GetAttribute("Injured") and gameRules.InjuredWalksSpeed)
+		or gameRules.NormalWalkSpeed
+	char.Humanoid.JumpPower = gameRules.JumpPower
+end
+function Crouch()
+	Stance:FireServer(Stances,Virar)
+	TS:Create(char.Humanoid,TweenInfo.new(.3),{CameraOffset=Vector3.new(CameraX,CameraY,0)}):Play()
+	SE_GUI.MainFrame.Poses.Levantado.Visible=false
+	SE_GUI.MainFrame.Poses.Agaixado.Visible=true
+	SE_GUI.MainFrame.Poses.Deitado.Visible=false
+	char.Humanoid.WalkSpeed = script.Parent:GetAttribute("Injured") and gameRules.InjuredCrouchWalkSpeed or gameRules.CrouchWalkSpeed
+	char.Humanoid.JumpPower=0
+end
+function Prone()
+	Stance:FireServer(Stances,Virar)
+	TS:Create(char.Humanoid,TweenInfo.new(.3),{CameraOffset=Vector3.new(CameraX,CameraY,0)}):Play()
+	SE_GUI.MainFrame.Poses.Levantado.Visible=false
+	SE_GUI.MainFrame.Poses.Agaixado.Visible=false
+	SE_GUI.MainFrame.Poses.Deitado.Visible=true
+	char.Humanoid.WalkSpeed = ACS_Client:GetAttribute("Surrender") and 0 or gameRules.ProneWalksSpeed
+	char.Humanoid.JumpPower=0
+end
+function Lean()
+	TS:Create(char.Humanoid,TweenInfo.new(.3),{CameraOffset=Vector3.new(CameraX,CameraY,0)}):Play()
+	Stance:FireServer(Stances,Virar)
+	SE_GUI.MainFrame.Poses.Esg_Left.Visible  = Virar==-1
+	SE_GUI.MainFrame.Poses.Esg_Right.Visible = Virar==1
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 20. LEAN SPRING
+-- ───────────────────────────────────────────────────────────────────
+local LeanSpring=SpringMod.new(0); LeanSpring.d=1; LeanSpring.s=20
+local LEAN_ANGLE=math.rad(-15)
+local lastLeanCF=CFrame.new()
+Run:BindToRenderStep("ACS_LeanUpdate",200,function()
+	LeanSpring.t=LEAN_ANGLE*Virar
+	local newCF=CFrame.fromAxisAngle(Vector3.new(0,0,1),LeanSpring.p)
+	cam.CFrame=cam.CFrame*(lastLeanCF:Inverse()*newCF)
+	lastLeanCF=newCF
+end)
+
+-- ───────────────────────────────────────────────────────────────────
+-- 21. BULLETS / RAYCAST
+-- ───────────────────────────────────────────────────────────────────
+local function CheckForHumanoid(inst)
+	if not inst then return false,nil end
+	local hum = inst.Parent:FindFirstChildOfClass("Humanoid")
+		or  inst.Parent.Parent:FindFirstChildOfClass("Humanoid")
+	return hum~=nil, hum
+end
+
+local BODY_NAMES = {Head=true,["Right Arm"]=true,["Left Arm"]=true,["Right Leg"]=true,["Left Leg"]=true,
+	UpperTorso=true,LowerTorso=true,RightUpperArm=true,RightLowerArm=true,RightHand=true,
+	LeftUpperArm=true,LeftLowerArm=true,LeftHand=true,RightUpperLeg=true,RightLowerLeg=true,
+	RightFoot=true,LeftUpperLeg=true,LeftLowerLeg=true,LeftFoot=true,Armor=true,EShield=true}
+
+local IGNORE_PARENTS = {Top=true,Helmet=true,Up=true,Down=true,Face=true,Olho=true,
+	Headset=true,Numero=true,Vest=true,Chest=true,Waist=true,Back=true,Belt=true,
+	Leg1=true,Leg2=true,Arm1=true,Arm2=true}
+
+local function shouldIgnore(inst)
+	if not inst then return false end
+	return inst.Name=="Ignorable" or inst.Name=="Glass" or inst.Name=="Ignore"
+		or IGNORE_PARENTS[inst.Parent and inst.Parent.Name or ""]
+end
+
+local function CastRay(Bullet, Origin)
+	if not Bullet then return end
+	local Bpos2=cam.CFrame.Position
+	local rp=RaycastParams.new()
+	rp.FilterDescendantsInstances=Ignore_Model; rp.FilterType=Enum.RaycastFilterType.Blacklist; rp.IgnoreWater=true
+
+	while Bullet do
+		Run.Heartbeat:Wait()
+		if not Bullet.Parent then break end
+		local Bpos=Bullet.Position
+		if (Bpos-Origin).Magnitude>7000 then Bullet:Destroy(); break end
+
+		for _, plyr in ipairs(game.Players:GetChildren()) do
+			if plyr:IsA("Player") and plyr~=plr and plyr.Character then
+				local head=plyr.Character:FindFirstChild("Head")
+				if head and (head.Position-Bpos).Magnitude<=25 then
+					Evt.Whizz:FireServer(plyr)
+					Evt.Suppression:FireServer(plyr,1,nil,nil)
+				end
+			end
+		end
+
+		local res=workspace:Raycast(Bpos2,(Bpos-Bpos2),rp)
+		if res then
+			local h=res.Instance
+			if h and (h.Parent:IsA("Accessory") or h.Parent:IsA("Hat")) then
+				for _, pl in ipairs(game.Players:GetPlayers()) do
+					if pl.Character then
+						for _, acc in ipairs(pl.Character:GetChildren()) do
+							if acc:IsA("Accessory") then table.insert(Ignore_Model,acc) end
+						end
+					end
+				end
+				CastRay(Bullet,Origin); break
+			end
+			if shouldIgnore(h) then table.insert(Ignore_Model,h); CastRay(Bullet,Origin); break end
+			if not BODY_NAMES[h.Name] and (h.Transparency>=1 or not h.CanCollide) then
+				table.insert(Ignore_Model,h); CastRay(Bullet,Origin); break
+			end
+
+			Bullet:Destroy()
+			local dist=(res.Position-Origin).Magnitude
+			HitMod.HitEffect(Ignore_Model,res.Position,h,res.Normal,res.Material,WeaponData)
+			Evt.HitEffect:FireServer(res.Position,h,res.Normal,res.Material,WeaponData)
+
+			local fh,hum=CheckForHumanoid(h)
+			if fh and hum.Health>0 and WeaponData then
+				local zone=3
+				if h.Name=="Head" or IGNORE_PARENTS[h.Parent and h.Parent.Name or ""] then zone=1
+				elseif h.Name=="Torso" or h.Name:match("Torso") or h.Name:match("Arm") or h.Name:match("Hand")
+					or h.Name=="Right Arm" or h.Name=="Left Arm" then zone=2 end
+				Evt.Damage:InvokeServer(WeaponTool,hum,dist,zone,WeaponData,ModTable,nil,nil,SKP_01.."-"..plr.UserId)
+			end
+			break
+		end
+		Bpos2=Bullet.Position
+	end
+end
+
+local Tracers=0
+local function TracerCalc()
+	if not (WeaponData.Tracer or WeaponData.BulletFlare) then return false end
+	if WeaponData.RandomTracer.Enabled then return math.random(1,100)<=WeaponData.RandomTracer.Chance end
+	if Tracers>=WeaponData.TracerEveryXShots then Tracers=0; return true end
+	Tracers+=1; return false
+end
+
+local function CreateBullet()
+	local Bullet=Instance.new("Part",ACS_Workspace.Client)
+	Bullet.Name="Bullet"; Bullet.CanCollide=false; Bullet.Shape=Enum.PartType.Ball
+	Bullet.Transparency=1; Bullet.Size=Vector3.new(1,1,1)
+	local handle=WeaponInHand.Handle
+	local Origin   =handle.Muzzle.WorldPosition
+	local Direction=handle.Muzzle.WorldCFrame.LookVector
+		+ handle.Muzzle.WorldCFrame.UpVector*(((WeaponData.BulletDrop*WeaponData.CurrentZero/4)/WeaponData.MuzzleVelocity)/2)
+	local wm=WeaponData.WalkMult*ModTable.WalkMult; local sp=charspeed
+	local div = aimming and WeaponData.Bullets<=1 and (10*WeaponData.AimSpreadReduction) or 10
+	local spread=CFrame.Angles(
+		math.rad(RAND(-BSpread-(sp*wm),BSpread+(sp*wm))/div),
+		math.rad(RAND(-BSpread-(sp*wm),BSpread+(sp*wm))/div),
+		math.rad(RAND(-BSpread-(sp*wm),BSpread+(sp*wm))/div))
+	Direction=spread*Direction
+	local visible=TracerCalc()
+	local BColor=WeaponData.RainbowMode and Color3.fromRGB(math.random(0,255),math.random(0,255),math.random(0,255)) or WeaponData.TracerColor
+	if visible then
+		if gameRules.ReplicatedBullets then Evt.ServerBullet:FireServer(Origin,Direction,WeaponData,ModTable) end
+		if WeaponData.Tracer then
+			local a1=Instance.new("Attachment",Bullet); a1.Position=Vector3.new(-.05,0,0)
+			local a2=Instance.new("Attachment",Bullet); a2.Position=Vector3.new(.05,0,0)
+			local trail=Instance.new("Trail",Bullet)
+			trail.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(1,1)})
+			trail.WidthScale=NumberSequence.new({NumberSequenceKeypoint.new(0,2),NumberSequenceKeypoint.new(1,1)})
+			trail.Color=ColorSequence.new(BColor); trail.Texture="rbxassetid://232918622"
+			trail.TextureMode=Enum.TextureMode.Stretch; trail.FaceCamera=true
+			trail.LightEmission=1; trail.LightInfluence=0; trail.Lifetime=.25
+			trail.Attachment0=a1; trail.Attachment1=a2
+		end
+		if WeaponData.BulletFlare then
+			local bg=Instance.new("BillboardGui",Bullet); bg.Adornee=Bullet; bg.Enabled=false
+			local sz=math.random(275,375)/10; bg.Size=UDim2.new(sz,0,sz,0); bg.LightInfluence=0
+			local fl=Instance.new("ImageLabel",bg); fl.BackgroundTransparency=1; fl.Size=UDim2.new(1,0,1,0)
+			fl.Image="rbxassetid://1047066405"; fl.ImageTransparency=math.random(2,5)/15; fl.ImageColor3=BColor
+			task.delay(.1,function() if Bullet:FindFirstChild("BillboardGui") then Bullet.BillboardGui.Enabled=true end end)
+		end
+	end
+	local bf=Instance.new("BodyForce",Bullet)
+	bf.Force=Vector3.new(0,Bullet:GetMass()*196.2-WeaponData.BulletDrop*196.2,0)
+	Bullet.CFrame=CFrame.new(Origin,Origin+Direction)
+	Bullet:ApplyImpulse(Direction*WeaponData.MuzzleVelocity*ModTable.MuzzleVelocity)
+	game.Debris:AddItem(Bullet,5)
+	CastRay(Bullet,Origin)
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 22. GUN FX / RECOIL / SHOOT / JAM / RELOAD
+-- ───────────────────────────────────────────────────────────────────
+local function GunFx()
+	local muzzle=WeaponInHand.Handle.Muzzle
+	if Suppressor then muzzle.Supressor:Play() else muzzle.Fire:Play() end
+	if FlashHider then muzzle["Smoke"]:Emit(10) else muzzle["FlashFX[Flash]"]:Emit(10); muzzle["Smoke"]:Emit(10) end
+	if BSpread then
+		BSpread     =math.min(WeaponData.MaxSpread*ModTable.MaxSpread, BSpread+WeaponData.AimInaccuracyStepAmount*ModTable.AimInaccuracyStepAmount)
+		RecoilPower =math.min(WeaponData.MaxRecoilPower*ModTable.MaxRecoilPower, RecoilPower+WeaponData.RecoilPowerStepAmount*ModTable.RecoilPowerStepAmount)
+	end
+	generateBullet+=1; LastSpreadUpdate=time()
+	local slide=WeaponInHand.Handle.Slide
+	if Ammo>0 or not WeaponData.SlideLock then
+		TS:Create(slide,TweenInfo.new(30/WeaponData.ShootRate,Enum.EasingStyle.Linear,Enum.EasingDirection.InOut,0,true),{C0=WeaponData.SlideEx:inverse()}):Play()
+	else
+		TS:Create(slide,TweenInfo.new(30/WeaponData.ShootRate,Enum.EasingStyle.Linear,Enum.EasingDirection.InOut),{C0=WeaponData.SlideEx:inverse()}):Play()
+	end
+	WeaponInHand.Handle.Chamber.Smoke:Emit(10)
+	WeaponInHand.Handle.Chamber.Shell:Emit(1)
+end
+
+local function JamChance()
+	if WeaponData.CanBreak and not WeaponData.Jammed and Ammo-1>0 then
+		if math.random(1000)<=2 then WeaponData.Jammed=true; WeaponInHand.Handle.Click:Play() end
+	end
+end
+
+local function Recoil()
+	local name=WeaponData and WeaponData.RecoilProfile or "Rifle556"
+	local profile=GetRecoilProfile(name) or GetRecoilProfile("Rifle556")
+	if not profile then return end
+	if gunRecoilState.currentProfile~=profile then gunRecoilState:SetProfile(profile) end
+
+	local adsVKS=profile.adsViewKickScale or 0.35
+	local adsRCS=profile.adsRecoilCFScale or 0.45
+	local adsCRP=profile.adsCamRecoilPower or 0.18
+	local hipRS =profile.hipRecoilScale or 0.20
+	local hipVKS=profile.hipVMKickScale or 0.20
+
+	local mult=(RecoilPower or 1)*5.5
+	if aimming     then mult=mult*(profile.aimMultiplier or 0.30) end
+	if Crouched    then mult=mult*(profile.crouchMultiplier or 0.65) end
+	if BipodActive then mult=mult*0.3 end
+	if charspeed>0.1 then mult=mult*(profile.moveMultiplier or 1.2) end
+	if not aimming then mult=mult*hipRS end
+	if aimming     then mult=mult*adsRCS end
+
+	gunRecoilState:Kick(profile,mult)
+	if aimming then
+		local cr=gunRecoilState:GetCameraRecoil()
+		cameraspring:accelerate(Vector3.new(math.rad(cr.Y)*adsCRP,math.rad(cr.X)*adsCRP,0))
+	end
+
+	local kick=(aimming and 0.55 or 1.0)*(BipodActive and 0.4 or 1)
+		*(not aimming and (WeaponData.HipRecoilMult or 1.15) or 1)
+		*(aimming and (WeaponData.ADSRecoilMult or 0.85) or 1)
+	if not aimming then kick=kick*hipVKS end
+	local kvm=kick*(aimming and adsVKS or 1)*0.75*0.345
+
+	VMKickPos:accelerate(Vector3.new(0,1.15*kvm*0.83,-1.55*kvm))
+	VMKickRot:accelerate(Vector3.new(math.rad(3.4)*kvm*0.83,
+		math.rad(RAND(-2.2,2.2,.5))*kvm, math.rad(RAND(-1.5,2.2,.5))*kvm))
+end
+
+function Shoot()
+	if WeaponData and WeaponData.Type=="Gun" and not shooting and not reloading then
+		if reloading or runKeyDown or SafeMode or CheckingMag then mouse1down=false; return end
+		if Ammo<=0 or WeaponData.Jammed then WeaponInHand.Handle.Click:Play(); mouse1down=false; return end
+		mouse1down=true
+		local function doShot()
+			Evt.Atirar:FireServer(WeaponTool,Suppressor,FlashHider)
+			for _=1,WeaponData.Bullets do Thread:Spawn(CreateBullet) end
+			Ammo-=1; GunFx(); JamChance(); UpdateGui(); Thread:Spawn(Recoil)
+		end
+		task.spawn(function()
+			if WeaponData.ShootType==1 then
+				shooting=true; doShot(); task.wait(60/WeaponData.ShootRate); shooting=false
+			elseif WeaponData.ShootType==2 then
+				for _=1,WeaponData.BurstShot do
+					if shooting or Ammo<=0 or not mouse1down or WeaponData.Jammed then break end
+					shooting=true; doShot(); task.wait(60/WeaponData.ShootRate); shooting=false
+				end
+			elseif WeaponData.ShootType==3 then
+				while mouse1down do
+					if shooting or Ammo<=0 or WeaponData.Jammed then break end
+					shooting=true; doShot(); task.wait(60/WeaponData.ShootRate); shooting=false
+				end
+			elseif WeaponData.ShootType==4 or WeaponData.ShootType==5 then
+				shooting=true; doShot(); PumpAnim(); RunCheck(); shooting=false
+			end
+		end)
+	elseif WeaponData and WeaponData.Type=="Melee" and not runKeyDown then
+		if not shooting then
+			shooting=true
+			local rp=RaycastParams.new(); rp.FilterDescendantsInstances=Ignore_Model
+			rp.FilterType=Enum.RaycastFilterType.Blacklist; rp.IgnoreWater=true
+			local res=workspace:Raycast(cam.CFrame.Position,cam.CFrame.LookVector*WeaponData.BladeRange,rp)
+			if res then
+				local fh,hum=CheckForHumanoid(res.Instance)
+				HitMod.HitEffect(Ignore_Model,res.Position,res.Instance,res.Normal,res.Material,WeaponData)
+				Evt.HitEffect:FireServer(res.Position,res.Instance,res.Normal,res.Material,WeaponData)
+				if fh and hum.Health>0 then
+					local z=(res.Instance.Name=="Head") and 1 or (res.Instance.Name:match("Torso") or res.Instance.Name:match("Arm")) and 2 or 3
+					Thread:Spawn(function()
+						Evt.Damage:InvokeServer(WeaponTool,hum,0,z,WeaponData,ModTable,nil,nil,SKP_01.."-"..plr.UserId)
+					end)
+				end
+			end
+			meleeAttack(); RunCheck(); shooting=false
+		end
+	end
+end
+
+function Jammed()
+	if WeaponData.Type~="Gun" or not WeaponData.Jammed then return end
+	mouse1down=false; reloading=true; SafeMode=false
+	GunStance=0; Evt.GunStance:FireServer(GunStance,nil); UpdateGui()
+	JammedAnim(); WeaponData.Jammed=false; UpdateGui()
+	reloading=false; RunCheck()
+end
+
+function Reload()
+	if WeaponData.Type~="Gun" or StoredAmmo<=0 then return end
+	if not (Ammo<WeaponData.Ammo or (WeaponData.IncludeChamberedBullet and Ammo<WeaponData.Ammo+1)) then return end
+	mouse1down=false; reloading=true; SafeMode=false
+	GunStance=0; Evt.GunStance:FireServer(GunStance,nil); UpdateGui()
+
+	if WeaponData.ShellInsert then
+		local function insertOne()
+			if StoredAmmo<=0 or Ammo>=WeaponData.Ammo or CancelReload then return false end
+			ReloadAnim(); Ammo+=1; StoredAmmo-=1; UpdateGui(); return true
+		end
+		if Ammo==0 then TacticalReloadAnim(); Ammo+=1; StoredAmmo-=1; UpdateGui() end
+		for _=1,WeaponData.Ammo do if not insertOne() then break end end
+	else
+		if Ammo>0 then ReloadAnim() else TacticalReloadAnim() end
+		if Ammo-(WeaponData.Ammo-StoredAmmo)<0 then Ammo=Ammo+StoredAmmo; StoredAmmo=0
+		elseif Ammo<=0 then StoredAmmo=StoredAmmo-(WeaponData.Ammo-Ammo); Ammo=WeaponData.Ammo
+		elseif WeaponData.IncludeChamberedBullet then StoredAmmo=StoredAmmo-(WeaponData.Ammo-Ammo)-1; Ammo=WeaponData.Ammo+1
+		else StoredAmmo=StoredAmmo-(WeaponData.Ammo-Ammo); Ammo=WeaponData.Ammo
+		end
+	end
+	CancelReload=false; reloading=false; RunCheck(); UpdateGui()
+	IdleAnim()
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 23. GRENADE
+-- ───────────────────────────────────────────────────────────────────
+function Grenade()
+	if GRDebounce then return end
+	GRDebounce=true; GrenadeReady()
+	repeat task.wait() until not CookGrenade
+	if WeaponTool and WeaponData then
+		GrenadeThrow()
+		Evt.Grenade:FireServer(WeaponTool,WeaponData,cam.CFrame,cam.CFrame.LookVector,Power,SKP_01.."-"..plr.UserId)
+		unset()
+	end
+end
+function GrenadeMode()
+	if Power>=150 then Power=100; SE_GUI.GrenadeForce.Text="Mid Throw"
+	elseif Power>=100 then Power=50; SE_GUI.GrenadeForce.Text="Low Throw"
+	else Power=150; SE_GUI.GrenadeForce.Text="High Throw" end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 24. CAMERA RECOIL
+-- ───────────────────────────────────────────────────────────────────
+local lastCamSpringCF=CFrame.new()
+local function renderCam()
+	local newCF=CFrame.Angles(cameraspring.p.x,cameraspring.p.y,cameraspring.p.z)
+	cam.CFrame=cam.CFrame*(lastCamSpringCF:Inverse()*newCF)
+	lastCamSpringCF=newCF
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 25. HEAD MOVEMENT
+-- ───────────────────────────────────────────────────────────────────
+local HalfStep=false
+local function HeadMovement()
+	if char.Humanoid.Health<=0 then return end
+	local dir=char.HumanoidRootPart.CFrame:toObjectSpace(cam.CFrame).lookVector
+	if Neck and char.Humanoid.RigType==Enum.HumanoidRigType.R15 and not char.Humanoid.PlatformStand then
+		HalfStep=not HalfStep
+		local neckCF=CFNew(0,YOffset,0)*CFAng(-Asin(char.UpperTorso.CFrame.lookVector.Y),-Asin(dir.X/1.15),0)*CFAng(Asin(dir.Y),0,0)
+		TS:Create(Neck,TweenInfo.new(.2,Enum.EasingStyle.Sine,Enum.EasingDirection.Out),{C0=neckCF}):Play()
+		if HalfStep then Evt.HeadRot:FireServer(neckCF) end
+	end
+end
+
+-- ───────────────────────────────────────────────────────────────────
+-- 26. KEYBINDS
+-- ───────────────────────────────────────────────────────────────────
+CAS:BindAction("Run",        handleAction,false,Enum.KeyCode.LeftShift)
+CAS:BindAction("Stand",      handleAction,false,Enum.KeyCode.X)
+CAS:BindAction("Crouch",     handleAction,false,Enum.KeyCode.C)
+CAS:BindAction("NVG",        handleAction,false,Enum.KeyCode.N)
+CAS:BindAction("ToggleWalk", handleAction,false,Enum.KeyCode.Z)
+CAS:BindAction("LeanLeft",   handleAction,false,Enum.KeyCode.Q)
+CAS:BindAction("LeanRight",  handleAction,false,Enum.KeyCode.E)
+
+-- ───────────────────────────────────────────────────────────────────
+-- 27. EQUIP WORKER
+-- ───────────────────────────────────────────────────────────────────
+local function RequestEquip(tool)
+	EquipToken = (EquipToken or 0) + 1
+	PendingTool = tool
+	if SwitchWorkerRunning then return end
+	SwitchWorkerRunning = true
+	print("[ACS] RequestEquip:", tool and tool.Name, "EquipToken:", EquipToken, "Parent:", tool and tool.Parent)
+	task.spawn(function()
+		while PendingTool do
+			local t=PendingTool; PendingTool=nil
+			if State.ToolEquip then unset() end
+			if t and t.Parent==char then setup(t) end
+		end
+		SwitchWorkerRunning=false
+	end)
+end
+
+local function AttachTool(tool)
+	if not tool or not tool:IsA("Tool") then return end
+	if not tool:FindFirstChild("ACS_Settings") then return end
+
+	local ok, cfg = pcall(require, tool.ACS_Settings)
+	if not ok then
+		warn("[ACS] ACS_Settings require failed:", tool.Name, cfg)
+		return
+	end
+
+	if cfg.Type ~= "Gun" and cfg.Type ~= "Melee" and cfg.Type ~= "Grenade" then
+		return
+	end
+
+	-- не подключать дважды
+	if tool:GetAttribute("ACS_Attached") then return end
+	tool:SetAttribute("ACS_Attached", true)
+
+	print("[ACS] Attached tool:", tool.Name, "Type:", cfg.Type)
+
+	tool.Equipped:Connect(function()
+		-- Важно: Equip должен быть когда tool.Parent == char
+		if tool.Parent == char then
+			RequestEquip(tool)
+		end
+	end)
+
+	tool.Unequipped:Connect(function()
+		-- безопасно: если это текущий тул — убрать
+		if tool == State.WeaponTool and State.ToolEquip then
+			unset()
+		end
+	end)
+end
+
+-- подключить существующие инструменты в Backpack и Character
+if plr:FindFirstChild("Backpack") then
+	for _,t in ipairs(plr.Backpack:GetChildren()) do
+		AttachTool(t)
+	end
+	plr.Backpack.ChildAdded:Connect(AttachTool)
+end
+
+for _,t in ipairs(char:GetChildren()) do
+	AttachTool(t)
+end
+char.ChildAdded:Connect(AttachTool)
+
+char.ChildRemoved:Connect(function(Tool)
+	task.delay(0.05,function()
+		if Tool==WeaponTool and ToolEquip then unset() end
+	end)
+end)
+
+-- ───────────────────────────────────────────────────────────────────
+-- 28. HUMANOID EVENTS
+-- ───────────────────────────────────────────────────────────────────
+Humanoid.Running:Connect(function(speed)
+	charspeed=speed; running=speed>0.1
+	if runKeyDown and running and not script.Parent:GetAttribute("Injured") then
+		char.Humanoid.WalkSpeed=gameRules.RunWalkSpeed
+		if not CheckingMag and not reloading and WeaponData and WeaponData.Type~="Grenade"
+			and (GunStance==0 or GunStance==2 or GunStance==3) then
+			GunStance=3; Evt.GunStance:FireServer(GunStance,nil); SprintAnim()
+		end
+	end
+end)
+Humanoid.Swimming:Connect(function(speed) if Swimming then charspeed=speed; running=speed>0.1 end end)
+Humanoid.Died:Connect(function()
+	TS:Create(char.Humanoid,TweenInfo.new(1),{CameraOffset=Vector3.new(0,0,0)}):Play()
+	ChangeStance=false; Stand(); Stances=0; Virar=0; CameraX=0; CameraY=0; Lean()
+	Equipped=0; unset(); Evt.NVG:Fire(false)
+end)
+Humanoid.Seated:Connect(function(IsSeated,Seat)
+	if IsSeated and Seat and Seat:IsA("VehicleSeat") then
+		unset(); Humanoid:UnequipTools(); CanLean=false
+		plr.CameraMaxZoomDistance=gameRules.VehicleMaxZoom
+	else plr.CameraMaxZoomDistance=game.StarterPlayer.CameraMaxZoomDistance end
+	if IsSeated then Sentado=true; Stances=0; Virar=0; CameraX=0; CameraY=0; Stand(); Lean()
+	else Sentado=false; CanLean=true end
+end)
+Humanoid.Changed:Connect(function(p)
+	if gameRules.AntiBunnyHop then
+		if p=="Jump" and Humanoid.Sit and Humanoid.SeatPart then Humanoid.Sit=false
+		elseif p=="Jump" and not Humanoid.Sit then
+			if JumpDelay then Humanoid.Jump=false; return end
+			JumpDelay=true
+			task.delay(gameRules.JumpCoolDown,function() JumpDelay=false end)
+		end
+	end
+end)
+Humanoid.StateChanged:Connect(function(_,state)
+	if state==Enum.HumanoidStateType.Swimming then
+		Swimming=true; Stances=0; Virar=0; CameraX=0; CameraY=0; Stand(); Lean()
+	else Swimming=false end
+	if gameRules.EnableFallDamage then
+		if state==Enum.HumanoidStateType.Freefall and not falling then
+			falling=true
+			task.spawn(function()
+				local vel,peak=0,0
+				while falling do vel=HumanoidRootPart.Velocity.Magnitude; peak+=1; Thread:Wait() end
+				local dmg=(vel-gameRules.MaxVelocity)*gameRules.DamageMult
+				if dmg>5 and peak>20 then
+					cameraspring:accelerate(Vector3.new(-dmg/20,0,math.random(-dmg,dmg)/5))
+					SwaySpring:accelerate(Vector3.new(math.random(-dmg,dmg)/5,dmg/5,0))
+					local snd=PastaFx.FallDamage:Clone(); snd.Parent=plr.PlayerGui
+					snd.Volume=dmg/Humanoid.MaxHealth; snd:Play(); Debris:AddItem(snd,snd.TimeLength)
+					Evt.Damage:InvokeServer(nil,nil,nil,nil,nil,nil,true,dmg,SKP_01.."-"..plr.UserId)
+				end
+			end)
+		elseif state==Enum.HumanoidStateType.Landed or state==Enum.HumanoidStateType.Dead then
+			falling=false; SwaySpring:accelerate(Vector3.new(0,2.5,0))
+		end
+	end
+end)
+
+-- ───────────────────────────────────────────────────────────────────
+-- 29. MOUSE WHEEL
+-- ───────────────────────────────────────────────────────────────────
+mouse.WheelBackward:Connect(function()
+	if ToolEquip and not CheckingMag and not aimming and not reloading and not runKeyDown and AnimDebounce and WeaponData and WeaponData.Type=="Gun" then
+		mouse1down=false
+		if     GunStance==0  then SafeMode=true;  GunStance=-1; UpdateGui(); Evt.GunStance:FireServer(-1,nil);  LowReady()
+		elseif GunStance==-1 then SafeMode=true;  GunStance=-2; UpdateGui(); Evt.GunStance:FireServer(-2,nil);  Patrol()
+		elseif GunStance==1  then SafeMode=false; GunStance=0;  UpdateGui(); Evt.GunStance:FireServer(0,nil);   IdleAnim()
+		end
+	end
+	if ToolEquip and aimming and Sens>5 then Sens-=5; UpdateGui(); UIS.MouseDeltaSensitivity=Sens/100 end
+end)
+mouse.WheelForward:Connect(function()
+	if ToolEquip and not CheckingMag and not aimming and not reloading and not runKeyDown and AnimDebounce and WeaponData and WeaponData.Type=="Gun" then
+		mouse1down=false
+		if     GunStance==0  then SafeMode=true;  GunStance=1;  UpdateGui(); Evt.GunStance:FireServer(1,nil);   HighReady()
+		elseif GunStance==-1 then SafeMode=false; GunStance=0;  UpdateGui(); Evt.GunStance:FireServer(0,nil);   IdleAnim()
+		elseif GunStance==-2 then SafeMode=true;  GunStance=-1; UpdateGui(); Evt.GunStance:FireServer(-1,nil);  LowReady()
+		end
+	end
+	if ToolEquip and aimming and Sens<100 then Sens+=5; UpdateGui(); UIS.MouseDeltaSensitivity=Sens/100 end
+end)
+
+script.Parent:GetAttributeChangedSignal("Injured"):Connect(function()
+	if script.Parent:GetAttribute("Injured") and runKeyDown then
+		runKeyDown=false; Stand()
+		if not CheckingMag and not reloading and WeaponData and WeaponData.Type~="Grenade"
+			and (GunStance==0 or GunStance==2 or GunStance==3) then
+			GunStance=0; Evt.GunStance:FireServer(0,nil); IdleAnim()
+		end
+	end
+	if Stances==0 then Stand() elseif Stances==1 then Crouch() end
+end)
+
+-- ───────────────────────────────────────────────────────────────────
+-- 30. HEALTH HUD
+-- ───────────────────────────────────────────────────────────────────
+BloodScreen:Play(); BloodScreenLow:Play()
+Humanoid.HealthChanged:Connect(function(hp)
+	SE_GUI.Efeitos.Health.ImageTransparency    = (hp-Humanoid.MaxHealth/2)/(Humanoid.MaxHealth/2)
+	SE_GUI.Efeitos.LowHealth.ImageTransparency = hp/(Humanoid.MaxHealth/2)
+end)
+
+-- ───────────────────────────────────────────────────────────────────
+-- 31. RENDERSTEP  — НЕТ wait/task.wait/yield внутри!
+-- ───────────────────────────────────────────────────────────────────
+Run.RenderStepped:Connect(function(dt)
+	HeadMovement()
+	if aimming then renderCam() end
+
+	if not (ViewModel and LArm and RArm and WeaponInHand) then return end
+
+	local md=UIS:GetMouseDelta()
+
+	-- Sway
+	local ss=aimming and 0.22 or 1
+	SwaySpring:accelerate(Vector3.new((md.X/60)*ss,(md.Y/60)*ss,0))
+	local sv=SwaySpring.p
+	local Sway=CFrame.Angles(sv.Y,sv.X,sv.X)
+
+	-- Lag
+	local rotK=aimming and LAG_ROT_ADS or LAG_ROT_HIP
+	local posK=aimming and LAG_POS_ADS or LAG_POS_HIP
+	local lagMx=aimming and LAG_MAX_ADS or LAG_MAX_HIP
+	LagSpring.t=Vector3.new(math.clamp(-md.Y*rotK,-lagMx,lagMx),math.clamp(-md.X*rotK,-lagMx,lagMx),0)
+	local lp=LagSpring.p
+	local lagCF=CFrame.new(math.clamp(-md.X*posK,-0.08,0.08),math.clamp(-md.Y*posK,-0.06,0.06),0)*CFrame.Angles(lp.X,lp.Y,0)
+
+	-- Bipod
+	if BipodAtt and UnderBarrelAtt then
+		local bRay=Ray.new(UnderBarrelAtt.Main.Position,Vector3.new(0,-1.75,0))
+		local bHit,bPos=workspace:FindPartOnRayWithIgnoreList(bRay,Ignore_Model,false,true)
+		if bHit then
+			CanBipod=true
+			if BipodActive and not runKeyDown and (GunStance==0 or GunStance==2) then
+				TS:Create(SE_GUI.GunHUD.Att.Bipod,TweenInfo.new(.1,Enum.EasingStyle.Linear),{ImageColor3=Color3.fromRGB(255,255,255),ImageTransparency=.123}):Play()
+				if not aimming then BipodCF=lerpCF_dt(BipodCF,CFrame.new(0,((UnderBarrelAtt.Main.Position-bPos).Magnitude-1)*(-1.5),0),14,dt)
+				else BipodCF=BipodCF:Lerp(CFrame.new(),.2) end
+			else
+				BipodActive=false; BipodCF=BipodCF:Lerp(CFrame.new(),.2)
+				TS:Create(SE_GUI.GunHUD.Att.Bipod,TweenInfo.new(.1,Enum.EasingStyle.Linear),{ImageColor3=Color3.fromRGB(255,255,0),ImageTransparency=.5}):Play()
+			end
+		else
+			BipodActive=false; CanBipod=false; BipodCF=BipodCF:Lerp(CFrame.new(),.2)
+			TS:Create(SE_GUI.GunHUD.Att.Bipod,TweenInfo.new(.1,Enum.EasingStyle.Linear),{ImageColor3=Color3.fromRGB(255,0,0),ImageTransparency=.5}):Play()
+		end
+	end
+
+	-- VMKick
+	local kp=VMKickPos.p; local kr=VMKickRot.p
+	vmKickCF=CFrame.new(kp)*CFrame.Angles(kr.X,kr.Y,kr.Z)
+
+	-- VM_Bump
+	do
+		local bumpTarget=CFrame.new(); local pushTarget=CFrame.new(); VM_Bump=false
+		if ToolEquip and WeaponData and WeaponData.Type=="Gun" and AnimDebounce and not reloading and not CheckingMag then
+			local hbCF=cam.CFrame*CFrame.new(0,0,-0.5)*gunbobcf
+			local rp=RaycastParams.new(); rp.FilterType=Enum.RaycastFilterType.Exclude
+			rp.FilterDescendantsInstances={char,cam,ViewModel,WeaponInHand,ACS_Workspace.Client,ACS_Workspace.Server}
+			rp.IgnoreWater=true
+			local hit=workspace:Raycast(hbCF.Position,hbCF.LookVector*3.0,rp)
+			if hit and hit.Instance and hit.Instance:IsA("BasePart") and hit.Instance.Transparency<1 and hit.Instance.Name~="HitIgnore" then
+				VM_Bump=true; bumpTarget=BUMP_POSE
+				local d=(hit.Position-hbCF.Position).Magnitude
+				if d<2.5 then pushTarget=CFrame.new(0,0,math.clamp((2.5-d)/2.5,0,1)*1.5) end
+			end
+		end
+		bumpCF=lerpCF_dt(bumpCF,bumpTarget,20,dt)
+		bumpPushCF=lerpCF_dt(bumpPushCF,pushTarget,22,dt)
+		if VM_Bump then
+			if aimming then
+				if not BumpAdsCut then BumpAdsCut=true; aimming=false; ADS(false)
+				else aimming=false end
+			end
+		else BumpAdsCut=false end
+	end
+
+	AnimPart.CFrame=cam.CFrame*NearZ*BipodCF*maincf*bumpPushCF*bumpCF*lagCF*gunbobcf*aimcf*recoilcf*vmKickCF
+
+	-- AimPart / maincf lerp
+	if CurAimpart and aimming and AnimDebounce and not CheckingMag then
+		local useNV=NVG and WeaponInHand.AimPart:FindFirstChild("NVAim")
+		if not useNV then
+			-- [ОПТИМИЗАЦИЯ] Tween создаётся только при смене FOV, не каждый кадр
+			if cam.FieldOfView ~= (AimPartMode==1 and ModTable.ZoomValue or ModTable.Zoom2Value) then
+				TS:Create(cam,AimTween,{FieldOfView=AimPartMode==1 and ModTable.ZoomValue or ModTable.Zoom2Value}):Play()
+			end
+			maincf=lerpCF_dt(maincf,maincf*CFrame.new(0,0,-.5)*Sway:inverse()*CurAimpart.CFrame:toObjectSpace(cam.CFrame),14,dt)
+		else
+			-- [ОПТИМИЗАЦИЯ] Tween создаётся только при смене FOV, не каждый кадр
+			if cam.FieldOfView ~= 70 then
+				TS:Create(cam,AimTween,{FieldOfView=70}):Play()
+			end
+			maincf=maincf:Lerp(maincf*CFrame.new(0,0,-.5)*Sway:inverse()*(WeaponInHand.AimPart.CFrame*WeaponInHand.AimPart.NVAim.CFrame):toObjectSpace(cam.CFrame),0.2)
+		end
+	else
+		-- [ОПТИМИЗАЦИЯ] Tween создаётся только при смене FOV, не каждый кадр
+		if cam.FieldOfView ~= 70 then
+			TS:Create(cam,AimTween,{FieldOfView=70}):Play()
+		end
+		maincf=lerpCF_dt(maincf,(WeaponData and WeaponData.MainCFrame or CFrame.new())*Sway:inverse(),14,dt)
+	end
+
+	-- Reticle
+	for _, p in ipairs(WeaponInHand:GetDescendants()) do
+		if p:IsA("BasePart") and p.Name=="SightMark" then
+			local ds=p.CFrame:pointToObjectSpace(cam.CFrame.Position)/p.Size
+			p.SurfaceGui.Border.Scope.Position=UDim2.new(.5+ds.x,0,.5-ds.y,0)
+		end
+	end
+
+	recoilcf=gunRecoilState:Update(dt)
+
+	-- Crosshair
+	if WeaponData and WeaponData.CrossHair then
+		if aimming then
+			CHup=lerpU2_dt(CHup,UDim2.new(.5,0,.5,0),14,dt); CHdown=lerpU2_dt(CHdown,UDim2.new(.5,0,.5,0),14,dt)
+			CHleft=lerpU2_dt(CHleft,UDim2.new(.5,0,.5,0),14,dt); CHright=lerpU2_dt(CHright,UDim2.new(.5,0,.5,0),14,dt)
+		else
+			local N=((WeaponData.CrosshairOffset+BSpread+charspeed*WeaponData.WalkMult*ModTable.WalkMult)/50)/10
+			CHup=lerpU2_dt(CHup,UDim2.new(.5,0,.5-N,0),35,dt); CHdown=lerpU2_dt(CHdown,UDim2.new(.5,0,.5+N,0),35,dt)
+			CHleft=lerpU2_dt(CHleft,UDim2.new(.5-N,0,.5,0),35,dt); CHright=lerpU2_dt(CHright,UDim2.new(.5+N,0,.5,0),35,dt)
+		end
+	else
+		CHup=lerpU2_dt(CHup,UDim2.new(.5,0,.5,0),14,dt); CHdown=lerpU2_dt(CHdown,UDim2.new(.5,0,.5,0),14,dt)
+		CHleft=lerpU2_dt(CHleft,UDim2.new(.5,0,.5,0),14,dt); CHright=lerpU2_dt(CHright,UDim2.new(.5,0,.5,0),14,dt)
+	end
+	Crosshair.Position=UDim2.new(0,mouse.X,0,mouse.Y)
+	Crosshair.Up.Position=CHup; Crosshair.Down.Position=CHdown
+	Crosshair.Left.Position=CHleft; Crosshair.Right.Position=CHright
+
+	-- Spread decay
+	if BSpread and WeaponData then
+		local ct=time()
+		if ct-LastSpreadUpdate>(60/WeaponData.ShootRate)*2 and not shooting and BSpread>WeaponData.MinSpread*ModTable.MinSpread then
+			BSpread=math.max(WeaponData.MinSpread*ModTable.MinSpread,BSpread-WeaponData.AimInaccuracyDecrease*ModTable.AimInaccuracyDecrease)
+		end
+		if ct-LastSpreadUpdate>(60/WeaponData.ShootRate)*1.5 and not shooting and RecoilPower>WeaponData.MinRecoilPower*ModTable.MinRecoilPower then
+			RecoilPower=math.max(WeaponData.MinRecoilPower*ModTable.MinRecoilPower,RecoilPower-WeaponData.RecoilPowerStepAmount*ModTable.RecoilPowerStepAmount)
+		end
+	end
+
+	-- Gun bob
+	if running then
+		gunbobcf=lerpCF_dt(gunbobcf,
+			CFrame.new(.025*(charspeed/10)*math.sin(tick()*8),.025*(charspeed/10)*math.cos(tick()*16),0)
+				*CFrame.Angles(math.rad(math.sin(tick()*16)*(charspeed/10)),math.rad(math.cos(tick()*8)*(charspeed/10)),0),
+			6.3,dt)
+	else
+		gunbobcf=lerpCF_dt(gunbobcf,CFrame.new(.005*math.sin(tick()*1.5),.005*math.cos(tick()*2.5),0),6.3,dt)
+	end
+
+	-- Laser
+	if LaserActive and Pointer then
+		Pointer.Transparency=(IRmode and not NVG) and 1 or 0
+		local beamOn=NVG or not gameRules.RealisticLaser
+		for _, d in ipairs(WeaponInHand:GetDescendants()) do if d:IsA("Beam") then d.Enabled=beamOn end end
+		for _, Key in ipairs(WeaponInHand:GetDescendants()) do
+			if Key:IsA("BasePart") and Key.Name=="LaserPoint" then
+				local lr=Ray.new(Key.CFrame.Position,Key.CFrame.LookVector*1000)
+				local h,p=workspace:FindPartOnRayWithIgnoreList(lr,Ignore_Model,false,true)
+				Pointer.CFrame=h and CFrame.new(p,p+Vector3.new(0,1,0)) or CFrame.new(cam.CFrame.Position+Key.CFrame.LookVector*2000,Key.CFrame.LookVector)
+				if HalfStep and gameRules.ReplicatedLaser then Evt.SVLaser:FireServer(p,1,Pointer.Color,IRmode,WeaponTool) end
+				break
+			end
+		end
+	end
+end)
+
+-- ───────────────────────────────────────────────────────────────────
+-- 32. REFIL
+-- ───────────────────────────────────────────────────────────────────
+Evt.Refil.OnClientEvent:Connect(function(Tool,Infinite,Stored)
+	local data=require(Tool.ACS_Settings)
+	local added=math.min(data.MaxStoredAmmo-StoredAmmo,Stored.Value)
+	StoredAmmo+=added; data.StoredAmmo=StoredAmmo; UpdateGui()
+	if not Infinite then Evt.Refil:FireServer(Stored,added) end
+end)
