@@ -1,0 +1,47 @@
+local TS = game:GetService('TweenService')
+local rad = math.rad(1)
+local deg = math.deg(1)
+local cf = CFrame.new
+local angles = CFrame.Angles
+local v3 = Vector3.new
+local self = {}
+
+self.GunModelFixed 	= true
+self.GunCFrame 		= cf(0.35, -0.732, -1) * angles(0 * rad, 0 * rad, 0 * rad)
+self.LArmCFrame 	= cf(-0.303, -0.221, -0.402) * angles(106 * rad, 25 * rad, 5 * rad)
+self.RArmCFrame 	= cf(0.21, -0.219, 0.947) * angles(95 * rad, 8 * rad, -6 * rad)
+
+self.ResetSlide = function(objs)
+	TS:Create(objs[4].Handle.Slide, TweenInfo.new(30 / objs[6],Enum.EasingStyle.Sine), {C0 = cf()}):Play()
+end
+
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+--//Server Animations
+------//Idle Position
+self.SV_GunPos 		= CFrame.new(-.3, -1, -0.4) * CFrame.Angles(math.rad(-90), math.rad(0), math.rad(0));
+
+self.SV_RightArmPos = CFrame.new(-0.85, 0.1, -1.2) * CFrame.Angles(math.rad(-90), math.rad(0), math.rad(0));
+self.SV_LeftArmPos 	= CFrame.new(1.05,0.9,-1.4) * CFrame.Angles(math.rad(-100),math.rad(25),math.rad(-20));
+
+------//High Ready Animations
+self.RightHighReady = CFrame.new(-1, -1, -1.5) * CFrame.Angles(math.rad(-160), math.rad(0), math.rad(0));
+self.LeftHighReady 	= CFrame.new(.85,-0.35,-1.15) * CFrame.Angles(math.rad(-170),math.rad(60),math.rad(15));
+
+------//Low Ready Animations
+self.RightLowReady 	= CFrame.new(-1, 0.5, -1.25) * CFrame.Angles(math.rad(-60), math.rad(0), math.rad(0));
+self.LeftLowReady 	= CFrame.new(1.25,1.15,-1.35) * CFrame.Angles(math.rad(-60),math.rad(35),math.rad(-25));
+
+------//Patrol Animations
+self.RightPatrol 	= CFrame.new(-1, -.35, -1.5) * CFrame.Angles(math.rad(-80), math.rad(-80), math.rad(0));
+self.LeftPatrol 	= CFrame.new(1,1.25,-.75) * CFrame.Angles(math.rad(-90),math.rad(-45),math.rad(-25));
+
+------//Aim Animations
+self.RightAim 		= CFrame.new(-.575, 0.1, -1) * CFrame.Angles(math.rad(-90), math.rad(0), math.rad(0));
+self.LeftAim 		= CFrame.new(1.4,0.25,-1.45) * CFrame.Angles(math.rad(-120),math.rad(35),math.rad(-25));
+
+------//Sprinting Animations
+self.RightSprint 	= CFrame.new(-1, 0.5, -1.25) * CFrame.Angles(math.rad(-60), math.rad(0), math.rad(0));
+self.LeftSprint 	= CFrame.new(1.25,1.15,-1.35) * CFrame.Angles(math.rad(-60),math.rad(35),math.rad(-25));
+
+return self
