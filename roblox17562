@@ -1,0 +1,2585 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-14 12:37:14
+-- Luau version 6, Types version 3
+-- Time taken: 0.041600 seconds
+
+-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+local Parent_upvr = script.Parent
+local Torso = Parent_upvr:WaitForChild("Torso")
+local Right_Shoulder_upvr = Torso:WaitForChild("Right Shoulder")
+local Left_Shoulder_upvr = Torso:WaitForChild("Left Shoulder")
+local Right_Hip_upvr = Torso:WaitForChild("Right Hip")
+local Left_Hip_upvr = Torso:WaitForChild("Left Hip")
+local Humanoid_upvr = Parent_upvr:WaitForChild("Humanoid")
+local var24_upvw = 16
+local var25_upvw
+if game.ReplicatedStorage:FindFirstChild("SPH_Assets") then
+	local SPH_Assets = game.ReplicatedStorage.SPH_Assets
+	local module = require(SPH_Assets:WaitForChild("GameConfig"))
+	animconfig = require(SPH_Assets:FindFirstChild("GameConfig"):WaitForChild("AnimationsConfig")) -- Setting global
+	var24_upvw = module.walkSpeed
+	var25_upvw = module.fallDamageDist
+else
+	animconfig = require(game.ReplicatedStorage:WaitForChild("AnimationsConfig")) -- Setting global
+	var24_upvw = Humanoid_upvr.WalkSpeed
+	var25_upvw = animconfig["Landing Mechanics"].RevertToDefaultFallDamageDistance
+end
+local pcall_result1, pcall_result2 = pcall(function() -- Line 39
+	return UserSettings():IsUserFeatureEnabled("UserAnimateScaleRun")
+end)
+local var31_upvr = pcall_result1 and pcall_result2
+local function _() -- Line 42, Named "getRigScale"
+	--[[ Upvalues[2]:
+		[1]: var31_upvr (readonly)
+		[2]: Parent_upvr (readonly)
+	]]
+	if var31_upvr then
+		return Parent_upvr:GetScale()
+	end
+	return 1
+end
+local tbl = {
+	pose = "Standing";
+	currentAnim = "";
+	currentAnimInstance = nil;
+	currentAnimTrack = nil;
+	currentAnimKeyframeHandler = nil;
+	currentAnimLength = 0;
+	currentAnimSpeed = 1;
+	animTable = {};
+	animNames = {
+		idle = {{
+			defaultid = "rbxassetid://180435571";
+			weight = 9;
+		}, {
+			defaultid = "rbxassetid://180435792";
+			weight = 1;
+		}};
+		swim = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		swimidle = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		walk = {{
+			defaultid = "rbxassetid://180426354";
+			weight = 10;
+		}};
+		run = {{
+			defaultid = "run.xml";
+			weight = 10;
+		}};
+		jump = {{
+			defaultid = "rbxassetid://125750702";
+			weight = 10;
+		}};
+		fall = {{
+			defaultid = "rbxassetid://180436148";
+			weight = 10;
+		}};
+		land = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		climb = {{
+			defaultid = "rbxassetid://180436334";
+			weight = 10;
+		}};
+		sit = {{
+			defaultid = "rbxassetid://178130996";
+			weight = 10;
+		}};
+		toolnone = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		toolslash = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		toollunge = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		wave = {{
+			defaultid = "rbxassetid://128777973";
+			weight = 10;
+		}};
+		point = {{
+			defaultid = "rbxassetid://128853357";
+			weight = 10;
+		}};
+		dance1 = {{
+			defaultid = "rbxassetid://182435998";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491037";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491065";
+			weight = 10;
+		}};
+		dance2 = {{
+			defaultid = "rbxassetid://182436842";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491248";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491277";
+			weight = 10;
+		}};
+		dance3 = {{
+			defaultid = "rbxassetid://182436935";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491368";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491423";
+			weight = 10;
+		}};
+		laugh = {{
+			defaultid = "rbxassetid://129423131";
+			weight = 10;
+		}};
+		cheer = {{
+			defaultid = "rbxassetid://129423030";
+			weight = 10;
+		}};
+	};
+	dances = {"dance1", "dance2", "dance3"};
+	emoteNames = {
+		wave = false;
+		point = false;
+		dance1 = true;
+		dance2 = true;
+		dance3 = true;
+		laugh = false;
+		cheer = false;
+	};
+}
+local pose_upvw = tbl.pose
+local currentAnim_upvw = tbl.currentAnim
+local currentAnimInstance_upvw = tbl.currentAnimInstance
+local currentAnimTrack_upvw = tbl.currentAnimTrack
+local currentAnimKeyframeHandler_upvw = tbl.currentAnimKeyframeHandler
+local currentAnimSpeed_upvw = tbl.currentAnimSpeed
+local animTable_upvr = tbl.animTable
+local animNames_upvr = tbl.animNames
+local emoteNames_upvr = tbl.emoteNames
+local HumanoidRootPart_upvr = Parent_upvr:WaitForChild("HumanoidRootPart")
+local RaycastParams_new_result1_upvr = RaycastParams.new()
+RaycastParams_new_result1_upvr.IgnoreWater = false
+RaycastParams_new_result1_upvr.RespectCanCollide = false
+RaycastParams_new_result1_upvr.FilterType = Enum.RaycastFilterType.Exclude
+RaycastParams_new_result1_upvr.FilterDescendantsInstances = {Parent_upvr}
+task.wait()
+if script:FindFirstChild("land").LandAnim.AnimationId ~= "rbxassetid://"..0 then
+	local Humanoid_upvr_2 = Parent_upvr:WaitForChild("Humanoid")
+	local var97_upvw = 0
+	local var98_upvw = false
+	local RevertToDefaultLandDelay_upvw = animconfig["Landing Mechanics"].RevertToDefaultLandDelay
+	local currentAnimLength_upvw = tbl.currentAnimLength
+	local Y_2_upvw = HumanoidRootPart_upvr.Position.Y
+	game:GetService("RunService").RenderStepped:Connect(function() -- Line 172
+		--[[ Upvalues[12]:
+			[1]: pose_upvw (read and write)
+			[2]: Humanoid_upvr_2 (readonly)
+			[3]: var97_upvw (read and write)
+			[4]: HumanoidRootPart_upvr (readonly)
+			[5]: RaycastParams_new_result1_upvr (readonly)
+			[6]: var98_upvw (read and write)
+			[7]: var25_upvw (read and write)
+			[8]: Humanoid_upvr (readonly)
+			[9]: RevertToDefaultLandDelay_upvw (read and write)
+			[10]: currentAnimLength_upvw (read and write)
+			[11]: Parent_upvr (readonly)
+			[12]: Y_2_upvw (read and write)
+		]]
+		if pose_upvw == "Dead" then
+		else
+			if Humanoid_upvr_2.Sit then
+				var97_upvw = 0
+			end
+			local workspace_Raycast_result1 = workspace:Raycast(HumanoidRootPart_upvr.Position, Vector3.new(0, -3.0999, 0), RaycastParams_new_result1_upvr)
+			if workspace_Raycast_result1 and workspace_Raycast_result1.Instance then
+				if var98_upvw then
+					var98_upvw = false
+					if var25_upvw + animconfig["Landing Mechanics"].FallDistanceAddition < var97_upvw and pose_upvw ~= "Landing" then
+						pose_upvw = "Landing"
+						playAnimation("land", 0.1, Humanoid_upvr)
+						RevertToDefaultLandDelay_upvw = currentAnimLength_upvw
+						if RevertToDefaultLandDelay_upvw == 0 then
+							RevertToDefaultLandDelay_upvw = animconfig["Landing Mechanics"].RevertToDefaultLandDelay
+						end
+						if animconfig["Landing Mechanics"].FindDefaultLandDelay then
+							if currentAnimLength_upvw == 0 then
+								warn("FIND LAND DELAY |", "Animation Loading... LAND AGAIN.")
+							else
+								warn("FIND LAND DELAY |", RevertToDefaultLandDelay_upvw, "- Use as Default LandDelay")
+							end
+						end
+						task.wait(RevertToDefaultLandDelay_upvw)
+						pose_upvw = "Standing"
+						onMoving(Parent_upvr.PrimaryPart.Velocity.Magnitude)
+					end
+					var97_upvw = 0
+					-- KONSTANTWARNING: GOTO [106] #80
+				end
+			else
+				var98_upvw = true
+			end
+			local Y = HumanoidRootPart_upvr.Position.Y
+			if Y < Y_2_upvw and var98_upvw then
+				var97_upvw += Y_2_upvw - Y
+			else
+				var97_upvw = 0
+			end
+			Y_2_upvw = Y
+		end
+	end)
+end
+function configureAnimationSet(arg1, arg2) -- Line 218
+	--[[ Upvalues[1]:
+		[1]: animTable_upvr (readonly)
+	]]
+	if animTable_upvr[arg1] ~= nil then
+		for _, v in pairs(animTable_upvr[arg1].connections) do
+			v:Disconnect()
+		end
+	end
+	animTable_upvr[arg1] = {}
+	animTable_upvr[arg1].count = 0
+	animTable_upvr[arg1].totalWeight = 0
+	animTable_upvr[arg1].connections = {}
+	local SOME = script:FindFirstChild(arg1)
+	if SOME ~= nil then
+		table.insert(animTable_upvr[arg1].connections, SOME.ChildAdded:Connect(function(arg1_2) -- Line 233
+			--[[ Upvalues[2]:
+				[1]: arg1 (readonly)
+				[2]: arg2 (readonly)
+			]]
+			configureAnimationSet(arg1, arg2)
+		end))
+		table.insert(animTable_upvr[arg1].connections, SOME.ChildRemoved:Connect(function(arg1_3) -- Line 234
+			--[[ Upvalues[2]:
+				[1]: arg1 (readonly)
+				[2]: arg2 (readonly)
+			]]
+			configureAnimationSet(arg1, arg2)
+		end))
+		local var116 = 1
+		for _, v_2 in pairs(SOME:GetChildren()) do
+			if v_2:IsA("Animation") then
+				table.insert(animTable_upvr[arg1].connections, v_2.Changed:Connect(function(arg1_4) -- Line 238
+					--[[ Upvalues[2]:
+						[1]: arg1 (readonly)
+						[2]: arg2 (readonly)
+					]]
+					configureAnimationSet(arg1, arg2)
+				end))
+				animTable_upvr[arg1][var116] = {}
+				animTable_upvr[arg1][var116].anim = v_2
+				local Weight = v_2:FindFirstChild("Weight")
+				if Weight == nil then
+					animTable_upvr[arg1][var116].weight = 1
+				else
+					animTable_upvr[arg1][var116].weight = Weight.Value
+				end
+				animTable_upvr[arg1].count = animTable_upvr[arg1].count + 1
+				animTable_upvr[arg1].totalWeight = animTable_upvr[arg1].totalWeight + animTable_upvr[arg1][var116].weight
+			end
+		end
+	end
+	if animTable_upvr[arg1].count <= 0 then
+		for i_3, v_3 in pairs(arg2) do
+			v_2 = animTable_upvr[arg1]
+			v_2[i_3] = {}
+			v_2 = animTable_upvr[arg1][i_3]
+			v_2.anim = Instance.new("Animation")
+			v_2 = animTable_upvr[arg1][i_3].anim
+			v_2.Name = arg1
+			v_2 = animTable_upvr[arg1][i_3].anim
+			v_2.AnimationId = v_3.defaultid
+			v_2 = animTable_upvr[arg1][i_3]
+			v_2.weight = v_3.weight
+			v_2 = animTable_upvr[arg1]
+			v_2.count = animTable_upvr[arg1].count + 1
+			v_2 = animTable_upvr[arg1]
+			v_2.totalWeight = animTable_upvr[arg1].totalWeight + v_3.weight
+		end
+	end
+end
+function scriptChildModified(arg1) -- Line 271
+	--[[ Upvalues[1]:
+		[1]: animNames_upvr (readonly)
+	]]
+	local var125 = animNames_upvr[arg1.Name]
+	if var125 ~= nil then
+		configureAnimationSet(arg1.Name, var125)
+	end
+end
+script.ChildAdded:Connect(scriptChildModified)
+script.ChildRemoved:Connect(scriptChildModified)
+if Humanoid_upvr then
+	local _ = Humanoid_upvr:FindFirstChildOfClass("Animator")
+else
+end
+if nil then
+	for _, v_4 in ipairs(nil:GetPlayingAnimationTracks()) do
+		v_4:Stop(0)
+		v_4:Destroy()
+	end
+end
+for i_5, _ in pairs(animNames_upvr) do
+	-- KONSTANTWARNING: Failed to evaluate expression, replaced with nil [670.48]
+	configureAnimationSet(i_5, nil)
+end
+local var133_upvw = "None"
+local var134_upvw = 0
+function stopAllAnimations() -- Line 312
+	--[[ Upvalues[5]:
+		[1]: currentAnim_upvw (read and write)
+		[2]: emoteNames_upvr (readonly)
+		[3]: currentAnimInstance_upvw (read and write)
+		[4]: currentAnimKeyframeHandler_upvw (read and write)
+		[5]: currentAnimTrack_upvw (read and write)
+	]]
+	local var135
+	if emoteNames_upvr[currentAnim_upvw] ~= nil and emoteNames_upvr[var135] == false then
+		var135 = "idle"
+	end
+	currentAnim_upvw = ""
+	currentAnimInstance_upvw = nil
+	if currentAnimKeyframeHandler_upvw ~= nil then
+		currentAnimKeyframeHandler_upvw:Disconnect()
+	end
+	if currentAnimTrack_upvw ~= nil then
+		currentAnimTrack_upvw:Stop()
+		currentAnimTrack_upvw:Destroy()
+		currentAnimTrack_upvw = nil
+	end
+	return var135
+end
+function setAnimationSpeed(arg1) -- Line 334
+	--[[ Upvalues[2]:
+		[1]: currentAnimSpeed_upvw (read and write)
+		[2]: currentAnimTrack_upvw (read and write)
+	]]
+	if arg1 ~= currentAnimSpeed_upvw then
+		currentAnimSpeed_upvw = arg1
+		currentAnimTrack_upvw:AdjustSpeed(currentAnimSpeed_upvw)
+	end
+end
+function keyFrameReachedFunc(arg1) -- Line 354
+	--[[ Upvalues[4]:
+		[1]: currentAnim_upvw (read and write)
+		[2]: emoteNames_upvr (readonly)
+		[3]: currentAnimSpeed_upvw (read and write)
+		[4]: Humanoid_upvr (readonly)
+	]]
+	if arg1 == "End" then
+		local var136
+		if emoteNames_upvr[currentAnim_upvw] ~= nil and emoteNames_upvr[var136] == false then
+			var136 = "idle"
+		end
+		playAnimation(var136, 0, Humanoid_upvr)
+		setAnimationSpeed(currentAnimSpeed_upvw)
+	end
+end
+local var137_upvw
+function playAnimation(arg1, arg2, arg3) -- Line 370
+	--[[ Upvalues[8]:
+		[1]: animTable_upvr (readonly)
+		[2]: currentAnimInstance_upvw (read and write)
+		[3]: currentAnimTrack_upvw (read and write)
+		[4]: currentAnimSpeed_upvw (read and write)
+		[5]: var137_upvw (read and write)
+		[6]: currentAnimLength_upvw (read and write)
+		[7]: currentAnim_upvw (read and write)
+		[8]: currentAnimKeyframeHandler_upvw (read and write)
+	]]
+	local var139
+	while animTable_upvr[arg1][var139].weight < math.random(1, animTable_upvr[arg1].totalWeight) do
+		var139 += 1
+	end
+	local anim = animTable_upvr[arg1][var139].anim
+	if anim ~= currentAnimInstance_upvw then
+		if currentAnimTrack_upvw ~= nil then
+			currentAnimTrack_upvw:Stop(arg2)
+			currentAnimTrack_upvw:Destroy()
+		end
+		currentAnimTrack_upvw = arg3:LoadAnimation(anim)
+		currentAnimSpeed_upvw = 1
+		var137_upvw = currentAnimTrack_upvw.Priority
+		currentAnimTrack_upvw.Priority = Enum.AnimationPriority.Core
+		currentAnimLength_upvw = currentAnimTrack_upvw.Length / currentAnimSpeed_upvw
+		currentAnimTrack_upvw:Play(arg2)
+		currentAnim_upvw = arg1
+		currentAnimInstance_upvw = anim
+		if currentAnimKeyframeHandler_upvw ~= nil then
+			currentAnimKeyframeHandler_upvw:Disconnect()
+		end
+		currentAnimKeyframeHandler_upvw = currentAnimTrack_upvw.KeyframeReached:Connect(keyFrameReachedFunc)
+	end
+end
+local var141_upvw = ""
+local var142_upvw
+local var143_upvw
+local var144_upvw
+function toolKeyFrameReachedFunc(arg1) -- Line 442
+	--[[ Upvalues[2]:
+		[1]: var141_upvw (read and write)
+		[2]: Humanoid_upvr (readonly)
+	]]
+	if arg1 == "End" then
+		playToolAnimation(var141_upvw, 0, Humanoid_upvr)
+	end
+end
+function playToolAnimation(arg1, arg2, arg3, arg4) -- Line 450
+	--[[ Upvalues[5]:
+		[1]: animTable_upvr (readonly)
+		[2]: var143_upvw (read and write)
+		[3]: var142_upvw (read and write)
+		[4]: var141_upvw (read and write)
+		[5]: var144_upvw (read and write)
+	]]
+	local var146
+	while animTable_upvr[arg1][var146].weight < math.random(1, animTable_upvr[arg1].totalWeight) do
+		var146 += 1
+	end
+	local var147
+	local anim_2 = animTable_upvr[arg1][var146].anim
+	if var143_upvw ~= anim_2 then
+		if var142_upvw ~= nil then
+			var142_upvw:Stop()
+			var142_upvw:Destroy()
+			var147 = 0
+		end
+		var142_upvw = arg3:LoadAnimation(anim_2)
+		if arg4 then
+			var142_upvw.Priority = arg4
+		end
+		var142_upvw:Play(var147)
+		var141_upvw = arg1
+		var143_upvw = anim_2
+		var144_upvw = var142_upvw.KeyframeReached:Connect(toolKeyFrameReachedFunc)
+	end
+end
+function stopToolAnimations() -- Line 485
+	--[[ Upvalues[4]:
+		[1]: var141_upvw (read and write)
+		[2]: var144_upvw (read and write)
+		[3]: var143_upvw (read and write)
+		[4]: var142_upvw (read and write)
+	]]
+	if var144_upvw ~= nil then
+		var144_upvw:Disconnect()
+	end
+	var141_upvw = ""
+	var143_upvw = nil
+	if var142_upvw ~= nil then
+		var142_upvw:Stop()
+		var142_upvw:Destroy()
+		var142_upvw = nil
+	end
+	return var141_upvw
+end
+local idleSpeedSafetyRange_upvr = animconfig["Velocity Mechanics"].idleSpeedSafetyRange
+local walkSpeedSafetyRange_upvr = animconfig["Velocity Mechanics"].walkSpeedSafetyRange
+function onMoving(arg1) -- Line 508
+	--[[ Upvalues[10]:
+		[1]: pose_upvw (read and write)
+		[2]: var31_upvr (readonly)
+		[3]: Parent_upvr (readonly)
+		[4]: idleSpeedSafetyRange_upvr (readonly)
+		[5]: Humanoid_upvr (readonly)
+		[6]: emoteNames_upvr (readonly)
+		[7]: currentAnim_upvw (read and write)
+		[8]: var24_upvw (read and write)
+		[9]: walkSpeedSafetyRange_upvr (readonly)
+		[10]: currentAnimInstance_upvw (read and write)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 35 start (CF ANALYSIS FAILED)
+	local var151
+	if var151 == "Landing" then return end
+	if var31_upvr then
+		var151 = Parent_upvr:GetScale()
+	else
+		var151 = 1
+	end
+	var151 = idleSpeedSafetyRange_upvr
+	-- KONSTANTERROR: [0] 1. Error Block 35 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [16] 14. Error Block 8 start (CF ANALYSIS FAILED)
+	var151 = Humanoid_upvr.MoveDirection.Magnitude
+	-- KONSTANTERROR: [16] 14. Error Block 8 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [24] 19. Error Block 28 start (CF ANALYSIS FAILED)
+	var151 = emoteNames_upvr[currentAnim_upvw]
+	-- KONSTANTERROR: [24] 19. Error Block 28 end (CF ANALYSIS FAILED)
+end
+function onDied() -- Line 531
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "Dead"
+	task.wait(1)
+	if script then
+		script:Destroy()
+	end
+end
+function onJumping() -- Line 539
+	--[[ Upvalues[3]:
+		[1]: Humanoid_upvr (readonly)
+		[2]: var134_upvw (read and write)
+		[3]: pose_upvw (read and write)
+	]]
+	playAnimation("jump", 0.1, Humanoid_upvr)
+	var134_upvw = 0.3
+	pose_upvw = "Jumping"
+end
+function onClimbing(arg1) -- Line 545
+	--[[ Upvalues[5]:
+		[1]: var31_upvr (readonly)
+		[2]: Parent_upvr (readonly)
+		[3]: Humanoid_upvr (readonly)
+		[4]: pose_upvw (read and write)
+		[5]: var97_upvw (read and write)
+	]]
+	local var152
+	if var31_upvr then
+		var152 = Parent_upvr:GetScale()
+	else
+		var152 = 1
+	end
+	var152 = playAnimation
+	var152("climb", 0.1, Humanoid_upvr)
+	var152 = setAnimationSpeed
+	var152(arg1 / var152 / 12)
+	var152 = "Climbing"
+	pose_upvw = var152
+	var152 = 0
+	var97_upvw = var152
+end
+function onGettingUp() -- Line 554
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "GettingUp"
+end
+function onFreeFall() -- Line 558
+	--[[ Upvalues[3]:
+		[1]: pose_upvw (read and write)
+		[2]: var134_upvw (read and write)
+		[3]: Humanoid_upvr (readonly)
+	]]
+	if pose_upvw == "Landing" then
+	else
+		if var134_upvw <= 0 then
+			playAnimation("fall", 0.3, Humanoid_upvr)
+		end
+		pose_upvw = "FreeFall"
+	end
+end
+function onFallingDown() -- Line 566
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "FallingDown"
+end
+function onSeated() -- Line 570
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "Seated"
+end
+function onPlatformStanding() -- Line 574
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "PlatformStanding"
+end
+function onSwimming(arg1) -- Line 578
+	--[[ Upvalues[2]:
+		[1]: Humanoid_upvr (readonly)
+		[2]: pose_upvw (read and write)
+	]]
+	if Humanoid_upvr.MoveDirection.Magnitude ~= 0 then
+		if script:FindFirstChild("swim").SwimAnim.AnimationId ~= "rbxassetid://"..0 then
+			pose_upvw = "Swimming"
+		else
+			pose_upvw = "Running"
+		end
+	end
+	if script:FindFirstChild("swimidle").SwimIdleAnim.AnimationId ~= "rbxassetid://"..0 then
+		pose_upvw = "SwimmingIdle"
+	else
+		pose_upvw = "Standing"
+	end
+end
+function getTool() -- Line 594
+	--[[ Upvalues[1]:
+		[1]: Parent_upvr (readonly)
+	]]
+	for _, v_6 in ipairs(Parent_upvr:GetChildren()) do
+		if v_6.className == "Tool" then
+			return v_6
+		end
+	end
+	return nil
+end
+function getToolAnim(arg1) -- Line 601
+	for _, v_7 in ipairs(arg1:GetChildren()) do
+		if v_7.Name == "toolanim" and v_7.className == "StringValue" then
+			return v_7
+		end
+	end
+	return nil
+end
+function animateTool() -- Line 610
+	--[[ Upvalues[2]:
+		[1]: var133_upvw (read and write)
+		[2]: Humanoid_upvr (readonly)
+	]]
+	if var133_upvw == "None" then
+		playToolAnimation("toolnone", 0.1, Humanoid_upvr, Enum.AnimationPriority.Idle)
+	else
+		if var133_upvw == "Slash" then
+			playToolAnimation("toolslash", 0, Humanoid_upvr, Enum.AnimationPriority.Action)
+			return
+		end
+		if var133_upvw == "Lunge" then
+			playToolAnimation("toollunge", 0, Humanoid_upvr, Enum.AnimationPriority.Action)
+			return
+		end
+	end
+end
+function moveSit() -- Line 628
+	--[[ Upvalues[4]:
+		[1]: Right_Shoulder_upvr (readonly)
+		[2]: Left_Shoulder_upvr (readonly)
+		[3]: Right_Hip_upvr (readonly)
+		[4]: Left_Hip_upvr (readonly)
+	]]
+	Right_Shoulder_upvr.MaxVelocity = 0.15
+	Left_Shoulder_upvr.MaxVelocity = 0.15
+	Right_Shoulder_upvr:SetDesiredAngle(1.57)
+	Left_Shoulder_upvr:SetDesiredAngle(-1.57)
+	Right_Hip_upvr:SetDesiredAngle(1.57)
+	Left_Hip_upvr:SetDesiredAngle(-1.57)
+end
+local var163_upvw = 0
+local var164_upvw = 0
+function move(arg1) -- Line 639
+	--[[ Upvalues[11]:
+		[1]: var163_upvw (read and write)
+		[2]: var134_upvw (read and write)
+		[3]: pose_upvw (read and write)
+		[4]: Humanoid_upvr (readonly)
+		[5]: Right_Shoulder_upvr (readonly)
+		[6]: Left_Shoulder_upvr (readonly)
+		[7]: Right_Hip_upvr (readonly)
+		[8]: Left_Hip_upvr (readonly)
+		[9]: var133_upvw (read and write)
+		[10]: var164_upvw (read and write)
+		[11]: var143_upvw (read and write)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	var163_upvw = arg1
+	if 0 < var134_upvw then
+		var134_upvw -= arg1 - var163_upvw
+	end
+	if animconfig.DEBUG["Pose Warns"] then
+		warn(pose_upvw)
+	end
+	if pose_upvw == "Landing" then
+	else
+		local var165
+		if pose_upvw == "FreeFall" and var134_upvw <= 0 then
+			playAnimation("fall", 0.3, Humanoid_upvr)
+		else
+			if pose_upvw == "Seated" then
+				playAnimation("sit", 0.5, Humanoid_upvr)
+				return
+			end
+			if pose_upvw == "Walking" then
+				playAnimation("walk", 0.1, Humanoid_upvr)
+			elseif pose_upvw == "Running" then
+				playAnimation("run", 0.1, Humanoid_upvr)
+			elseif pose_upvw == "Swimming" then
+				playAnimation("swim", 0.1, Humanoid_upvr)
+			elseif pose_upvw == "SwimmingIdle" then
+				playAnimation("swimidle", 0.1, Humanoid_upvr)
+			elseif pose_upvw == "Dead" or pose_upvw == "GettingUp" or pose_upvw == "FallingDown" or pose_upvw == "Seated" or pose_upvw == "PlatformStanding" then
+				stopAllAnimations()
+				var165 = true
+			end
+		end
+		if var165 then
+			local var166 = 0.1 * math.sin(arg1 * 1)
+			Right_Shoulder_upvr:SetDesiredAngle(var166 + 0)
+			Left_Shoulder_upvr:SetDesiredAngle(var166 - 0)
+			Right_Hip_upvr:SetDesiredAngle(-var166)
+			Left_Hip_upvr:SetDesiredAngle(-var166)
+		end
+		local getTool_result1 = getTool()
+		if getTool_result1 and getTool_result1:FindFirstChild("Handle") then
+			local getToolAnim_result1 = getToolAnim(getTool_result1)
+			if getToolAnim_result1 then
+				var133_upvw = getToolAnim_result1.Value
+				getToolAnim_result1.Parent = nil
+				var164_upvw = arg1 + 0.3
+			end
+			if var164_upvw < arg1 then
+				var164_upvw = 0
+				var133_upvw = "None"
+			end
+			animateTool()
+			return
+		end
+		stopToolAnimations()
+		var133_upvw = "None"
+		var143_upvw = nil
+		var164_upvw = 0
+	end
+end
+Humanoid_upvr.Died:Connect(onDied)
+Humanoid_upvr.Running:Connect(onMoving)
+Humanoid_upvr.Jumping:Connect(onJumping)
+Humanoid_upvr.Climbing:Connect(onClimbing)
+Humanoid_upvr.GettingUp:Connect(onGettingUp)
+Humanoid_upvr.FreeFalling:Connect(onFreeFall)
+Humanoid_upvr.FallingDown:Connect(onFallingDown)
+Humanoid_upvr.Seated:Connect(onSeated)
+Humanoid_upvr.PlatformStanding:Connect(onPlatformStanding)
+Humanoid_upvr.Swimming:Connect(onSwimming)
+local dances_upvr = tbl.dances
+game:GetService("Players").LocalPlayer.Chatted:Connect(function(arg1) -- Line 725
+	--[[ Upvalues[4]:
+		[1]: dances_upvr (readonly)
+		[2]: pose_upvw (read and write)
+		[3]: emoteNames_upvr (readonly)
+		[4]: Humanoid_upvr (readonly)
+	]]
+	local var171
+	if arg1 == "/e dance" then
+		var171 = dances_upvr[math.random(1, #dances_upvr)]
+	elseif string.sub(arg1, 1, 3) == "/e " then
+		var171 = string.sub(arg1, 4)
+	elseif string.sub(arg1, 1, 7) == "/emote " then
+		var171 = string.sub(arg1, 8)
+	end
+	if pose_upvw == "Standing" and emoteNames_upvr[var171] ~= nil then
+		playAnimation(var171, 0.1, Humanoid_upvr)
+	end
+end)
+script:WaitForChild("PlayEmote").OnInvoke = function(arg1) -- Line 742
+	--[[ Upvalues[4]:
+		[1]: pose_upvw (read and write)
+		[2]: emoteNames_upvr (readonly)
+		[3]: Humanoid_upvr (readonly)
+		[4]: currentAnimTrack_upvw (read and write)
+	]]
+	if pose_upvw ~= "Standing" then return end
+	if emoteNames_upvr[arg1] ~= nil then
+		playAnimation(arg1, 0.1, Humanoid_upvr)
+		return true, currentAnimTrack_upvw
+	end
+	return false
+end
+playAnimation("idle", 0.1, Humanoid_upvr)
+pose_upvw = "Standing"
+while Parent_upvr.Parent ~= nil do
+	local _, wait_result2 = wait(0.1)
+	move(wait_result2)
+end
+
+
+
+
+                         ВТОРЙО СРИКПТ ИБО Я НЕ ЗНЮА КАКОЙ ИЗ НИХ оснвоной
+
+
+
+
+
+                         -- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-14 12:36:59
+-- Luau version 6, Types version 3
+-- Time taken: 0.140473 seconds
+
+local ReplicatedStorage_2 = game:GetService("ReplicatedStorage")
+local TweenService_upvr = game:GetService("TweenService")
+local Workspace_upvr_2 = game:GetService("Workspace")
+local StarterGui_upvr = game:GetService("StarterGui")
+local LocalPlayer_upvr_2 = game:GetService("Players").LocalPlayer
+local PlayerGui_upvr = LocalPlayer_upvr_2:WaitForChild("PlayerGui")
+local CurrentCamera_upvr_2 = Workspace_upvr_2.CurrentCamera
+local module_2_upvr = require(ReplicatedStorage_2:WaitForChild("GameConfig"))
+local SquadEvent_upvr = ReplicatedStorage_2:WaitForChild("SquadEvent")
+local GetPlayerSquad_upvr = ReplicatedStorage_2:WaitForChild("GetPlayerSquad")
+local tbl_24_upvr = {
+	Primary = Color3.fromRGB(220, 180, 100);
+	Accent = Color3.fromRGB(100, 150, 200);
+	Success = Color3.fromRGB(100, 180, 120);
+	Danger = Color3.fromRGB(200, 100, 100);
+	Background = Color3.fromRGB(0, 0, 0);
+	Premium = Color3.fromRGB(255, 215, 0);
+}
+local tbl_25_upvw = {}
+local var340_upvw
+local var341_upvw
+local var342_upvw
+local var343_upvw
+local var344_upvw = false
+local var345_upvw = 0
+local var346_upvw = false
+local var347_upvw
+local var348_upvw
+local function _(arg1, arg2) -- Line 49, Named "ShowNotification"
+	--[[ Upvalues[1]:
+		[1]: StarterGui_upvr (readonly)
+	]]
+	pcall(function() -- Line 50
+		--[[ Upvalues[3]:
+			[1]: StarterGui_upvr (copied, readonly)
+			[2]: arg1 (readonly)
+			[3]: arg2 (readonly)
+		]]
+		local tbl_20 = {
+			Title = "Squad System";
+		}
+		tbl_20.Text = arg1
+		tbl_20.Duration = arg2 or 3
+		StarterGui_upvr:SetCore("SendNotification", tbl_20)
+	end)
+end
+local function BlockPlayerMovement_upvr() -- Line 59, Named "BlockPlayerMovement"
+	--[[ Upvalues[3]:
+		[1]: LocalPlayer_upvr_2 (readonly)
+		[2]: var347_upvw (read and write)
+		[3]: var346_upvw (read and write)
+	]]
+	if not LocalPlayer_upvr_2.Character then
+	else
+		local Humanoid_6 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+		if not Humanoid_6 then return end
+		Humanoid_6.WalkSpeed = 0
+		Humanoid_6.JumpPower = 0
+		Humanoid_6.JumpHeight = 0
+		for _, v_4 in pairs(LocalPlayer_upvr_2.Character:GetChildren()) do
+			if v_4:IsA("Tool") then
+				v_4.Parent = LocalPlayer_upvr_2.Backpack
+			end
+		end
+		if var347_upvw then
+			var347_upvw:Disconnect()
+		end
+		var347_upvw = LocalPlayer_upvr_2.Character.ChildAdded:Connect(function(arg1) -- Line 79
+			--[[ Upvalues[2]:
+				[1]: var346_upvw (copied, read and write)
+				[2]: LocalPlayer_upvr_2 (copied, readonly)
+			]]
+			if arg1:IsA("Tool") and var346_upvw then
+				arg1.Parent = LocalPlayer_upvr_2.Backpack
+			end
+		end)
+	end
+end
+local function _() -- Line 86, Named "UnblockPlayerMovement"
+	--[[ Upvalues[2]:
+		[1]: LocalPlayer_upvr_2 (readonly)
+		[2]: var347_upvw (read and write)
+	]]
+	if not LocalPlayer_upvr_2.Character then
+	else
+		local Humanoid_3 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+		if not Humanoid_3 then return end
+		Humanoid_3.WalkSpeed = 16
+		Humanoid_3.JumpPower = 30
+		Humanoid_3.JumpHeight = 3
+		if var347_upvw then
+			var347_upvw:Disconnect()
+			var347_upvw = nil
+		end
+	end
+end
+local function RemoveBlur_upvr() -- Line 102, Named "RemoveBlur"
+	--[[ Upvalues[2]:
+		[1]: var342_upvw (read and write)
+		[2]: CurrentCamera_upvr_2 (readonly)
+	]]
+	if var342_upvw then
+		var342_upvw:Destroy()
+		var342_upvw = nil
+	end
+	for _, v in pairs(CurrentCamera_upvr_2:GetChildren()) do
+		if v:IsA("BlurEffect") then
+			v:Destroy()
+		end
+	end
+end
+local function _() -- Line 115, Named "CreateBlur"
+	--[[ Upvalues[3]:
+		[1]: RemoveBlur_upvr (readonly)
+		[2]: var342_upvw (read and write)
+		[3]: CurrentCamera_upvr_2 (readonly)
+	]]
+	RemoveBlur_upvr()
+	var342_upvw = Instance.new("BlurEffect")
+	var342_upvw.Name = "SquadMenuBlur"
+	var342_upvw.Size = 10
+	var342_upvw.Parent = CurrentCamera_upvr_2
+end
+local function _() -- Line 124, Named "RestoreCamera"
+	--[[ Upvalues[3]:
+		[1]: var343_upvw (read and write)
+		[2]: CurrentCamera_upvr_2 (readonly)
+		[3]: LocalPlayer_upvr_2 (readonly)
+	]]
+	if var343_upvw then
+		var343_upvw:Disconnect()
+		var343_upvw = nil
+	end
+	CurrentCamera_upvr_2.CameraType = Enum.CameraType.Custom
+	if LocalPlayer_upvr_2.Character then
+		local Humanoid_21 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+		if Humanoid_21 then
+			CurrentCamera_upvr_2.CameraSubject = Humanoid_21
+		end
+	end
+end
+local RunService_upvr_2 = game:GetService("RunService")
+local function SetupCamera_upvr() -- Line 140, Named "SetupCamera"
+	--[[ Upvalues[4]:
+		[1]: Workspace_upvr_2 (readonly)
+		[2]: CurrentCamera_upvr_2 (readonly)
+		[3]: var343_upvw (read and write)
+		[4]: RunService_upvr_2 (readonly)
+	]]
+	local CamPart_upvr = Workspace_upvr_2:FindFirstChild("CamPart")
+	if not CamPart_upvr then
+	else
+		CurrentCamera_upvr_2.CameraType = Enum.CameraType.Scriptable
+		if var343_upvw then
+			var343_upvw:Disconnect()
+		end
+		var343_upvw = RunService_upvr_2.RenderStepped:Connect(function() -- Line 150
+			--[[ Upvalues[2]:
+				[1]: CamPart_upvr (readonly)
+				[2]: CurrentCamera_upvr_2 (copied, readonly)
+			]]
+			if CamPart_upvr and CamPart_upvr.Parent then
+				CurrentCamera_upvr_2.CFrame = CamPart_upvr.CFrame
+			end
+		end)
+	end
+end
+local function _() -- Line 157, Named "CloseActiveDropdown"
+	--[[ Upvalues[1]:
+		[1]: var348_upvw (read and write)
+	]]
+	if var348_upvw and var348_upvw.Parent then
+		var348_upvw:Destroy()
+		var348_upvw = nil
+	end
+end
+local function ShowMemberOptionsMenu_upvr(arg1, arg2, arg3) -- Line 510, Named "ShowMemberOptionsMenu"
+	--[[ Upvalues[7]:
+		[1]: module_2_upvr (readonly)
+		[2]: LocalPlayer_upvr_2 (readonly)
+		[3]: var348_upvw (read and write)
+		[4]: tbl_25_upvw (read and write)
+		[5]: tbl_24_upvr (readonly)
+		[6]: TweenService_upvr (readonly)
+		[7]: SquadEvent_upvr (readonly)
+	]]
+	if not module_2_upvr.SquadLeaderSettings.ShowMemberOptions then
+	else
+		if arg2.Leader ~= LocalPlayer_upvr_2.UserId then return end
+		if arg1.UserId == LocalPlayer_upvr_2.UserId then return end
+		if var348_upvw and var348_upvw.Parent then
+			var348_upvw:Destroy()
+			var348_upvw = nil
+		end
+		local Frame_6 = Instance.new("Frame")
+		Frame_6.Name = "OptionsOverlay"
+		Frame_6.Size = UDim2.new(1, 0, 1, 0)
+		Frame_6.BackgroundTransparency = 1
+		Frame_6.BorderSizePixel = 0
+		Frame_6.ZIndex = 300
+		Frame_6.Parent = tbl_25_upvw.ScreenGui
+		var348_upvw = Frame_6
+		Frame_6.InputBegan:Connect(function(arg1_5) -- Line 528
+			--[[ Upvalues[1]:
+				[1]: var348_upvw (copied, read and write)
+			]]
+			if arg1_5.UserInputType == Enum.UserInputType.MouseButton1 and var348_upvw and var348_upvw.Parent then
+				var348_upvw:Destroy()
+				var348_upvw = nil
+			end
+		end)
+		local Frame_28_upvr = Instance.new("Frame")
+		Frame_28_upvr.Size = UDim2.new(0, 180, 0, 0)
+		Frame_28_upvr.Position = UDim2.new(0, arg3.X, 0, arg3.Y + 35)
+		Frame_28_upvr.BackgroundColor3 = tbl_24_upvr.Background
+		Frame_28_upvr.BackgroundTransparency = 0.1
+		Frame_28_upvr.BorderSizePixel = 0
+		Frame_28_upvr.ZIndex = 301
+		Frame_28_upvr.Parent = Frame_6
+		Instance.new("UICorner", Frame_28_upvr).CornerRadius = UDim.new(0, 6)
+		local UIStroke_2 = Instance.new("UIStroke", Frame_28_upvr)
+		UIStroke_2.Color = tbl_24_upvr.Primary
+		UIStroke_2.Thickness = 2
+		local UIListLayout = Instance.new("UIListLayout", Frame_28_upvr)
+		UIListLayout.Padding = UDim.new(0, 2)
+		local function CreateOption(arg1_6, arg2_3, arg3_3) -- Line 551
+			--[[ Upvalues[4]:
+				[1]: tbl_24_upvr (copied, readonly)
+				[2]: Frame_28_upvr (readonly)
+				[3]: TweenService_upvr (copied, readonly)
+				[4]: var348_upvw (copied, read and write)
+			]]
+			local TextButton_15_upvr = Instance.new("TextButton")
+			TextButton_15_upvr.Size = UDim2.new(1, 0, 0, 40)
+			TextButton_15_upvr.BackgroundColor3 = tbl_24_upvr.Background
+			TextButton_15_upvr.BackgroundTransparency = 0.3
+			TextButton_15_upvr.BorderSizePixel = 0
+			TextButton_15_upvr.Text = arg1_6
+			TextButton_15_upvr.Font = Enum.Font.GothamBold
+			TextButton_15_upvr.TextSize = 14
+			TextButton_15_upvr.TextColor3 = arg2_3
+			TextButton_15_upvr.AutoButtonColor = false
+			TextButton_15_upvr.ZIndex = 302
+			TextButton_15_upvr.Parent = Frame_28_upvr
+			Instance.new("UICorner", TextButton_15_upvr).CornerRadius = UDim.new(0, 4)
+			TextButton_15_upvr.MouseEnter:Connect(function() -- Line 567
+				--[[ Upvalues[2]:
+					[1]: TweenService_upvr (copied, readonly)
+					[2]: TextButton_15_upvr (readonly)
+				]]
+				TweenService_upvr:Create(TextButton_15_upvr, TweenInfo.new(0.1), {
+					BackgroundTransparency = 0;
+				}):Play()
+			end)
+			TextButton_15_upvr.MouseLeave:Connect(function() -- Line 571
+				--[[ Upvalues[2]:
+					[1]: TweenService_upvr (copied, readonly)
+					[2]: TextButton_15_upvr (readonly)
+				]]
+				TweenService_upvr:Create(TextButton_15_upvr, TweenInfo.new(0.1), {
+					BackgroundTransparency = 0.3;
+				}):Play()
+			end)
+			TextButton_15_upvr.MouseButton1Click:Connect(function() -- Line 575
+				--[[ Upvalues[2]:
+					[1]: arg3_3 (readonly)
+					[2]: var348_upvw (copied, read and write)
+				]]
+				arg3_3()
+				if var348_upvw and var348_upvw.Parent then
+					var348_upvw:Destroy()
+					var348_upvw = nil
+				end
+			end)
+		end
+		if module_2_upvr.SquadLeaderSettings.CanKickMembers then
+			CreateOption("⚠ Kick Member", tbl_24_upvr.Danger, function() -- Line 582
+				--[[ Upvalues[2]:
+					[1]: SquadEvent_upvr (copied, readonly)
+					[2]: arg1 (readonly)
+				]]
+				SquadEvent_upvr:FireServer("KickMember", arg1.UserId)
+			end)
+		end
+		if module_2_upvr.SquadLeaderSettings.CanPromoteLeader then
+			CreateOption("★ Promote to Leader", tbl_24_upvr.Primary, function() -- Line 588
+				--[[ Upvalues[2]:
+					[1]: SquadEvent_upvr (copied, readonly)
+					[2]: arg1 (readonly)
+				]]
+				SquadEvent_upvr:FireServer("PromoteLeader", arg1.UserId)
+			end)
+		end
+		task.wait()
+		Frame_28_upvr.Size = UDim2.new(0, 180, 0, UIListLayout.AbsoluteContentSize.Y)
+		Frame_28_upvr.Size = UDim2.new(0, 180, 0, 0)
+		TweenService_upvr:Create(Frame_28_upvr, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(0, 180, 0, UIListLayout.AbsoluteContentSize.Y);
+		}):Play()
+	end
+end
+local function CreateMemberCard_upvr(arg1, arg2, arg3) -- Line 602, Named "CreateMemberCard"
+	--[[ Upvalues[5]:
+		[1]: tbl_24_upvr (readonly)
+		[2]: module_2_upvr (readonly)
+		[3]: LocalPlayer_upvr_2 (readonly)
+		[4]: TweenService_upvr (readonly)
+		[5]: ShowMemberOptionsMenu_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	local Frame_8 = Instance.new("Frame")
+	local var422
+	if arg2 then
+		var422 = 80
+	else
+		var422 = 65
+	end
+	Frame_8.Size = UDim2.new(1, -16, 0, var422)
+	Frame_8.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_8.BackgroundTransparency = 0.4
+	Frame_8.BorderSizePixel = 0
+	Instance.new("UICorner", Frame_8).CornerRadius = UDim.new(0, 6)
+	if arg2 then
+		local UIStroke_18 = Instance.new("UIStroke", Frame_8)
+		UIStroke_18.Color = tbl_24_upvr.Primary
+		UIStroke_18.Thickness = 2
+		local TextLabel_36 = Instance.new("TextLabel")
+		var422 = -40
+		TextLabel_36.Size = UDim2.new(1, var422, 0, 20)
+		var422 = 5
+		TextLabel_36.Position = UDim2.new(0, var422, 0, 5)
+		TextLabel_36.BackgroundTransparency = 1
+		TextLabel_36.Text = "★ SQUAD LEADER"
+		TextLabel_36.Font = Enum.Font.GothamBold
+		TextLabel_36.TextSize = 12
+		var422 = module_2_upvr
+		if not var422.SquadLeaderSettings.NametagColor then
+			var422 = 215
+		end
+		TextLabel_36.TextColor3 = Color3.fromRGB(255, var422, 0)
+		TextLabel_36.TextXAlignment = Enum.TextXAlignment.Left
+		TextLabel_36.Parent = Frame_8
+	end
+	local TextLabel_24 = Instance.new("TextLabel")
+	var422 = 0
+	local var426 = 25
+	TextLabel_24.Size = UDim2.new(1, -40, var422, var426)
+	var422 = 0
+	if arg2 then
+		var426 = 28
+	else
+		var426 = 5
+	end
+	TextLabel_24.Position = UDim2.new(0, 5, var422, var426)
+	TextLabel_24.BackgroundTransparency = 1
+	TextLabel_24.Text = arg1.Name
+	TextLabel_24.Font = Enum.Font.GothamBold
+	TextLabel_24.TextSize = 16
+	var422 = 255
+	TextLabel_24.TextColor3 = Color3.fromRGB(255, 255, var422)
+	TextLabel_24.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel_24.TextTruncate = Enum.TextTruncate.AtEnd
+	TextLabel_24.Parent = Frame_8
+	local TextLabel_18 = Instance.new("TextLabel")
+	var422 = -40
+	TextLabel_18.Size = UDim2.new(1, var422, 0, 20)
+	var422 = 5
+	TextLabel_18.Position = UDim2.new(0, var422, 1, -25)
+	TextLabel_18.BackgroundTransparency = 1
+	local function INLINED_3() -- Internal function, doesn't exist in bytecode
+		var422 = arg1.Class
+		return '['..var422..']'
+	end
+	if not arg1.Class or not INLINED_3() then
+	end
+	TextLabel_18.Text = "[No Class]"
+	TextLabel_18.Font = Enum.Font.Gotham
+	TextLabel_18.TextSize = 14
+	var422 = 180
+	TextLabel_18.TextColor3 = Color3.fromRGB(180, var422, 180)
+	TextLabel_18.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel_18.Parent = Frame_8
+	if not arg2 and arg3 then
+		var422 = LocalPlayer_upvr_2
+		if arg3.Leader == var422.UserId then
+			var422 = module_2_upvr
+			if var422.SquadLeaderSettings.ShowMemberOptions then
+				local TextButton_18_upvr = Instance.new("TextButton")
+				var422 = 0
+				TextButton_18_upvr.Size = UDim2.new(var422, 30, 0, 30)
+				var422 = 1
+				TextButton_18_upvr.Position = UDim2.new(var422, -35, 0, 5)
+				var422 = tbl_24_upvr
+				TextButton_18_upvr.BackgroundColor3 = var422.Background
+				TextButton_18_upvr.BackgroundTransparency = 0.5
+				TextButton_18_upvr.BorderSizePixel = 0
+				TextButton_18_upvr.Text = "⋮"
+				TextButton_18_upvr.Font = Enum.Font.GothamBold
+				TextButton_18_upvr.TextSize = 20
+				var422 = 255
+				TextButton_18_upvr.TextColor3 = Color3.fromRGB(var422, 255, 255)
+				TextButton_18_upvr.AutoButtonColor = false
+				TextButton_18_upvr.Parent = Frame_8
+				var422 = "UICorner"
+				var422 = UDim.new(0, 6)
+				Instance.new(var422, TextButton_18_upvr).CornerRadius = var422
+				TextButton_18_upvr.MouseEnter:Connect(function() -- Line 666
+					--[[ Upvalues[2]:
+						[1]: TweenService_upvr (copied, readonly)
+						[2]: TextButton_18_upvr (readonly)
+					]]
+					TweenService_upvr:Create(TextButton_18_upvr, TweenInfo.new(0.1), {
+						BackgroundTransparency = 0.2;
+					}):Play()
+				end)
+				TextButton_18_upvr.MouseLeave:Connect(function() -- Line 670
+					--[[ Upvalues[2]:
+						[1]: TweenService_upvr (copied, readonly)
+						[2]: TextButton_18_upvr (readonly)
+					]]
+					TweenService_upvr:Create(TextButton_18_upvr, TweenInfo.new(0.1), {
+						BackgroundTransparency = 0.5;
+					}):Play()
+				end)
+				TextButton_18_upvr.MouseButton1Click:Connect(function() -- Line 674
+					--[[ Upvalues[4]:
+						[1]: TextButton_18_upvr (readonly)
+						[2]: ShowMemberOptionsMenu_upvr (copied, readonly)
+						[3]: arg1 (readonly)
+						[4]: arg3 (readonly)
+					]]
+					ShowMemberOptionsMenu_upvr(arg1, arg3, TextButton_18_upvr.AbsolutePosition)
+				end)
+			end
+		end
+	end
+	return Frame_8
+end
+local function LoadSquadMembers_upvr(arg1) -- Line 683, Named "LoadSquadMembers"
+	--[[ Upvalues[2]:
+		[1]: tbl_25_upvw (read and write)
+		[2]: CreateMemberCard_upvr (readonly)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 32 start (CF ANALYSIS FAILED)
+	for _, v_2 in pairs(tbl_25_upvw.MembersScroll:GetChildren()) do
+		if not v_2:IsA("UIListLayout") and not v_2:IsA("UIPadding") then
+			v_2:Destroy()
+		end
+	end
+	if not arg1 or not arg1.Members then return end
+	local ipairs_result1_5, ipairs_result2_3, ipairs_result3 = ipairs(arg1.Members)
+	-- KONSTANTERROR: [0] 1. Error Block 32 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [53] 39. Error Block 13 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [53] 39. Error Block 13 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [36] 27. Error Block 11 start (CF ANALYSIS FAILED)
+	-- KONSTANTWARNING: Failed to evaluate expression, replaced with nil [53.2147483650]
+	-- KONSTANTERROR: [36] 27. Error Block 11 end (CF ANALYSIS FAILED)
+end
+local MarketplaceService_upvr = game:GetService("MarketplaceService")
+local function ShowGamePassPrompt_upvr(arg1, arg2) -- Line 704, Named "ShowGamePassPrompt"
+	--[[ Upvalues[5]:
+		[1]: tbl_24_upvr (readonly)
+		[2]: tbl_25_upvw (read and write)
+		[3]: MarketplaceService_upvr (readonly)
+		[4]: LocalPlayer_upvr_2 (readonly)
+		[5]: TweenService_upvr (readonly)
+	]]
+	local Frame_24_upvr = Instance.new("Frame")
+	Frame_24_upvr.Size = UDim2.new(1, 0, 1, 0)
+	Frame_24_upvr.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_24_upvr.BackgroundTransparency = 0.5
+	Frame_24_upvr.BorderSizePixel = 0
+	Frame_24_upvr.ZIndex = 250
+	Frame_24_upvr.Parent = tbl_25_upvw.ScreenGui
+	local Frame_15 = Instance.new("Frame")
+	Frame_15.Size = UDim2.new(0, 400, 0, 300)
+	Frame_15.Position = UDim2.new(0.5, 0, 0.5, 0)
+	Frame_15.AnchorPoint = Vector2.new(0.5, 0.5)
+	Frame_15.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_15.BackgroundTransparency = 0.2
+	Frame_15.BorderSizePixel = 0
+	Frame_15.ZIndex = 251
+	Frame_15.Parent = Frame_24_upvr
+	Instance.new("UICorner", Frame_15).CornerRadius = UDim.new(0, 10)
+	local UIStroke_20 = Instance.new("UIStroke", Frame_15)
+	UIStroke_20.Color = tbl_24_upvr.Premium
+	UIStroke_20.Thickness = 3
+	local TextLabel_39 = Instance.new("TextLabel")
+	TextLabel_39.Size = UDim2.new(1, -40, 0, 40)
+	TextLabel_39.Position = UDim2.new(0, 20, 0, 90)
+	TextLabel_39.BackgroundTransparency = 1
+	TextLabel_39.Text = "Special CLASS"
+	TextLabel_39.Font = Enum.Font.GothamBold
+	TextLabel_39.TextSize = 26
+	TextLabel_39.TextColor3 = tbl_24_upvr.Premium
+	TextLabel_39.ZIndex = 252
+	TextLabel_39.Parent = Frame_15
+	local TextLabel_38 = Instance.new("TextLabel")
+	TextLabel_38.Size = UDim2.new(1, -40, 0, 80)
+	TextLabel_38.Position = UDim2.new(0, 20, 0, 140)
+	TextLabel_38.BackgroundTransparency = 1
+	TextLabel_38.Text = "This class requires a GamePass!\n\nClick 'Purchase' to unlock this class."
+	TextLabel_38.Font = Enum.Font.Gotham
+	TextLabel_38.TextSize = 16
+	TextLabel_38.TextColor3 = Color3.fromRGB(220, 220, 220)
+	TextLabel_38.TextWrapped = true
+	TextLabel_38.ZIndex = 252
+	TextLabel_38.Parent = Frame_15
+	local TextButton_17_upvr = Instance.new("TextButton")
+	TextButton_17_upvr.Size = UDim2.new(0, 180, 0, 45)
+	TextButton_17_upvr.Position = UDim2.new(0, 20, 1, -60)
+	TextButton_17_upvr.BackgroundColor3 = tbl_24_upvr.Background
+	TextButton_17_upvr.BackgroundTransparency = 0.3
+	TextButton_17_upvr.Text = "PURCHASE"
+	TextButton_17_upvr.Font = Enum.Font.GothamBold
+	TextButton_17_upvr.TextSize = 20
+	TextButton_17_upvr.TextColor3 = tbl_24_upvr.Premium
+	TextButton_17_upvr.AutoButtonColor = false
+	TextButton_17_upvr.ZIndex = 252
+	TextButton_17_upvr.Parent = Frame_15
+	Instance.new("UICorner", TextButton_17_upvr).CornerRadius = UDim.new(0, 6)
+	local UIStroke_16 = Instance.new("UIStroke", TextButton_17_upvr)
+	UIStroke_16.Color = tbl_24_upvr.Premium
+	UIStroke_16.Thickness = 2
+	local TextButton_14_upvr = Instance.new("TextButton")
+	TextButton_14_upvr.Size = UDim2.new(0, 180, 0, 45)
+	TextButton_14_upvr.Position = UDim2.new(1, -200, 1, -60)
+	TextButton_14_upvr.BackgroundColor3 = tbl_24_upvr.Background
+	TextButton_14_upvr.BackgroundTransparency = 0.3
+	TextButton_14_upvr.Text = "CANCEL"
+	TextButton_14_upvr.Font = Enum.Font.GothamBold
+	TextButton_14_upvr.TextSize = 20
+	TextButton_14_upvr.TextColor3 = Color3.fromRGB(200, 200, 200)
+	TextButton_14_upvr.AutoButtonColor = false
+	TextButton_14_upvr.ZIndex = 252
+	TextButton_14_upvr.Parent = Frame_15
+	Instance.new("UICorner", TextButton_14_upvr).CornerRadius = UDim.new(0, 6)
+	TextButton_17_upvr.MouseButton1Click:Connect(function() -- Line 784
+		--[[ Upvalues[4]:
+			[1]: MarketplaceService_upvr (copied, readonly)
+			[2]: LocalPlayer_upvr_2 (copied, readonly)
+			[3]: arg2 (readonly)
+			[4]: Frame_24_upvr (readonly)
+		]]
+		pcall(function() -- Line 785
+			--[[ Upvalues[3]:
+				[1]: MarketplaceService_upvr (copied, readonly)
+				[2]: LocalPlayer_upvr_2 (copied, readonly)
+				[3]: arg2 (copied, readonly)
+			]]
+			MarketplaceService_upvr:PromptGamePassPurchase(LocalPlayer_upvr_2, arg2)
+		end)
+		Frame_24_upvr:Destroy()
+	end)
+	TextButton_14_upvr.MouseButton1Click:Connect(function() -- Line 791
+		--[[ Upvalues[1]:
+			[1]: Frame_24_upvr (readonly)
+		]]
+		Frame_24_upvr:Destroy()
+	end)
+	TextButton_17_upvr.MouseEnter:Connect(function() -- Line 795
+		--[[ Upvalues[2]:
+			[1]: TweenService_upvr (copied, readonly)
+			[2]: TextButton_17_upvr (readonly)
+		]]
+		TweenService_upvr:Create(TextButton_17_upvr, TweenInfo.new(0.1), {
+			BackgroundTransparency = 0;
+		}):Play()
+	end)
+	TextButton_17_upvr.MouseLeave:Connect(function() -- Line 799
+		--[[ Upvalues[2]:
+			[1]: TweenService_upvr (copied, readonly)
+			[2]: TextButton_17_upvr (readonly)
+		]]
+		TweenService_upvr:Create(TextButton_17_upvr, TweenInfo.new(0.1), {
+			BackgroundTransparency = 0.3;
+		}):Play()
+	end)
+	TextButton_14_upvr.MouseEnter:Connect(function() -- Line 803
+		--[[ Upvalues[2]:
+			[1]: TweenService_upvr (copied, readonly)
+			[2]: TextButton_14_upvr (readonly)
+		]]
+		TweenService_upvr:Create(TextButton_14_upvr, TweenInfo.new(0.1), {
+			BackgroundTransparency = 0;
+		}):Play()
+	end)
+	TextButton_14_upvr.MouseLeave:Connect(function() -- Line 807
+		--[[ Upvalues[2]:
+			[1]: TweenService_upvr (copied, readonly)
+			[2]: TextButton_14_upvr (readonly)
+		]]
+		TweenService_upvr:Create(TextButton_14_upvr, TweenInfo.new(0.1), {
+			BackgroundTransparency = 0.3;
+		}):Play()
+	end)
+end
+local function LoadClasses_upvr(arg1) -- Line 812, Named "LoadClasses"
+	--[[ Upvalues[6]:
+		[1]: tbl_25_upvw (read and write)
+		[2]: var341_upvw (read and write)
+		[3]: module_2_upvr (readonly)
+		[4]: tbl_24_upvr (readonly)
+		[5]: SquadEvent_upvr (readonly)
+		[6]: TweenService_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	for _, v_3 in pairs(tbl_25_upvw.ClassesScroll:GetChildren()) do
+		if not v_3:IsA("UIListLayout") and not v_3:IsA("UIPadding") then
+			v_3:Destroy()
+		end
+	end
+	if not var341_upvw then
+	else
+		local var489 = module_2_upvr.Classes[var341_upvw]
+		if not var489 then return end
+		for i_5_upvr, v_5_upvr in pairs(var489) do
+			local var493
+			if arg1 and arg1.Members then
+				local ipairs_result1_6, ipairs_result2_5, ipairs_result3_5 = ipairs(arg1.Members)
+				for i_6, v_6 in ipairs_result1_6, ipairs_result2_5, ipairs_result3_5 do
+					if v_6.Class == i_5_upvr then
+						var493 += 1
+					end
+				end
+			end
+			ipairs_result1_6 = arg1
+			local var497 = ipairs_result1_6
+			if var497 then
+				if v_5_upvr.MaxPerSquad > var493 then
+				else
+				end
+			end
+			local IsPremium_2 = v_5_upvr.IsPremium
+			if IsPremium_2 then
+				if v_5_upvr.RequiresGamePass then
+					i_6 = module_2_upvr
+				end
+			end
+			local TextButton_13_upvr = Instance.new("TextButton")
+			TextButton_13_upvr.Size = UDim2.new(1, -16, 0, 75)
+			local Background_2 = tbl_24_upvr.Background
+			TextButton_13_upvr.BackgroundColor3 = Background_2
+			if true then
+				Background_2 = 0.7
+			else
+				Background_2 = 0.5
+			end
+			TextButton_13_upvr.BackgroundTransparency = Background_2
+			TextButton_13_upvr.BorderSizePixel = 0
+			TextButton_13_upvr.AutoButtonColor = false
+			TextButton_13_upvr.Text = ""
+			TextButton_13_upvr.Parent = tbl_25_upvw.ClassesScroll
+			Instance.new("UICorner", TextButton_13_upvr).CornerRadius = UDim.new(0, 6)
+			local UIStroke_13_upvr = Instance.new("UIStroke", TextButton_13_upvr)
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			if not true or not Color3.fromRGB(100, 100, 100) or not i_6.PremiumClasses.Enabled or not tbl_24_upvr.Premium then
+			end
+			UIStroke_13_upvr.Color = tbl_24_upvr.Primary
+			UIStroke_13_upvr.Transparency = 0.5
+			local TextLabel_33 = Instance.new("TextLabel")
+			TextLabel_33.Size = UDim2.new(0, 55, 0, 55)
+			TextLabel_33.Position = UDim2.new(0, 10, 0, 10)
+			TextLabel_33.BackgroundColor3 = tbl_24_upvr.Background
+			TextLabel_33.BackgroundTransparency = 0.4
+			TextLabel_33.Text = string.sub(i_5_upvr, 1, 1)
+			TextLabel_33.Font = Enum.Font.GothamBold
+			TextLabel_33.TextSize = 32
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			if not i_6.PremiumClasses.Enabled or not tbl_24_upvr.Premium then
+			end
+			TextLabel_33.TextColor3 = Color3.fromRGB(200, 200, 200)
+			TextLabel_33.Parent = TextButton_13_upvr
+			Instance.new("UICorner", TextLabel_33).CornerRadius = UDim.new(0, 6)
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			if i_6.PremiumClasses.Enabled then
+				local ImageLabel_7 = Instance.new("ImageLabel")
+				ImageLabel_7.Size = UDim2.new(0, 20, 0, 20)
+				ImageLabel_7.Position = UDim2.new(1, -25, 0, 5)
+				ImageLabel_7.BackgroundTransparency = 1
+				ImageLabel_7.Image = module_2_upvr.PremiumClasses.LockedIcon
+				ImageLabel_7.ImageColor3 = tbl_24_upvr.Premium
+				ImageLabel_7.Parent = TextButton_13_upvr
+			end
+			local TextLabel_23 = Instance.new("TextLabel")
+			TextLabel_23.Size = UDim2.new(1, -150, 0, 30)
+			local var505 = 75
+			TextLabel_23.Position = UDim2.new(0, var505, 0, 10)
+			TextLabel_23.BackgroundTransparency = 1
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			if i_6.PremiumClasses.Enabled then
+				var505 = ""
+			else
+				var505 = ""
+			end
+			TextLabel_23.Text = v_5_upvr.DisplayName..var505
+			TextLabel_23.Font = Enum.Font.GothamBold
+			TextLabel_23.TextSize = 18
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			if not i_6.PremiumClasses.Enabled or not tbl_24_upvr.Premium then
+			end
+			TextLabel_23.TextColor3 = Color3.fromRGB(255, 255, 255)
+			TextLabel_23.TextXAlignment = Enum.TextXAlignment.Left
+			TextLabel_23.Parent = TextButton_13_upvr
+			local TextLabel_34 = Instance.new("TextLabel")
+			TextLabel_34.Size = UDim2.new(0, 60, 0, 25)
+			TextLabel_34.Position = UDim2.new(1, -70, 0, 8)
+			TextLabel_34.BackgroundTransparency = 1
+			if not arg1 or not var493..'/'..v_5_upvr.MaxPerSquad then
+			end
+			TextLabel_34.Text = "∞"
+			TextLabel_34.Font = Enum.Font.GothamBold
+			TextLabel_34.TextSize = 16
+			TextLabel_34.TextColor3 = Color3.fromRGB(180, 180, 180)
+			TextLabel_34.TextXAlignment = Enum.TextXAlignment.Right
+			TextLabel_34.Parent = TextButton_13_upvr
+			local TextLabel_32 = Instance.new("TextLabel")
+			TextLabel_32.Size = UDim2.new(1, -150, 0, 25)
+			TextLabel_32.Position = UDim2.new(0, 75, 0, 42)
+			TextLabel_32.BackgroundTransparency = 1
+			TextLabel_32.Text = v_5_upvr.Description or ""
+			TextLabel_32.Font = Enum.Font.Gotham
+			TextLabel_32.TextSize = 12
+			TextLabel_32.TextColor3 = Color3.fromRGB(150, 150, 150)
+			TextLabel_32.TextXAlignment = Enum.TextXAlignment.Left
+			TextLabel_32.TextTruncate = Enum.TextTruncate.AtEnd
+			TextLabel_32.Parent = TextButton_13_upvr
+			local var509_upvr = true
+			TextButton_13_upvr.MouseButton1Click:Connect(function() -- Line 904
+				--[[ Upvalues[3]:
+					[1]: var509_upvr (readonly)
+					[2]: SquadEvent_upvr (copied, readonly)
+					[3]: i_5_upvr (readonly)
+				]]
+				if var509_upvr then
+				else
+					SquadEvent_upvr:FireServer("SelectClass", i_5_upvr)
+				end
+			end)
+			if not var509_upvr then
+				TextButton_13_upvr.MouseEnter:Connect(function() -- Line 912
+					--[[ Upvalues[5]:
+						[1]: TweenService_upvr (copied, readonly)
+						[2]: TextButton_13_upvr (readonly)
+						[3]: UIStroke_13_upvr (readonly)
+						[4]: tbl_25_upvw (copied, read and write)
+						[5]: v_5_upvr (readonly)
+					]]
+					TweenService_upvr:Create(TextButton_13_upvr, TweenInfo.new(0.2), {
+						BackgroundTransparency = 0.2;
+					}):Play()
+					TweenService_upvr:Create(UIStroke_13_upvr, TweenInfo.new(0.2), {
+						Transparency = 0;
+					}):Play()
+					tbl_25_upvw.ClassDescFrame.Visible = true
+					tbl_25_upvw.ClassDescTitle.Text = v_5_upvr.DisplayName.." CLASS"
+					tbl_25_upvw.ClassDescText.Text = v_5_upvr.Description or ""
+				end)
+				TextButton_13_upvr.MouseLeave:Connect(function() -- Line 920
+					--[[ Upvalues[3]:
+						[1]: TweenService_upvr (copied, readonly)
+						[2]: TextButton_13_upvr (readonly)
+						[3]: UIStroke_13_upvr (readonly)
+					]]
+					TweenService_upvr:Create(TextButton_13_upvr, TweenInfo.new(0.2), {
+						BackgroundTransparency = 0.5;
+					}):Play()
+					TweenService_upvr:Create(UIStroke_13_upvr, TweenInfo.new(0.2), {
+						Transparency = 0.5;
+					}):Play()
+				end)
+			end
+		end
+	end
+end
+local var516_upvw = false
+local GetClassLoadout_upvr = ReplicatedStorage_2:WaitForChild("GetClassLoadout")
+local function ShowLoadout_upvr(arg1) -- Line 928, Named "ShowLoadout"
+	--[[ Upvalues[5]:
+		[1]: var516_upvw (read and write)
+		[2]: var341_upvw (read and write)
+		[3]: tbl_25_upvw (read and write)
+		[4]: GetClassLoadout_upvr (readonly)
+		[5]: tbl_24_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	if var516_upvw then
+	else
+		if not var341_upvw or not arg1 then return end
+		var516_upvw = true
+		for _, v_7 in pairs(tbl_25_upvw.LoadoutScroll:GetChildren()) do
+			if not v_7:IsA("UIListLayout") and not v_7:IsA("UIPadding") then
+				v_7:Destroy()
+			end
+		end
+		task.wait(0.1)
+		local pcall_result1_2, pcall_result2_2 = pcall(function() -- Line 942
+			--[[ Upvalues[3]:
+				[1]: GetClassLoadout_upvr (copied, readonly)
+				[2]: var341_upvw (copied, read and write)
+				[3]: arg1 (readonly)
+			]]
+			return GetClassLoadout_upvr:InvokeServer(var341_upvw, arg1)
+		end)
+		if not pcall_result1_2 or not pcall_result2_2 or not pcall_result2_2.Loadout then
+			var516_upvw = false
+			return
+		end
+		local function CreateLoadoutItem(arg1_7, arg2, arg3) -- Line 951
+			--[[ Upvalues[2]:
+				[1]: tbl_25_upvw (copied, read and write)
+				[2]: tbl_24_upvr (copied, readonly)
+			]]
+			local Frame_18 = Instance.new("Frame")
+			Frame_18.Size = UDim2.new(1, 0, 0, 120)
+			Frame_18.BackgroundTransparency = 1
+			Frame_18.BorderSizePixel = 0
+			Frame_18.Parent = tbl_25_upvw.LoadoutScroll
+			local TextLabel_4 = Instance.new("TextLabel")
+			TextLabel_4.Size = UDim2.new(1, 0, 0, 18)
+			TextLabel_4.Position = UDim2.new(0, 5, 0, 0)
+			TextLabel_4.BackgroundTransparency = 1
+			TextLabel_4.Text = arg3:upper()
+			TextLabel_4.Font = Enum.Font.GothamBold
+			TextLabel_4.TextSize = 11
+			TextLabel_4.TextColor3 = tbl_24_upvr.Primary
+			TextLabel_4.TextXAlignment = Enum.TextXAlignment.Left
+			TextLabel_4.Parent = Frame_18
+			local Frame_10 = Instance.new("Frame")
+			Frame_10.Size = UDim2.new(1, -10, 1, -25)
+			Frame_10.Position = UDim2.new(0, 5, 0, 20)
+			Frame_10.BackgroundColor3 = tbl_24_upvr.Background
+			Frame_10.BackgroundTransparency = 0.5
+			Frame_10.BorderSizePixel = 0
+			Frame_10.Parent = Frame_18
+			Instance.new("UICorner", Frame_10).CornerRadius = UDim.new(0, 6)
+			local ImageLabel = Instance.new("ImageLabel")
+			ImageLabel.Size = UDim2.new(1, 0, 1, 0)
+			ImageLabel.Position = UDim2.new(0, 0, 0, 0)
+			ImageLabel.BackgroundTransparency = 1
+			ImageLabel.BorderSizePixel = 0
+			ImageLabel.Image = arg2 or ""
+			ImageLabel.ScaleType = Enum.ScaleType.Fit
+			ImageLabel.Parent = Frame_10
+			local Frame_20 = Instance.new("Frame")
+			Frame_20.Size = UDim2.new(1, 0, 0, 25)
+			Frame_20.Position = UDim2.new(0, 0, 1, -25)
+			Frame_20.BackgroundColor3 = tbl_24_upvr.Background
+			Frame_20.BackgroundTransparency = 0.3
+			Frame_20.BorderSizePixel = 0
+			Frame_20.Parent = Frame_10
+			local TextLabel_40 = Instance.new("TextLabel")
+			TextLabel_40.Size = UDim2.new(1, -10, 1, 0)
+			TextLabel_40.Position = UDim2.new(0, 5, 0, 0)
+			TextLabel_40.BackgroundTransparency = 1
+			TextLabel_40.Text = arg1_7
+			TextLabel_40.Font = Enum.Font.GothamBold
+			TextLabel_40.TextSize = 13
+			TextLabel_40.TextColor3 = Color3.fromRGB(255, 255, 255)
+			TextLabel_40.TextXAlignment = Enum.TextXAlignment.Left
+			TextLabel_40.TextTruncate = Enum.TextTruncate.AtEnd
+			TextLabel_40.Parent = Frame_20
+			return Frame_18
+		end
+		if pcall_result2_2.Loadout.PrimaryWeapon then
+			CreateLoadoutItem(pcall_result2_2.Loadout.PrimaryWeapon.Name, pcall_result2_2.Loadout.PrimaryWeapon.Image, "Primary Weapon")
+		end
+		if pcall_result2_2.Loadout.SecondaryWeapon then
+			CreateLoadoutItem(pcall_result2_2.Loadout.SecondaryWeapon.Name, pcall_result2_2.Loadout.SecondaryWeapon.Image, "Secondary Weapon")
+		end
+		if pcall_result2_2.Loadout.Equipment then
+			for _, v_8 in ipairs(pcall_result2_2.Loadout.Equipment) do
+				CreateLoadoutItem(v_8.Name.." x"..(v_8.Amount or 1), v_8.Image, "Equipment")
+				local _
+			end
+		end
+		task.wait(0.2)
+		var516_upvw = false
+	end
+end
+local function ShowCreateSquadDialog_upvr() -- Line 1041, Named "ShowCreateSquadDialog"
+	--[[ Upvalues[3]:
+		[1]: tbl_24_upvr (readonly)
+		[2]: tbl_25_upvw (read and write)
+		[3]: SquadEvent_upvr (readonly)
+	]]
+	local Frame_23_upvr = Instance.new("Frame")
+	Frame_23_upvr.Size = UDim2.new(1, 0, 1, 0)
+	Frame_23_upvr.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_23_upvr.BackgroundTransparency = 0.5
+	Frame_23_upvr.BorderSizePixel = 0
+	Frame_23_upvr.ZIndex = 200
+	Frame_23_upvr.Parent = tbl_25_upvw.ScreenGui
+	local Frame_22 = Instance.new("Frame")
+	Frame_22.Size = UDim2.new(0, 400, 0, 270)
+	Frame_22.Position = UDim2.new(0.5, 0, 0.5, 0)
+	Frame_22.AnchorPoint = Vector2.new(0.5, 0.5)
+	Frame_22.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_22.BackgroundTransparency = 0.2
+	Frame_22.BorderSizePixel = 0
+	Frame_22.ZIndex = 201
+	Frame_22.Parent = Frame_23_upvr
+	Instance.new("UICorner", Frame_22).CornerRadius = UDim.new(0, 10)
+	Instance.new("UIStroke", Frame_22).Color = tbl_24_upvr.Primary
+	local TextLabel_26 = Instance.new("TextLabel")
+	TextLabel_26.Size = UDim2.new(1, 0, 0, 60)
+	TextLabel_26.BackgroundTransparency = 1
+	TextLabel_26.Text = "CREATE SQUAD"
+	TextLabel_26.Font = Enum.Font.GothamBold
+	TextLabel_26.TextSize = 26
+	TextLabel_26.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel_26.ZIndex = 202
+	TextLabel_26.Parent = Frame_22
+	local TextBox_upvr = Instance.new("TextBox")
+	TextBox_upvr.Size = UDim2.new(1, -40, 0, 45)
+	TextBox_upvr.Position = UDim2.new(0, 20, 0, 75)
+	TextBox_upvr.BackgroundColor3 = tbl_24_upvr.Background
+	TextBox_upvr.BackgroundTransparency = 0.4
+	TextBox_upvr.BorderSizePixel = 0
+	TextBox_upvr.Text = ""
+	TextBox_upvr.PlaceholderText = "Enter squad name..."
+	TextBox_upvr.Font = Enum.Font.Gotham
+	TextBox_upvr.TextSize = 18
+	TextBox_upvr.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextBox_upvr.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+	TextBox_upvr.ClearTextOnFocus = false
+	TextBox_upvr.ZIndex = 202
+	TextBox_upvr.Parent = Frame_22
+	Instance.new("UICorner", TextBox_upvr).CornerRadius = UDim.new(0, 6)
+	Instance.new("UIStroke", TextBox_upvr).Color = tbl_24_upvr.Primary
+	local TextLabel_27_upvr = Instance.new("TextLabel")
+	TextLabel_27_upvr.Size = UDim2.new(1, -40, 0, 30)
+	TextLabel_27_upvr.Position = UDim2.new(0, 20, 0, 130)
+	TextLabel_27_upvr.BackgroundTransparency = 1
+	TextLabel_27_upvr.Text = ""
+	TextLabel_27_upvr.Font = Enum.Font.Gotham
+	TextLabel_27_upvr.TextSize = 14
+	TextLabel_27_upvr.TextColor3 = tbl_24_upvr.Danger
+	TextLabel_27_upvr.TextWrapped = true
+	TextLabel_27_upvr.ZIndex = 202
+	TextLabel_27_upvr.Visible = false
+	TextLabel_27_upvr.Parent = Frame_22
+	local TextButton = Instance.new("TextButton")
+	TextButton.Size = UDim2.new(0, 180, 0, 45)
+	TextButton.Position = UDim2.new(0, 20, 1, -60)
+	TextButton.BackgroundColor3 = tbl_24_upvr.Background
+	TextButton.BackgroundTransparency = 0.3
+	TextButton.Text = "CREATE"
+	TextButton.Font = Enum.Font.GothamBold
+	TextButton.TextSize = 20
+	TextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextButton.AutoButtonColor = false
+	TextButton.ZIndex = 202
+	TextButton.Parent = Frame_22
+	Instance.new("UICorner", TextButton).CornerRadius = UDim.new(0, 6)
+	Instance.new("UIStroke", TextButton).Color = tbl_24_upvr.Success
+	local TextButton_5 = Instance.new("TextButton")
+	TextButton_5.Size = UDim2.new(0, 180, 0, 45)
+	TextButton_5.Position = UDim2.new(1, -200, 1, -60)
+	TextButton_5.BackgroundColor3 = tbl_24_upvr.Background
+	TextButton_5.BackgroundTransparency = 0.3
+	TextButton_5.Text = "CANCEL"
+	TextButton_5.Font = Enum.Font.GothamBold
+	TextButton_5.TextSize = 20
+	TextButton_5.TextColor3 = Color3.fromRGB(200, 200, 200)
+	TextButton_5.AutoButtonColor = false
+	TextButton_5.ZIndex = 202
+	TextButton_5.Parent = Frame_22
+	Instance.new("UICorner", TextButton_5).CornerRadius = UDim.new(0, 6)
+	TextButton.MouseButton1Click:Connect(function() -- Line 1136
+		--[[ Upvalues[4]:
+			[1]: TextBox_upvr (readonly)
+			[2]: TextLabel_27_upvr (readonly)
+			[3]: SquadEvent_upvr (copied, readonly)
+			[4]: Frame_23_upvr (readonly)
+		]]
+		local any_gsub_result1_2 = TextBox_upvr.Text:gsub("^%s*(.-)%s*$", "%1")
+		if any_gsub_result1_2 == "" then
+			TextLabel_27_upvr.Text = "Squad name cannot be empty"
+			TextLabel_27_upvr.Visible = true
+		else
+			if 20 < #any_gsub_result1_2 then
+				TextLabel_27_upvr.Text = "Name too long (max 20 characters)"
+				TextLabel_27_upvr.Visible = true
+				return
+			end
+			SquadEvent_upvr:FireServer("CreateSquad", any_gsub_result1_2)
+			Frame_23_upvr:Destroy()
+		end
+	end)
+	TextButton_5.MouseButton1Click:Connect(function() -- Line 1155
+		--[[ Upvalues[1]:
+			[1]: Frame_23_upvr (readonly)
+		]]
+		Frame_23_upvr:Destroy()
+	end)
+	task.spawn(function() -- Line 1159
+		--[[ Upvalues[1]:
+			[1]: TextBox_upvr (readonly)
+		]]
+		task.wait(0.1)
+		TextBox_upvr:CaptureFocus()
+	end)
+end
+local var561_upvw
+local GetSquads_upvr = ReplicatedStorage_2:WaitForChild("GetSquads")
+local function ShowSquadMenu_upvr() -- Line 1165, Named "ShowSquadMenu"
+	--[[ Upvalues[18]:
+		[1]: LocalPlayer_upvr_2 (readonly)
+		[2]: var346_upvw (read and write)
+		[3]: BlockPlayerMovement_upvr (readonly)
+		[4]: var341_upvw (read and write)
+		[5]: module_2_upvr (readonly)
+		[6]: tbl_25_upvw (read and write)
+		[7]: SetupCamera_upvr (readonly)
+		[8]: RemoveBlur_upvr (readonly)
+		[9]: var342_upvw (read and write)
+		[10]: CurrentCamera_upvr_2 (readonly)
+		[11]: var561_upvw (read and write)
+		[12]: LoadClasses_upvr (readonly)
+		[13]: GetPlayerSquad_upvr (readonly)
+		[14]: tbl_24_upvr (readonly)
+		[15]: LoadSquadMembers_upvr (readonly)
+		[16]: var340_upvw (read and write)
+		[17]: GetSquads_upvr (readonly)
+		[18]: SquadEvent_upvr (readonly)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 73 start (CF ANALYSIS FAILED)
+	if not LocalPlayer_upvr_2.Team or LocalPlayer_upvr_2.Team.Name == "Neutral" then return end
+	var346_upvw = true
+	BlockPlayerMovement_upvr()
+	var341_upvw = LocalPlayer_upvr_2.Team.Name
+	-- KONSTANTERROR: [0] 1. Error Block 73 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [28] 21. Error Block 102 start (CF ANALYSIS FAILED)
+	if tbl_25_upvw.TeamBanner:IsA("ImageLabel") then
+		local FlagImage_2 = module_2_upvr.Teams[var341_upvw].FlagImage
+		if not FlagImage_2 then
+			FlagImage_2 = module_2_upvr.Teams[var341_upvw].BannerImage
+		end
+		tbl_25_upvw.TeamBanner.Image = FlagImage_2
+		-- KONSTANTWARNING: GOTO [77] #57
+	end
+	-- KONSTANTERROR: [28] 21. Error Block 102 end (CF ANALYSIS FAILED)
+end
+local function _() -- Line 1327, Named "HideSquadMenu"
+	--[[ Upvalues[8]:
+		[1]: var346_upvw (read and write)
+		[2]: LocalPlayer_upvr_2 (readonly)
+		[3]: var347_upvw (read and write)
+		[4]: var348_upvw (read and write)
+		[5]: tbl_25_upvw (read and write)
+		[6]: RemoveBlur_upvr (readonly)
+		[7]: var343_upvw (read and write)
+		[8]: CurrentCamera_upvr_2 (readonly)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 28 start (CF ANALYSIS FAILED)
+	var346_upvw = false
+	if not LocalPlayer_upvr_2.Character then
+		-- KONSTANTWARNING: GOTO [33] #27
+	end
+	-- KONSTANTERROR: [0] 1. Error Block 28 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [7] 7. Error Block 29 start (CF ANALYSIS FAILED)
+	local Humanoid_15 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+	if not Humanoid_15 then
+	else
+		Humanoid_15.WalkSpeed = 16
+		Humanoid_15.JumpPower = 30
+		Humanoid_15.JumpHeight = 3
+		if var347_upvw then
+			var347_upvw:Disconnect()
+			var347_upvw = nil
+		end
+	end
+	if var348_upvw and var348_upvw.Parent then
+		var348_upvw:Destroy()
+		var348_upvw = nil
+	end
+	tbl_25_upvw.ScreenGui.Enabled = false
+	RemoveBlur_upvr()
+	if var343_upvw then
+		var343_upvw:Disconnect()
+		var343_upvw = nil
+	end
+	CurrentCamera_upvr_2.CameraType = Enum.CameraType.Custom
+	if LocalPlayer_upvr_2.Character then
+		local Humanoid_14 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+		if Humanoid_14 then
+			CurrentCamera_upvr_2.CameraSubject = Humanoid_14
+		end
+	end
+	-- KONSTANTERROR: [7] 7. Error Block 29 end (CF ANALYSIS FAILED)
+end
+SquadEvent_upvr.OnClientEvent:Connect(function(arg1, ...) -- Line 1337
+	--[[ Upvalues[19]:
+		[1]: ShowSquadMenu_upvr (readonly)
+		[2]: var340_upvw (read and write)
+		[3]: ShowLoadout_upvr (readonly)
+		[4]: var346_upvw (read and write)
+		[5]: LocalPlayer_upvr_2 (readonly)
+		[6]: var347_upvw (read and write)
+		[7]: var348_upvw (read and write)
+		[8]: tbl_25_upvw (read and write)
+		[9]: RemoveBlur_upvr (readonly)
+		[10]: var343_upvw (read and write)
+		[11]: CurrentCamera_upvr_2 (readonly)
+		[12]: GetPlayerSquad_upvr (readonly)
+		[13]: LoadSquadMembers_upvr (readonly)
+		[14]: LoadClasses_upvr (readonly)
+		[15]: var344_upvw (read and write)
+		[16]: var345_upvw (read and write)
+		[17]: StarterGui_upvr (readonly)
+		[18]: module_2_upvr (readonly)
+		[19]: ShowGamePassPrompt_upvr (readonly)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 1 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [0] 1. Error Block 1 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [3] 3. Error Block 2 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [3] 3. Error Block 2 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [5] 4. Error Block 91 start (CF ANALYSIS FAILED)
+	task.wait(0.5)
+	ShowSquadMenu_upvr()
+	do
+		return
+	end
+	-- KONSTANTERROR: [5] 4. Error Block 91 end (CF ANALYSIS FAILED)
+end)
+ReplicatedStorage_2:WaitForChild("TeamSelectEvent").OnClientEvent:Connect(function(arg1, arg2) -- Line 1385
+	--[[ Upvalues[1]:
+		[1]: ShowSquadMenu_upvr (readonly)
+	]]
+	if arg1 == "TeamAssigned" then
+		task.wait(0.5)
+		ShowSquadMenu_upvr()
+	end
+end)
+game:GetService("UserInputService").InputBegan:Connect(function(arg1) -- Line 1392
+	--[[ Upvalues[1]:
+		[1]: var348_upvw (read and write)
+	]]
+	if arg1.UserInputType == Enum.UserInputType.MouseButton1 and var348_upvw and var348_upvw and var348_upvw.Parent then
+		var348_upvw:Destroy()
+		var348_upvw = nil
+	end
+end)
+task.wait(0.5)
+tbl_25_upvw = (function() -- Line 163, Named "CreateGUI"
+	--[[ Upvalues[3]:
+		[1]: PlayerGui_upvr (readonly)
+		[2]: module_2_upvr (readonly)
+		[3]: tbl_24_upvr (readonly)
+	]]
+	local SquadMenuGui_2 = PlayerGui_upvr:FindFirstChild("SquadMenuGui")
+	if SquadMenuGui_2 then
+		SquadMenuGui_2:Destroy()
+	end
+	local ScreenGui_2 = Instance.new("ScreenGui")
+	ScreenGui_2.Name = "SquadMenuGui"
+	ScreenGui_2.ResetOnSpawn = false
+	ScreenGui_2.DisplayOrder = 101
+	ScreenGui_2.Enabled = false
+	ScreenGui_2.Parent = PlayerGui_upvr
+	if module_2_upvr.SquadSettings.ShowTeamBannerInsteadOfName then
+		local ImageLabel_3 = Instance.new("ImageLabel")
+		ImageLabel_3.Name = "TeamBanner"
+		ImageLabel_3.Size = UDim2.new(0, 350, 0, 90)
+		ImageLabel_3.Position = UDim2.new(1, -20, 0, 20)
+		ImageLabel_3.AnchorPoint = Vector2.new(1, 0)
+		ImageLabel_3.BackgroundTransparency = 1
+		ImageLabel_3.Image = ""
+		ImageLabel_3.ScaleType = Enum.ScaleType.Fit
+		ImageLabel_3.Parent = ScreenGui_2
+	else
+		local TextLabel_31 = Instance.new("TextLabel")
+		TextLabel_31.Name = "TeamLabel"
+		TextLabel_31.Size = UDim2.new(0, 350, 0, 90)
+		TextLabel_31.Position = UDim2.new(1, -20, 0, 20)
+		TextLabel_31.AnchorPoint = Vector2.new(1, 0)
+		TextLabel_31.BackgroundTransparency = 1
+		TextLabel_31.Text = "COALITION FORCES"
+		TextLabel_31.Font = Enum.Font.GothamBold
+		TextLabel_31.TextSize = 28
+		TextLabel_31.TextColor3 = Color3.fromRGB(255, 255, 255)
+		TextLabel_31.TextXAlignment = Enum.TextXAlignment.Right
+		TextLabel_31.Parent = ScreenGui_2
+	end
+	local TextButton_10 = Instance.new("TextButton")
+	TextButton_10.Name = "ChangeTeamBtn"
+	TextButton_10.Size = UDim2.new(0, 200, 0, 40)
+	TextButton_10.Position = UDim2.new(1, -20, 0, 120)
+	TextButton_10.AnchorPoint = Vector2.new(1, 0)
+	TextButton_10.BackgroundColor3 = tbl_24_upvr.Background
+	TextButton_10.BackgroundTransparency = 0.3
+	TextButton_10.BorderSizePixel = 0
+	TextButton_10.Text = "CHANGE TEAM"
+	TextButton_10.Font = Enum.Font.GothamBold
+	TextButton_10.TextSize = 14
+	TextButton_10.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextButton_10.AutoButtonColor = false
+	TextButton_10.Parent = ScreenGui_2
+	Instance.new("UICorner", TextButton_10).CornerRadius = UDim.new(0, 6)
+	Instance.new("UIStroke", TextButton_10).Color = tbl_24_upvr.Primary
+	local Frame_27 = Instance.new("Frame")
+	Frame_27.Size = UDim2.new(0, 280, 0, 600)
+	Frame_27.Position = UDim2.new(0.5, -610, 0.5, 0)
+	Frame_27.AnchorPoint = Vector2.new(0, 0.5)
+	Frame_27.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_27.BackgroundTransparency = 1
+	Frame_27.BorderSizePixel = 0
+	Frame_27.Parent = ScreenGui_2
+	Instance.new("UICorner", Frame_27).CornerRadius = UDim.new(0, 8)
+	local UIStroke_17 = Instance.new("UIStroke", Frame_27)
+	UIStroke_17.Color = tbl_24_upvr.Primary
+	UIStroke_17.Transparency = 1
+	UIStroke_17.Thickness = 2
+	local TextLabel_19 = Instance.new("TextLabel")
+	TextLabel_19.Size = UDim2.new(1, -20, 0, 40)
+	TextLabel_19.Position = UDim2.new(0, 10, 0, 10)
+	TextLabel_19.BackgroundTransparency = 1
+	TextLabel_19.Text = ""
+	TextLabel_19.Font = Enum.Font.GothamBold
+	TextLabel_19.TextSize = 20
+	TextLabel_19.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel_19.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel_19.Parent = Frame_27
+	local TextLabel_21 = Instance.new("TextLabel")
+	TextLabel_21.Name = "InfoLabel"
+	TextLabel_21.Size = UDim2.new(1, -20, 0, 50)
+	TextLabel_21.Position = UDim2.new(0, 10, 0, 55)
+	TextLabel_21.BackgroundColor3 = tbl_24_upvr.Background
+	TextLabel_21.BackgroundTransparency = 0.3
+	TextLabel_21.BorderSizePixel = 0
+	TextLabel_21.Text = "+ CREATE SQUAD"
+	TextLabel_21.Font = Enum.Font.GothamBold
+	TextLabel_21.TextSize = 16
+	TextLabel_21.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel_21.Parent = Frame_27
+	Instance.new("UICorner", TextLabel_21).CornerRadius = UDim.new(0, 6)
+	local UIStroke_19 = Instance.new("UIStroke", TextLabel_21)
+	UIStroke_19.Name = "InfoStroke"
+	UIStroke_19.Color = tbl_24_upvr.Success
+	local TextButton_20 = Instance.new("TextButton")
+	TextButton_20.Name = "CreateBtn"
+	TextButton_20.Size = UDim2.new(1, -20, 0, 50)
+	TextButton_20.Position = UDim2.new(0, 10, 0, 55)
+	TextButton_20.BackgroundTransparency = 1
+	TextButton_20.Text = ""
+	TextButton_20.Parent = Frame_27
+	local TextButton_2 = Instance.new("TextButton")
+	TextButton_2.Name = "LeaveSquadBtn"
+	TextButton_2.Size = UDim2.new(1, -20, 0, 45)
+	TextButton_2.Position = UDim2.new(0, 10, 1, -55)
+	TextButton_2.BackgroundColor3 = tbl_24_upvr.Background
+	TextButton_2.BackgroundTransparency = 0.3
+	TextButton_2.BorderSizePixel = 0
+	TextButton_2.Text = "LEAVE SQUAD"
+	TextButton_2.Font = Enum.Font.GothamBold
+	TextButton_2.TextSize = 16
+	TextButton_2.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextButton_2.AutoButtonColor = false
+	TextButton_2.Visible = false
+	TextButton_2.Parent = Frame_27
+	Instance.new("UICorner", TextButton_2).CornerRadius = UDim.new(0, 6)
+	Instance.new("UIStroke", TextButton_2).Color = tbl_24_upvr.Danger
+	local ScrollingFrame_upvr_3 = Instance.new("ScrollingFrame")
+	ScrollingFrame_upvr_3.Name = "MembersScroll"
+	ScrollingFrame_upvr_3.Size = UDim2.new(1, -20, 0, 200)
+	ScrollingFrame_upvr_3.Position = UDim2.new(0, 10, 0, 115)
+	ScrollingFrame_upvr_3.BackgroundColor3 = tbl_24_upvr.Background
+	ScrollingFrame_upvr_3.BackgroundTransparency = 0.6
+	ScrollingFrame_upvr_3.BorderSizePixel = 0
+	ScrollingFrame_upvr_3.ScrollBarThickness = 4
+	ScrollingFrame_upvr_3.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ScrollingFrame_upvr_3.Visible = false
+	ScrollingFrame_upvr_3.Parent = Frame_27
+	Instance.new("UICorner", ScrollingFrame_upvr_3).CornerRadius = UDim.new(0, 6)
+	local UIListLayout_9_upvr = Instance.new("UIListLayout", ScrollingFrame_upvr_3)
+	UIListLayout_9_upvr.Padding = UDim.new(0, 8)
+	local UIPadding_6 = Instance.new("UIPadding", ScrollingFrame_upvr_3)
+	UIPadding_6.PaddingTop = UDim.new(0, 8)
+	UIPadding_6.PaddingLeft = UDim.new(0, 8)
+	UIPadding_6.PaddingRight = UDim.new(0, 8)
+	UIPadding_6.PaddingBottom = UDim.new(0, 8)
+	local ScrollingFrame_upvr = Instance.new("ScrollingFrame")
+	ScrollingFrame_upvr.Name = "SquadsScroll"
+	ScrollingFrame_upvr.Size = UDim2.new(1, -20, 1, -125)
+	ScrollingFrame_upvr.Position = UDim2.new(0, 10, 0, 115)
+	ScrollingFrame_upvr.BackgroundColor3 = tbl_24_upvr.Background
+	ScrollingFrame_upvr.BackgroundTransparency = 0.6
+	ScrollingFrame_upvr.BorderSizePixel = 0
+	ScrollingFrame_upvr.ScrollBarThickness = 4
+	ScrollingFrame_upvr.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ScrollingFrame_upvr.Parent = Frame_27
+	Instance.new("UICorner", ScrollingFrame_upvr).CornerRadius = UDim.new(0, 6)
+	local UIListLayout_4_upvr = Instance.new("UIListLayout", ScrollingFrame_upvr)
+	UIListLayout_4_upvr.Padding = UDim.new(0, 8)
+	local UIPadding_4 = Instance.new("UIPadding", ScrollingFrame_upvr)
+	UIPadding_4.PaddingTop = UDim.new(0, 8)
+	UIPadding_4.PaddingLeft = UDim.new(0, 8)
+	UIPadding_4.PaddingRight = UDim.new(0, 8)
+	UIPadding_4.PaddingBottom = UDim.new(0, 8)
+	local Frame_29 = Instance.new("Frame")
+	Frame_29.Size = UDim2.new(0, 320, 0, 600)
+	Frame_29.Position = UDim2.new(0.5, -310, 0.5, 0)
+	Frame_29.AnchorPoint = Vector2.new(0, 0.5)
+	Frame_29.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_29.BackgroundTransparency = 0.4
+	Frame_29.BorderSizePixel = 0
+	Frame_29.Parent = ScreenGui_2
+	Instance.new("UICorner", Frame_29).CornerRadius = UDim.new(0, 8)
+	local UIStroke_4 = Instance.new("UIStroke", Frame_29)
+	UIStroke_4.Color = tbl_24_upvr.Primary
+	UIStroke_4.Transparency = 0.6
+	UIStroke_4.Thickness = 2
+	local TextLabel_43 = Instance.new("TextLabel")
+	TextLabel_43.Size = UDim2.new(1, -20, 0, 40)
+	TextLabel_43.Position = UDim2.new(0, 10, 0, 10)
+	TextLabel_43.BackgroundTransparency = 1
+	TextLabel_43.Text = "ROLE SELECTION"
+	TextLabel_43.Font = Enum.Font.GothamBold
+	TextLabel_43.TextSize = 20
+	TextLabel_43.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel_43.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel_43.Parent = Frame_29
+	local Frame_5 = Instance.new("Frame")
+	Frame_5.Name = "ClassDescFrame"
+	Frame_5.Size = UDim2.new(1, -20, 0, 80)
+	Frame_5.Position = UDim2.new(0, 10, 0, 55)
+	Frame_5.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_5.BackgroundTransparency = 0.6
+	Frame_5.BorderSizePixel = 0
+	Frame_5.Visible = false
+	Frame_5.Parent = Frame_29
+	Instance.new("UICorner", Frame_5).CornerRadius = UDim.new(0, 6)
+	local TextLabel_8 = Instance.new("TextLabel")
+	TextLabel_8.Name = "Title"
+	TextLabel_8.Size = UDim2.new(1, -16, 0, 25)
+	TextLabel_8.Position = UDim2.new(0, 8, 0, 8)
+	TextLabel_8.BackgroundTransparency = 1
+	TextLabel_8.Text = "ASSAULT CLASS"
+	TextLabel_8.Font = Enum.Font.GothamBold
+	TextLabel_8.TextSize = 18
+	TextLabel_8.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel_8.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel_8.Parent = Frame_5
+	local TextLabel_29 = Instance.new("TextLabel")
+	TextLabel_29.Name = "Description"
+	TextLabel_29.Size = UDim2.new(1, -16, 1, -35)
+	TextLabel_29.Position = UDim2.new(0, 8, 0, 33)
+	TextLabel_29.BackgroundTransparency = 1
+	TextLabel_29.Text = "Standard infantry"
+	TextLabel_29.Font = Enum.Font.Gotham
+	TextLabel_29.TextSize = 14
+	TextLabel_29.TextColor3 = Color3.fromRGB(200, 200, 200)
+	TextLabel_29.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel_29.TextYAlignment = Enum.TextYAlignment.Top
+	TextLabel_29.TextWrapped = true
+	TextLabel_29.Parent = Frame_5
+	local ScrollingFrame_upvr_2 = Instance.new("ScrollingFrame")
+	ScrollingFrame_upvr_2.Name = "ClassesScroll"
+	ScrollingFrame_upvr_2.Size = UDim2.new(1, -20, 1, -155)
+	ScrollingFrame_upvr_2.Position = UDim2.new(0, 10, 0, 145)
+	ScrollingFrame_upvr_2.BackgroundColor3 = tbl_24_upvr.Background
+	ScrollingFrame_upvr_2.BackgroundTransparency = 0.6
+	ScrollingFrame_upvr_2.BorderSizePixel = 0
+	ScrollingFrame_upvr_2.ScrollBarThickness = 4
+	ScrollingFrame_upvr_2.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ScrollingFrame_upvr_2.Parent = Frame_29
+	Instance.new("UICorner", ScrollingFrame_upvr_2).CornerRadius = UDim.new(0, 6)
+	local UIListLayout_6_upvr = Instance.new("UIListLayout", ScrollingFrame_upvr_2)
+	UIListLayout_6_upvr.Padding = UDim.new(0, 8)
+	local UIPadding_7 = Instance.new("UIPadding", ScrollingFrame_upvr_2)
+	UIPadding_7.PaddingTop = UDim.new(0, 8)
+	UIPadding_7.PaddingLeft = UDim.new(0, 8)
+	UIPadding_7.PaddingRight = UDim.new(0, 8)
+	UIPadding_7.PaddingBottom = UDim.new(0, 8)
+	local Frame_26 = Instance.new("Frame")
+	Frame_26.Size = UDim2.new(0, 280, 0, 600)
+	Frame_26.Position = UDim2.new(0.5, 20, 0.5, 0)
+	Frame_26.AnchorPoint = Vector2.new(0, 0.5)
+	Frame_26.BackgroundColor3 = tbl_24_upvr.Background
+	Frame_26.BackgroundTransparency = 0.4
+	Frame_26.BorderSizePixel = 0
+	Frame_26.Parent = ScreenGui_2
+	Instance.new("UICorner", Frame_26).CornerRadius = UDim.new(0, 8)
+	local UIStroke_6 = Instance.new("UIStroke", Frame_26)
+	UIStroke_6.Color = tbl_24_upvr.Primary
+	UIStroke_6.Transparency = 0.6
+	UIStroke_6.Thickness = 2
+	local TextLabel_7 = Instance.new("TextLabel")
+	TextLabel_7.Size = UDim2.new(1, -20, 0, 40)
+	TextLabel_7.Position = UDim2.new(0, 10, 0, 10)
+	TextLabel_7.BackgroundTransparency = 1
+	TextLabel_7.Text = "EQUIPMENT"
+	TextLabel_7.Font = Enum.Font.GothamBold
+	TextLabel_7.TextSize = 20
+	TextLabel_7.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextLabel_7.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel_7.Parent = Frame_26
+	local ScrollingFrame_upvr_7 = Instance.new("ScrollingFrame")
+	ScrollingFrame_upvr_7.Name = "LoadoutScroll"
+	ScrollingFrame_upvr_7.Size = UDim2.new(1, -20, 1, -140)
+	ScrollingFrame_upvr_7.Position = UDim2.new(0, 10, 0, 55)
+	ScrollingFrame_upvr_7.BackgroundColor3 = tbl_24_upvr.Background
+	ScrollingFrame_upvr_7.BackgroundTransparency = 0.6
+	ScrollingFrame_upvr_7.BorderSizePixel = 0
+	ScrollingFrame_upvr_7.ScrollBarThickness = 4
+	ScrollingFrame_upvr_7.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ScrollingFrame_upvr_7.Parent = Frame_26
+	Instance.new("UICorner", ScrollingFrame_upvr_7).CornerRadius = UDim.new(0, 6)
+	local UIListLayout_5_upvr = Instance.new("UIListLayout", ScrollingFrame_upvr_7)
+	UIListLayout_5_upvr.Padding = UDim.new(0, 10)
+	local UIPadding = Instance.new("UIPadding", ScrollingFrame_upvr_7)
+	UIPadding.PaddingTop = UDim.new(0, 10)
+	UIPadding.PaddingLeft = UDim.new(0, 10)
+	UIPadding.PaddingRight = UDim.new(0, 10)
+	UIPadding.PaddingBottom = UDim.new(0, 10)
+	local TextButton_7 = Instance.new("TextButton")
+	TextButton_7.Name = "SpawnBtn"
+	TextButton_7.Size = UDim2.new(1, -20, 0, 60)
+	TextButton_7.Position = UDim2.new(0, 10, 1, -70)
+	TextButton_7.BackgroundColor3 = tbl_24_upvr.Background
+	TextButton_7.BackgroundTransparency = 0.3
+	TextButton_7.BorderSizePixel = 0
+	TextButton_7.Text = "DEPLOY"
+	TextButton_7.Font = Enum.Font.GothamBold
+	TextButton_7.TextSize = 26
+	TextButton_7.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextButton_7.AutoButtonColor = false
+	TextButton_7.Parent = Frame_26
+	Instance.new("UICorner", TextButton_7).CornerRadius = UDim.new(0, 8)
+	Instance.new("UIStroke", TextButton_7).Color = tbl_24_upvr.Success
+	UIListLayout_4_upvr:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() -- Line 476
+		--[[ Upvalues[2]:
+			[1]: ScrollingFrame_upvr (readonly)
+			[2]: UIListLayout_4_upvr (readonly)
+		]]
+		ScrollingFrame_upvr.CanvasSize = UDim2.new(0, 0, 0, UIListLayout_4_upvr.AbsoluteContentSize.Y + 16)
+	end)
+	UIListLayout_9_upvr:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() -- Line 480
+		--[[ Upvalues[2]:
+			[1]: ScrollingFrame_upvr_3 (readonly)
+			[2]: UIListLayout_9_upvr (readonly)
+		]]
+		ScrollingFrame_upvr_3.CanvasSize = UDim2.new(0, 0, 0, UIListLayout_9_upvr.AbsoluteContentSize.Y + 16)
+	end)
+	UIListLayout_6_upvr:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() -- Line 484
+		--[[ Upvalues[2]:
+			[1]: ScrollingFrame_upvr_2 (readonly)
+			[2]: UIListLayout_6_upvr (readonly)
+		]]
+		ScrollingFrame_upvr_2.CanvasSize = UDim2.new(0, 0, 0, UIListLayout_6_upvr.AbsoluteContentSize.Y + 16)
+	end)
+	UIListLayout_5_upvr:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() -- Line 488
+		--[[ Upvalues[2]:
+			[1]: ScrollingFrame_upvr_7 (readonly)
+			[2]: UIListLayout_5_upvr (readonly)
+		]]
+		ScrollingFrame_upvr_7.CanvasSize = UDim2.new(0, 0, 0, UIListLayout_5_upvr.AbsoluteContentSize.Y + 16)
+	end)
+	return {
+		ScreenGui = ScreenGui_2;
+		TeamBanner = TextLabel_31;
+		ChangeTeamBtn = TextButton_10;
+		InfoLabel = TextLabel_21;
+		CreateBtn = TextButton_20;
+		LeaveSquadBtn = TextButton_2;
+		MembersScroll = ScrollingFrame_upvr_3;
+		SquadsScroll = ScrollingFrame_upvr;
+		ClassDescFrame = Frame_5;
+		ClassDescTitle = TextLabel_8;
+		ClassDescText = TextLabel_29;
+		ClassesScroll = ScrollingFrame_upvr_2;
+		LoadoutScroll = ScrollingFrame_upvr_7;
+		SpawnBtn = TextButton_7;
+	}
+end)()
+local var569_upvw = tbl_25_upvw
+var569_upvw.CreateBtn.MouseButton1Click:Connect(function() -- Line 1404
+	--[[ Upvalues[1]:
+		[1]: ShowCreateSquadDialog_upvr (readonly)
+	]]
+	ShowCreateSquadDialog_upvr()
+end)
+var569_upvw.LeaveSquadBtn.MouseButton1Click:Connect(function() -- Line 1408
+	--[[ Upvalues[1]:
+		[1]: SquadEvent_upvr (readonly)
+	]]
+	SquadEvent_upvr:FireServer("LeaveSquad")
+end)
+var569_upvw.ChangeTeamBtn.MouseButton1Click:Connect(function() -- Line 1412
+	--[[ Upvalues[9]:
+		[1]: var346_upvw (read and write)
+		[2]: LocalPlayer_upvr_2 (readonly)
+		[3]: var347_upvw (read and write)
+		[4]: var348_upvw (read and write)
+		[5]: var569_upvw (read and write)
+		[6]: RemoveBlur_upvr (readonly)
+		[7]: var343_upvw (read and write)
+		[8]: CurrentCamera_upvr_2 (readonly)
+		[9]: PlayerGui_upvr (readonly)
+	]]
+	var346_upvw = false
+	if not LocalPlayer_upvr_2.Character then
+	else
+		local Humanoid_13 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+		if not Humanoid_13 then
+		else
+			Humanoid_13.WalkSpeed = 16
+			Humanoid_13.JumpPower = 30
+			Humanoid_13.JumpHeight = 3
+			if var347_upvw then
+				var347_upvw:Disconnect()
+				var347_upvw = nil
+			end
+		end
+	end
+	if var348_upvw and var348_upvw.Parent then
+		var348_upvw:Destroy()
+		var348_upvw = nil
+	end
+	var569_upvw.ScreenGui.Enabled = false
+	RemoveBlur_upvr()
+	if var343_upvw then
+		var343_upvw:Disconnect()
+		var343_upvw = nil
+	end
+	CurrentCamera_upvr_2.CameraType = Enum.CameraType.Custom
+	if LocalPlayer_upvr_2.Character then
+		local Humanoid_12 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+		if Humanoid_12 then
+			CurrentCamera_upvr_2.CameraSubject = Humanoid_12
+		end
+	end
+	local TeamSelectionGui = PlayerGui_upvr:FindFirstChild("TeamSelectionGui")
+	if TeamSelectionGui then
+		TeamSelectionGui.Enabled = true
+	end
+end)
+var569_upvw.SpawnBtn.MouseButton1Click:Connect(function() -- Line 1420
+	--[[ Upvalues[5]:
+		[1]: var340_upvw (read and write)
+		[2]: StarterGui_upvr (readonly)
+		[3]: var344_upvw (read and write)
+		[4]: var345_upvw (read and write)
+		[5]: SquadEvent_upvr (readonly)
+	]]
+	if not var340_upvw then
+		local var578_upvr = "You must select a class first!"
+		local var579_upvr = 4
+		pcall(function() -- Line 50
+			--[[ Upvalues[3]:
+				[1]: StarterGui_upvr (copied, readonly)
+				[2]: var578_upvr (readonly)
+				[3]: var579_upvr (readonly)
+			]]
+			StarterGui_upvr:SetCore("SendNotification", {
+				Title = "Squad System";
+				Text = var578_upvr;
+				Duration = var579_upvr or 3;
+			})
+		end)
+	else
+		var344_upvw = true
+		var345_upvw = tick()
+		var578_upvr = "SpawnWithLoadout"
+		SquadEvent_upvr:FireServer(var578_upvr)
+	end
+end)
+LocalPlayer_upvr_2.CharacterAdded:Connect(function() -- Line 1431
+	--[[ Upvalues[7]:
+		[1]: RemoveBlur_upvr (readonly)
+		[2]: var343_upvw (read and write)
+		[3]: CurrentCamera_upvr_2 (readonly)
+		[4]: LocalPlayer_upvr_2 (readonly)
+		[5]: var345_upvw (read and write)
+		[6]: var344_upvw (read and write)
+		[7]: ShowSquadMenu_upvr (readonly)
+	]]
+	RemoveBlur_upvr()
+	if var343_upvw then
+		var343_upvw:Disconnect()
+		var343_upvw = nil
+	end
+	CurrentCamera_upvr_2.CameraType = Enum.CameraType.Custom
+	if LocalPlayer_upvr_2.Character then
+		local Humanoid_11 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+		if Humanoid_11 then
+			CurrentCamera_upvr_2.CameraSubject = Humanoid_11
+		end
+	end
+	task.wait(0.5)
+	if var344_upvw and tick() - var345_upvw < 3 then
+		var344_upvw = false
+	else
+		if LocalPlayer_upvr_2.Team and LocalPlayer_upvr_2.Team.Name ~= "Neutral" then
+			ShowSquadMenu_upvr()
+		end
+		var344_upvw = false
+	end
+end)
+RemoveBlur_upvr()
+if var343_upvw then
+	var343_upvw:Disconnect()
+	var343_upvw = nil
+end
+CurrentCamera_upvr_2.CameraType = Enum.CameraType.Custom
+if LocalPlayer_upvr_2.Character then
+	local Humanoid_4 = LocalPlayer_upvr_2.Character:FindFirstChild("Humanoid")
+	if Humanoid_4 then
+		CurrentCamera_upvr_2.CameraSubject = Humanoid_4
+	end
+end
+if LocalPlayer_upvr_2.Team and LocalPlayer_upvr_2.Team.Name ~= "Neutral" then
+	task.wait(0.5)
+	ShowSquadMenu_upvr()
+end
+
+
+еще 1 сркитп
+
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-14 12:36:45
+-- Luau version 6, Types version 3
+-- Time taken: 0.010619 seconds
+
+local SPH_Assets = game:GetService("ReplicatedStorage").SPH_Assets
+local module = {}
+local Arms_upvr = SPH_Assets.Arms
+local Mods_upvr = require(SPH_Assets.Mods)
+local WeldMod_upvr = require(script.Parent.WeldMod)
+function module.RigModel(arg1, arg2, arg3) -- Line 8
+	--[[ Upvalues[3]:
+		[1]: Arms_upvr (readonly)
+		[2]: Mods_upvr (readonly)
+		[3]: WeldMod_upvr (readonly)
+	]]
+	local var37
+	if arg2 then
+		local class_Humanoid_2 = arg3.Parent:FindFirstChildWhichIsA("Humanoid")
+		if class_Humanoid_2 and class_Humanoid_2.RigType ~= Enum.HumanoidRigType.R15 and Arms_upvr:FindFirstChild("R6_Arms") then
+			var37 = Arms_upvr.R6_Arms.WeaponRig
+		else
+			var37 = Arms_upvr.Default.WeaponRig
+		end
+	elseif arg1.Neutral or not arg1.Team or not Arms_upvr:FindFirstChild(arg1.Team.Name) then
+		var37 = Arms_upvr.Default.WeaponRig
+	else
+		var37 = Arms_upvr[arg1.Team.Name].WeaponRig
+	end
+	if not arg2 and Mods_upvr.viewmodelOverride then
+		local any_viewmodelOverride_result1_2 = Mods_upvr.viewmodelOverride(arg1, var37)
+		if any_viewmodelOverride_result1_2 and any_viewmodelOverride_result1_2:FindFirstChild("AnimBase") then
+			var37 = any_viewmodelOverride_result1_2
+		end
+	end
+	var37 = var37:Clone()
+	local AnimBase = var37.AnimBase
+	local FakeCamera = var37.FakeCamera
+	local Left_Arm = var37["Left Arm"]
+	for _, v in ipairs(Left_Arm:GetChildren()) do
+		if v:IsA("BasePart") then
+			WeldMod_upvr.Weld(Left_Arm, v)
+			v.CanCollide = false
+			v.CanQuery = false
+		end
+	end
+	local Right_Arm_2 = var37["Right Arm"]
+	for _, v_2 in ipairs(Right_Arm_2:GetChildren()) do
+		if v_2:IsA("BasePart") then
+			WeldMod_upvr.Weld(Right_Arm_2, v_2)
+			v_2.CanCollide = false
+			v_2.CanQuery = false
+		end
+	end
+	WeldMod_upvr.BlankM6D(var37.AnimBase, FakeCamera).Name = "FakeCamera"
+	WeldMod_upvr.M6D(var37.AnimBase, Left_Arm).Name = "LeftJoint"
+	WeldMod_upvr.M6D(var37.AnimBase, Right_Arm_2).Name = "RightJoint"
+	AnimBase.Transparency = 1
+	AnimBase.CanCollide = false
+	AnimBase.CanQuery = false
+	AnimBase.CanTouch = false
+	AnimBase.CastShadow = false
+	FakeCamera.Transparency = 1
+	FakeCamera.CanCollide = false
+	FakeCamera.CanQuery = false
+	FakeCamera.CanTouch = false
+	FakeCamera.CastShadow = false
+	Left_Arm.CanCollide = false
+	Left_Arm.CanQuery = false
+	Left_Arm.CanTouch = false
+	Left_Arm.CastShadow = true
+	Right_Arm_2.CanCollide = false
+	Right_Arm_2.CanQuery = false
+	Right_Arm_2.CanTouch = false
+	Right_Arm_2.CastShadow = true
+	if arg3 then
+		local any_BlankWeld_result1 = WeldMod_upvr.BlankWeld(arg3, var37.AnimBase)
+		any_BlankWeld_result1.Name = "BaseWeld"
+		any_BlankWeld_result1.Parent = var37
+	end
+	Instance.new("Folder", var37).Name = "Weapon"
+	return var37
+end
+return module
+
+
+еще 1
+
+
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-14 12:37:20
+-- Luau version 6, Types version 3
+-- Time taken: 0.002230 seconds
+
+local WeaponRig_upvw = workspace.CurrentCamera:WaitForChild("WeaponRig", 20)
+local function SetupListeners_upvr(arg1) -- Line 3, Named "SetupListeners"
+	--[[ Upvalues[2]:
+		[1]: WeaponRig_upvw (read and write)
+		[2]: SetupListeners_upvr (readonly)
+	]]
+	local Left_Arm_upvr_2 = arg1["Left Arm"]
+	local Right_Arm_upvr = arg1["Right Arm"]
+	local Left_Arm_upvr = arg1.FakeArms["Left Arm"]
+	local Right_Arm_upvr_2 = arg1.FakeArms["Right Arm"]
+	local Shirt_upvr = arg1.FakeArms.Shirt
+	local Clothing_upvr = arg1:WaitForChild("Clothing")
+	Shirt_upvr.ShirtTemplate = Clothing_upvr.ShirtTemplate
+	Clothing_upvr.Changed:Connect(function() -- Line 12
+		--[[ Upvalues[2]:
+			[1]: Shirt_upvr (readonly)
+			[2]: Clothing_upvr (readonly)
+		]]
+		Shirt_upvr.ShirtTemplate = Clothing_upvr.ShirtTemplate
+	end)
+	Left_Arm_upvr.Color = Left_Arm_upvr_2.Color
+	Left_Arm_upvr_2.Changed:Connect(function() -- Line 17
+		--[[ Upvalues[2]:
+			[1]: Left_Arm_upvr (readonly)
+			[2]: Left_Arm_upvr_2 (readonly)
+		]]
+		Left_Arm_upvr.Color = Left_Arm_upvr_2.Color
+	end)
+	Right_Arm_upvr_2.Color = Right_Arm_upvr.Color
+	Right_Arm_upvr.Changed:Connect(function() -- Line 22
+		--[[ Upvalues[2]:
+			[1]: Right_Arm_upvr_2 (readonly)
+			[2]: Right_Arm_upvr (readonly)
+		]]
+		Right_Arm_upvr_2.Color = Right_Arm_upvr.Color
+	end)
+	WeaponRig_upvw.Destroying:Connect(function() -- Line 26
+		--[[ Upvalues[2]:
+			[1]: WeaponRig_upvw (copied, read and write)
+			[2]: SetupListeners_upvr (copied, readonly)
+		]]
+		task.wait()
+		WeaponRig_upvw = workspace.CurrentCamera:WaitForChild("WeaponRig", 20)
+		if WeaponRig_upvw then
+			SetupListeners_upvr(WeaponRig_upvw)
+		end
+	end)
+end
+if WeaponRig_upvw and WeaponRig_upvw.Parent and WeaponRig_upvw:FindFirstChild("FakeArms") then
+	SetupListeners_upvr(WeaponRig_upvw)
+end
