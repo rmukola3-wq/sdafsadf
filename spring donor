@@ -1,0 +1,263 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-14 12:53:58
+-- Luau version 6, Types version 3
+-- Time taken: 0.013472 seconds
+
+local module_3 = {
+	spring = {};
+}
+local tbl = {}
+module_3.spring = tbl
+function tbl.new(arg1) -- Line 9
+	local var3_upvr = 0 * (arg1 or 0)
+	local var4_upvw = 1
+	local var5_upvw = 1
+	local var6_upvw = arg1 or var3_upvr
+	local var7_upvw = var3_upvr
+	local var8_upvw = arg1 or var3_upvr
+	local os_clock_result1_3_upvw = os.clock()
+	local var10_upvw = 0
+	local var11_upvw = var3_upvr
+	local var12_upvw = var3_upvr
+	local module_2 = {}
+	local module = {}
+	local function UpdateConstants_upvr() -- Line 22, Named "UpdateConstants"
+		--[[ Upvalues[9]:
+			[1]: var5_upvw (read and write)
+			[2]: var10_upvw (read and write)
+			[3]: var11_upvw (read and write)
+			[4]: var3_upvr (readonly)
+			[5]: var12_upvw (read and write)
+			[6]: var4_upvw (read and write)
+			[7]: var6_upvw (read and write)
+			[8]: var8_upvw (read and write)
+			[9]: var7_upvw (read and write)
+		]]
+		if var5_upvw == 0 then
+			var10_upvw = 0
+			var11_upvw = var3_upvr
+			var12_upvw = var3_upvr
+		else
+			if var4_upvw < 0.99999999 then
+				var10_upvw = (1 - var4_upvw * var4_upvw) ^ 0.5
+				var11_upvw = var6_upvw - var8_upvw
+				var12_upvw = var4_upvw / var10_upvw * var11_upvw + (var7_upvw) / (var10_upvw * var5_upvw)
+				return
+			end
+			if var4_upvw < 1.00000001 then
+				var10_upvw = 0
+				var11_upvw = var6_upvw - var8_upvw
+				var12_upvw = var11_upvw + var7_upvw / var5_upvw
+				return
+			end
+			var10_upvw = (var4_upvw * var4_upvw - 1) ^ 0.5
+			local var15 = (-var7_upvw) / (var5_upvw * 2 * var10_upvw)
+			local var16 = -(var8_upvw - var6_upvw) / 2
+			var11_upvw = (1 - var4_upvw / var10_upvw) * var16 + var15
+			var12_upvw = (var4_upvw / var10_upvw + 1) * var16 - var15
+		end
+	end
+	local function Pos_upvr(arg1_2) -- Line 43, Named "Pos"
+		--[[ Upvalues[7]:
+			[1]: var6_upvw (read and write)
+			[2]: var5_upvw (read and write)
+			[3]: var4_upvw (read and write)
+			[4]: var10_upvw (read and write)
+			[5]: var11_upvw (read and write)
+			[6]: var12_upvw (read and write)
+			[7]: var8_upvw (read and write)
+		]]
+		if arg1_2 < 0.001 then
+			return var6_upvw
+		end
+		if var5_upvw == 0 then
+			return var6_upvw
+		end
+		if var4_upvw < 0.99999999 then
+			local var17 = 2.718281828459045 ^ (var4_upvw * var5_upvw * arg1_2)
+			return math.cos(var10_upvw * var5_upvw * arg1_2) / var17 * var11_upvw + math.sin(var10_upvw * var5_upvw * arg1_2) / var17 * var12_upvw + var8_upvw
+		end
+		if var4_upvw < 1.00000001 then
+			return (var11_upvw + var5_upvw * arg1_2 * var12_upvw) / 2.718281828459045 ^ (var5_upvw * arg1_2) + var8_upvw
+		end
+		return var11_upvw * 2.718281828459045 ^ ((-var4_upvw - var10_upvw) * var5_upvw * arg1_2) + var12_upvw * 2.718281828459045 ^ ((-var4_upvw + var10_upvw) * var5_upvw * arg1_2) + var8_upvw
+	end
+	local function Vel_upvr(arg1_3) -- Line 63, Named "Vel"
+		--[[ Upvalues[7]:
+			[1]: var7_upvw (read and write)
+			[2]: var5_upvw (read and write)
+			[3]: var6_upvw (read and write)
+			[4]: var4_upvw (read and write)
+			[5]: var10_upvw (read and write)
+			[6]: var12_upvw (read and write)
+			[7]: var11_upvw (read and write)
+		]]
+		if arg1_3 < 0.001 then
+			return var7_upvw
+		end
+		if var5_upvw == 0 then
+			return var6_upvw
+		end
+		if var4_upvw < 0.99999999 then
+			local cosine = math.cos(var10_upvw * var5_upvw * arg1_3)
+			local sine_2 = math.sin(var10_upvw * var5_upvw * arg1_3)
+			local var20 = 2.718281828459045 ^ (var4_upvw * var5_upvw * arg1_3)
+			return var5_upvw * (cosine * var10_upvw - var4_upvw * sine_2) / var20 * var12_upvw - var5_upvw * (cosine * var4_upvw + var10_upvw * sine_2) / var20 * var11_upvw
+		end
+		if var4_upvw < 1.00000001 then
+			return -var5_upvw / 2.718281828459045 ^ (var5_upvw * arg1_3) * (var11_upvw + (var5_upvw * arg1_3 - 1) * var12_upvw)
+		end
+		return 2.718281828459045 ^ ((-var4_upvw + var10_upvw) * var5_upvw * arg1_3) * (var10_upvw - var4_upvw) * var5_upvw * var12_upvw - 2.718281828459045 ^ ((-var4_upvw - var10_upvw) * var5_upvw * arg1_3) * (var4_upvw + var10_upvw) * var5_upvw * var11_upvw
+	end
+	local function PosVel_upvr(arg1_4) -- Line 83, Named "PosVel"
+		--[[ Upvalues[7]:
+			[1]: var5_upvw (read and write)
+			[2]: var6_upvw (read and write)
+			[3]: var4_upvw (read and write)
+			[4]: var10_upvw (read and write)
+			[5]: var11_upvw (read and write)
+			[6]: var12_upvw (read and write)
+			[7]: var8_upvw (read and write)
+		]]
+		if var5_upvw == 0 then
+			return var6_upvw
+		end
+		if var4_upvw < 0.99999999 then
+			local cosine_2 = math.cos(var10_upvw * var5_upvw * arg1_4)
+			local sine = math.sin(var10_upvw * var5_upvw * arg1_4)
+			local var23 = 2.718281828459045 ^ (var4_upvw * var5_upvw * arg1_4)
+			return cosine_2 / var23 * var11_upvw + sine / var23 * var12_upvw + var8_upvw, var5_upvw * (cosine_2 * var10_upvw - var4_upvw * sine) / var23 * var12_upvw - var5_upvw * (cosine_2 * var4_upvw + var10_upvw * sine) / var23 * var11_upvw
+		end
+		if var4_upvw < 1.00000001 then
+			local var24 = 2.718281828459045 ^ (var5_upvw * arg1_4)
+			return (var11_upvw + var5_upvw * arg1_4 * var12_upvw) / var24 + var8_upvw, -var5_upvw / var24 * (var11_upvw + (var5_upvw * arg1_4 - 1) * var12_upvw)
+		end
+		local var25 = 2.718281828459045 ^ ((-var4_upvw - var10_upvw) * var5_upvw * arg1_4)
+		local var26 = 2.718281828459045 ^ ((-var4_upvw + var10_upvw) * var5_upvw * arg1_4)
+		return var11_upvw * var25 + var12_upvw * var26 + var8_upvw, var26 * (var10_upvw - var4_upvw) * var5_upvw * var12_upvw - var25 * (var4_upvw + var10_upvw) * var5_upvw * var11_upvw
+	end
+	UpdateConstants_upvr()
+	function module_2.GetPosVel() -- Line 101
+		--[[ Upvalues[2]:
+			[1]: PosVel_upvr (readonly)
+			[2]: os_clock_result1_3_upvw (read and write)
+		]]
+		return PosVel_upvr(os.clock() - os_clock_result1_3_upvw)
+	end
+	function module_2.SetPosVel(arg1_5, arg2) -- Line 104
+		--[[ Upvalues[4]:
+			[1]: var6_upvw (read and write)
+			[2]: var7_upvw (read and write)
+			[3]: os_clock_result1_3_upvw (read and write)
+			[4]: UpdateConstants_upvr (readonly)
+		]]
+		var6_upvw = arg1_5
+		var7_upvw = arg2
+		os_clock_result1_3_upvw = os.clock()
+		UpdateConstants_upvr()
+	end
+	function module_2.Accelerate(arg1_6, arg2) -- Line 110
+		--[[ Upvalues[5]:
+			[1]: PosVel_upvr (readonly)
+			[2]: os_clock_result1_3_upvw (read and write)
+			[3]: var6_upvw (read and write)
+			[4]: var7_upvw (read and write)
+			[5]: UpdateConstants_upvr (readonly)
+		]]
+		local os_clock_result1 = os.clock()
+		local PosVel_result1_3, PosVel_result2 = PosVel_upvr(os_clock_result1 - os_clock_result1_3_upvw)
+		var6_upvw = PosVel_result1_3
+		var7_upvw = PosVel_result2 + arg2
+		os_clock_result1_3_upvw = os_clock_result1
+		UpdateConstants_upvr()
+	end
+	function module.__index(arg1_7, arg2) -- Line 117
+		--[[ Upvalues[6]:
+			[1]: Pos_upvr (readonly)
+			[2]: os_clock_result1_3_upvw (read and write)
+			[3]: Vel_upvr (readonly)
+			[4]: var8_upvw (read and write)
+			[5]: var4_upvw (read and write)
+			[6]: var5_upvw (read and write)
+		]]
+		local os_clock_result1_2 = os.clock()
+		if arg2 == 'p' then
+			return Pos_upvr(os_clock_result1_2 - os_clock_result1_3_upvw)
+		end
+		if arg2 == 'v' then
+			return Vel_upvr(os_clock_result1_2 - os_clock_result1_3_upvw)
+		end
+		if arg2 == 't' then
+			return var8_upvw
+		end
+		if arg2 == 'd' then
+			return var4_upvw
+		end
+		if arg2 == 's' then
+			return var5_upvw
+		end
+	end
+	function module.__newindex(arg1_8, arg2, arg3) -- Line 131
+		--[[ Upvalues[10]:
+			[1]: var6_upvw (read and write)
+			[2]: var7_upvw (read and write)
+			[3]: Vel_upvr (readonly)
+			[4]: os_clock_result1_3_upvw (read and write)
+			[5]: Pos_upvr (readonly)
+			[6]: PosVel_upvr (readonly)
+			[7]: var8_upvw (read and write)
+			[8]: var4_upvw (read and write)
+			[9]: var5_upvw (read and write)
+			[10]: UpdateConstants_upvr (readonly)
+		]]
+		local var31
+		if arg2 == 'p' then
+			var6_upvw = var31
+			var7_upvw = Vel_upvr(os.clock() - os_clock_result1_3_upvw)
+		elseif arg2 == 'v' then
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			var6_upvw = Pos_upvr(os.clock() - os_clock_result1_3_upvw)
+			var7_upvw = var31
+		elseif arg2 == 't' then
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			local PosVel_result1_4, PosVel_result2_2 = PosVel_upvr(os.clock() - os_clock_result1_3_upvw)
+			var6_upvw = PosVel_result1_4
+			var7_upvw = PosVel_result2_2
+			var8_upvw = var31
+		elseif arg2 == 'd' then
+			if var31 == nil then
+				warn("nil value for d")
+				warn(debug.stacktrace())
+			end
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			local PosVel_result1, PosVel_result2_5 = PosVel_upvr(os.clock() - os_clock_result1_3_upvw)
+			var6_upvw = PosVel_result1
+			var7_upvw = PosVel_result2_5
+			var4_upvw = var4_upvw
+		elseif arg2 == 's' then
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			if var4_upvw == nil then
+				warn("nil value for s")
+				warn(debug.stacktrace())
+			end
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			local PosVel_result1_5, PosVel_result2_4 = PosVel_upvr(os.clock() - os_clock_result1_3_upvw)
+			var6_upvw = PosVel_result1_5
+			var7_upvw = PosVel_result2_4
+			var5_upvw = var5_upvw
+		elseif arg2 == 'a' then
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			local PosVel_result1_2, PosVel_result2_3 = PosVel_upvr(os.clock() - os_clock_result1_3_upvw)
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			var6_upvw = PosVel_result1_2
+			var7_upvw = PosVel_result2_3 + var5_upvw
+		end
+		-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+		os_clock_result1_3_upvw = os.clock()
+		UpdateConstants_upvr()
+	end
+	return setmetatable(module_2, module)
+end
+return module_3
