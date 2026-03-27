@@ -1,0 +1,172 @@
+local Utilities = {}
+
+Utilities.Weld = function(p1: BasePart, p2: BasePart, par: Instance, c0: CFrame?, c1: CFrame?): Motor6D
+	local w = Instance.new("Motor6D")
+	w.Part0 = p1
+	w.Part1 = p2
+	w.Name = p1.Name
+	w.C0 = c0 or p1.CFrame:inverse() * p2.CFrame
+	w.C1 = c1 or CFrame.new()
+	w.Parent = par
+	return w
+end
+
+Utilities.WeldComplex = function(x:BasePart, y:BasePart, par:Instance): Motor6D
+	local W = Instance.new("Motor6D")
+	W.Name = y.Name
+	W.Part0 = x
+	W.Part1 = y
+	local CJ = CFrame.new(x.Position)
+	local C0 = x.CFrame:inverse()*CJ
+	local C1 = y.CFrame:inverse()*CJ
+	W.C0 = C0
+	W.C1 = C1
+	W.Parent = par
+	return W
+end
+
+Utilities.CheckForHumanoid = function(search: Instance?): (boolean, Humanoid?)
+	local result = false
+	local humanoid = nil
+	if search then
+		if (search.Parent:FindFirstChild("Humanoid") or search.Parent.Parent:FindFirstChild("Humanoid")) then
+			result = true
+			if search.Parent:FindFirstChild('Humanoid') then
+				humanoid = search.Parent.Humanoid
+			elseif search.Parent.Parent:FindFirstChild('Humanoid') then
+				humanoid = search.Parent.Parent.Humanoid
+			end
+		else
+			result = false
+		end	
+	end
+	return result, humanoid
+end
+
+local RS = game:GetService("RunService")
+
+Utilities.ArrayToDict = function(array: {string}, value: any): {[string]: any}
+	if value == nil then
+		value = true
+	end
+	local dict = {}
+	for _, name in ipairs(array) do
+		dict[name] = value
+	end
+	return dict
+end
+
+-- dictionary from object values
+Utilities.MakeVarDict = function(...: Instance): {[string]: Instance}
+	local args = table.pack(...)
+	local dict = {}
+	for i, obj in ipairs(args) do
+		dict[obj.Name] = obj.Value
+	end
+	return dict
+end
+
+--------------------[ DEBUG PRINT ]------------------------------------------------
+
+local function round3(n: number): number
+	return math.round(n * 1000) / 1000
+end
+
+local function stringV3(V3: Vector3, name: string?): string?
+	if not V3 then
+		warn("Vector3 is nil, not printing.")
+		return
+	end
+	
+	local coords = "("..round3(V3.X)..", "..round3(V3.Y)..", "..round3(V3.Z)..")"
+	if name then
+		return name .. ": " .. coords
+	end
+	return coords
+end
+
+Utilities.V3string = stringV3
+
+Utilities.V3print = function(V3: Vector3, name: string?)
+	print(stringV3(V3, name))
+end
+Utilities.CFprint = function(CF: CFrame, name: string?, adv: boolean?)
+	name = name or ""
+	if not CF then
+		warn("CFrame is nil, not printing: " .. name)
+		return
+	end
+	
+	local str = "\n" .. Utilities.V3print(CF.Position, "Position") .. "\n" .. Utilities.V3print(CF.LookVector, "Looking At")
+	
+	if adv then
+		str = str .. "\n" .. Utilities.V3print(CF.UpVector, "Up Vector") .. "\n" .. Utilities.V3print(CF.RightVector, "Right Vector")
+	end
+	
+	print("CFrame: " .. name .. str)
+end
+
+Utilities.debugprint = function(str: string)
+	local t = round3(tick()) % 1000 + 1000
+	print(t..": "..str)
+end
+
+local typeoftable = {
+	number = function(num: number, name: string?)
+		local name2 = name or "Number"
+		print(name2 .. ": " .. round3(num))
+	end,
+	Vector3 = Utilities.V3print,
+	CFrame = Utilities.CFprint,
+}
+Utilities.Uprint = function(item: any, name: string?)
+	local itemtype = typeof(item)
+	local func = typeoftable[itemtype]
+	if func then
+		func(item, name)
+	else
+		print(name .. ": unsupported type: " .. itemtype)
+	end
+end
+
+--------------------[ MATH FUNCTIONS ]------------------------------------------------
+
+type nv3 = number|Vector3
+type v3cf = (number, number, number) -> CFrame
+
+Utilities.RANDF = function(Min: nv3, Max: nv3): nv3
+	return Min + math.random() * (Max - Min)
+end
+
+local function RANDMR(mean: nv3, range: nv3): nv3
+	return range * (math.random() - 0.5) + mean
+end
+Utilities.RANDMR = RANDMR
+
+Utilities.RANDMRV3 = function(m: Vector3, r: Vector3): Vector3
+	return Vector3.new(RANDMR(m.X, r.X), RANDMR(m.Y, r.Y), RANDMR(m.Z, r.Z))
+end
+
+Utilities.CFRot = function(CF: CFrame): CFrame
+	return CFrame.Angles(CF:ToEulerAnglesXYZ())
+end
+
+Utilities.bounds = function(val: number, min: number, max: number): number
+	return math.max(math.min(val, max), min)
+end
+
+local function V3ToCF(func: v3cf, V3: Vector3): CFrame
+	return func(V3.X, V3.Y, V3.Z)
+end
+Utilities.V3ToCF = V3ToCF
+
+Utilities.V3ToCFRad = function(func: v3cf, V3: Vector3): CFrame
+	return V3ToCF(func, V3 * math.rad(1))
+end
+
+Utilities.CFRad = function(func: v3cf, x: number, y: number, z: number): CFrame
+	return func(math.rad(x), math.rad(y), math.rad(z))
+end
+
+return Utilities
+  
