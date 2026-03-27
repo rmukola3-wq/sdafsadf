@@ -1,0 +1,42 @@
+--!strict
+-- AK47 Recoil Profile (soft snap + fast return, no down bounce)
+
+return {
+	kickStrength = 0.0053, -- уменьшено в 6 раз (было 0.032)
+	kickRandomness = 0.10,
+	horizontalStrength = 0.005, -- уменьшено в 6 раз (было 0.030)
+	horizontalRandomness = 0.18,
+	rollStrength = 0.0033, -- уменьшено в 6 раз (было 0.020)
+	instantKickRatio = 0.55,
+	posInstantKickRatio = 0.50,
+	patternSpeed = 18,
+	patternScale = 0.020,
+	patternRandomness = 0.10,
+	springStiffness = 62.0,
+	springDamping = 26.0,
+	leftBias = -0.0016,
+	gunKickback = 0.0067, -- уменьшено в 6 раз (было 0.040)
+	gunRise = 0.0047, -- уменьшено в 6 раз (было 0.028)
+	posMult = 0.90,
+	verticalMult = 0.83, -- уменьшаем вертикальную отдачу в 1.2 раза
+	minPitch = -0.10,
+	maxPitch = 0.80,
+	maxYaw = 0.50,
+	maxRoll = 0.35,
+	-- ADS multipliers для стабильного прицеливания
+	adsViewKickScale = 0.35,   -- насколько меньше VMKick в ADS
+	adsRecoilCFScale = 0.45,   -- насколько меньше RecoilSystem recoilcf в ADS
+	adsSwayScale = 0.22,       -- sway меньше в ADS
+	adsLagScale = 0.15,        -- lag меньше в ADS
+	adsCamRecoilPower = 0.18,  -- маленькая отдача в камеру ТОЛЬКО ADS
+	hipRecoilScale = 0.10,  -- влияет на recoilcf (RecoilSystem) - hipfire в 10 раз мягче
+	hipVMKickScale = 0.10,  -- влияет на VMKick (сам "щелчок") - hipfire в 10 раз мягче
+	usePattern = true,
+	pattern = {
+		{x = -0.08, y = 0.85},
+		{x = -0.12, y = 0.73},
+		{x = -0.18, y = 0.60},
+		{x = -0.12, y = 0.60},
+	},
+	cameraShake = 0.02,
+}
