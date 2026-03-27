@@ -1,0 +1,799 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-14 12:37:14
+-- Luau version 6, Types version 3
+-- Time taken: 0.041600 seconds
+
+-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+local Parent_upvr = script.Parent
+local Torso = Parent_upvr:WaitForChild("Torso")
+local Right_Shoulder_upvr = Torso:WaitForChild("Right Shoulder")
+local Left_Shoulder_upvr = Torso:WaitForChild("Left Shoulder")
+local Right_Hip_upvr = Torso:WaitForChild("Right Hip")
+local Left_Hip_upvr = Torso:WaitForChild("Left Hip")
+local Humanoid_upvr = Parent_upvr:WaitForChild("Humanoid")
+local var24_upvw = 16
+local var25_upvw
+if game.ReplicatedStorage:FindFirstChild("SPH_Assets") then
+	local SPH_Assets = game.ReplicatedStorage.SPH_Assets
+	local module = require(SPH_Assets:WaitForChild("GameConfig"))
+	animconfig = require(SPH_Assets:FindFirstChild("GameConfig"):WaitForChild("AnimationsConfig")) -- Setting global
+	var24_upvw = module.walkSpeed
+	var25_upvw = module.fallDamageDist
+else
+	animconfig = require(game.ReplicatedStorage:WaitForChild("AnimationsConfig")) -- Setting global
+	var24_upvw = Humanoid_upvr.WalkSpeed
+	var25_upvw = animconfig["Landing Mechanics"].RevertToDefaultFallDamageDistance
+end
+local pcall_result1, pcall_result2 = pcall(function() -- Line 39
+	return UserSettings():IsUserFeatureEnabled("UserAnimateScaleRun")
+end)
+local var31_upvr = pcall_result1 and pcall_result2
+local function _() -- Line 42, Named "getRigScale"
+	--[[ Upvalues[2]:
+		[1]: var31_upvr (readonly)
+		[2]: Parent_upvr (readonly)
+	]]
+	if var31_upvr then
+		return Parent_upvr:GetScale()
+	end
+	return 1
+end
+local tbl = {
+	pose = "Standing";
+	currentAnim = "";
+	currentAnimInstance = nil;
+	currentAnimTrack = nil;
+	currentAnimKeyframeHandler = nil;
+	currentAnimLength = 0;
+	currentAnimSpeed = 1;
+	animTable = {};
+	animNames = {
+		idle = {{
+			defaultid = "rbxassetid://180435571";
+			weight = 9;
+		}, {
+			defaultid = "rbxassetid://180435792";
+			weight = 1;
+		}};
+		swim = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		swimidle = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		walk = {{
+			defaultid = "rbxassetid://180426354";
+			weight = 10;
+		}};
+		run = {{
+			defaultid = "run.xml";
+			weight = 10;
+		}};
+		jump = {{
+			defaultid = "rbxassetid://125750702";
+			weight = 10;
+		}};
+		fall = {{
+			defaultid = "rbxassetid://180436148";
+			weight = 10;
+		}};
+		land = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		climb = {{
+			defaultid = "rbxassetid://180436334";
+			weight = 10;
+		}};
+		sit = {{
+			defaultid = "rbxassetid://178130996";
+			weight = 10;
+		}};
+		toolnone = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		toolslash = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		toollunge = {{
+			defaultid = "rbxassetid://0";
+			weight = 10;
+		}};
+		wave = {{
+			defaultid = "rbxassetid://128777973";
+			weight = 10;
+		}};
+		point = {{
+			defaultid = "rbxassetid://128853357";
+			weight = 10;
+		}};
+		dance1 = {{
+			defaultid = "rbxassetid://182435998";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491037";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491065";
+			weight = 10;
+		}};
+		dance2 = {{
+			defaultid = "rbxassetid://182436842";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491248";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491277";
+			weight = 10;
+		}};
+		dance3 = {{
+			defaultid = "rbxassetid://182436935";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491368";
+			weight = 10;
+		}, {
+			defaultid = "rbxassetid://182491423";
+			weight = 10;
+		}};
+		laugh = {{
+			defaultid = "rbxassetid://129423131";
+			weight = 10;
+		}};
+		cheer = {{
+			defaultid = "rbxassetid://129423030";
+			weight = 10;
+		}};
+	};
+	dances = {"dance1", "dance2", "dance3"};
+	emoteNames = {
+		wave = false;
+		point = false;
+		dance1 = true;
+		dance2 = true;
+		dance3 = true;
+		laugh = false;
+		cheer = false;
+	};
+}
+local pose_upvw = tbl.pose
+local currentAnim_upvw = tbl.currentAnim
+local currentAnimInstance_upvw = tbl.currentAnimInstance
+local currentAnimTrack_upvw = tbl.currentAnimTrack
+local currentAnimKeyframeHandler_upvw = tbl.currentAnimKeyframeHandler
+local currentAnimSpeed_upvw = tbl.currentAnimSpeed
+local animTable_upvr = tbl.animTable
+local animNames_upvr = tbl.animNames
+local emoteNames_upvr = tbl.emoteNames
+local HumanoidRootPart_upvr = Parent_upvr:WaitForChild("HumanoidRootPart")
+local RaycastParams_new_result1_upvr = RaycastParams.new()
+RaycastParams_new_result1_upvr.IgnoreWater = false
+RaycastParams_new_result1_upvr.RespectCanCollide = false
+RaycastParams_new_result1_upvr.FilterType = Enum.RaycastFilterType.Exclude
+RaycastParams_new_result1_upvr.FilterDescendantsInstances = {Parent_upvr}
+task.wait()
+if script:FindFirstChild("land").LandAnim.AnimationId ~= "rbxassetid://"..0 then
+	local Humanoid_upvr_2 = Parent_upvr:WaitForChild("Humanoid")
+	local var97_upvw = 0
+	local var98_upvw = false
+	local RevertToDefaultLandDelay_upvw = animconfig["Landing Mechanics"].RevertToDefaultLandDelay
+	local currentAnimLength_upvw = tbl.currentAnimLength
+	local Y_2_upvw = HumanoidRootPart_upvr.Position.Y
+	game:GetService("RunService").RenderStepped:Connect(function() -- Line 172
+		--[[ Upvalues[12]:
+			[1]: pose_upvw (read and write)
+			[2]: Humanoid_upvr_2 (readonly)
+			[3]: var97_upvw (read and write)
+			[4]: HumanoidRootPart_upvr (readonly)
+			[5]: RaycastParams_new_result1_upvr (readonly)
+			[6]: var98_upvw (read and write)
+			[7]: var25_upvw (read and write)
+			[8]: Humanoid_upvr (readonly)
+			[9]: RevertToDefaultLandDelay_upvw (read and write)
+			[10]: currentAnimLength_upvw (read and write)
+			[11]: Parent_upvr (readonly)
+			[12]: Y_2_upvw (read and write)
+		]]
+		if pose_upvw == "Dead" then
+		else
+			if Humanoid_upvr_2.Sit then
+				var97_upvw = 0
+			end
+			local workspace_Raycast_result1 = workspace:Raycast(HumanoidRootPart_upvr.Position, Vector3.new(0, -3.0999, 0), RaycastParams_new_result1_upvr)
+			if workspace_Raycast_result1 and workspace_Raycast_result1.Instance then
+				if var98_upvw then
+					var98_upvw = false
+					if var25_upvw + animconfig["Landing Mechanics"].FallDistanceAddition < var97_upvw and pose_upvw ~= "Landing" then
+						pose_upvw = "Landing"
+						playAnimation("land", 0.1, Humanoid_upvr)
+						RevertToDefaultLandDelay_upvw = currentAnimLength_upvw
+						if RevertToDefaultLandDelay_upvw == 0 then
+							RevertToDefaultLandDelay_upvw = animconfig["Landing Mechanics"].RevertToDefaultLandDelay
+						end
+						if animconfig["Landing Mechanics"].FindDefaultLandDelay then
+							if currentAnimLength_upvw == 0 then
+								warn("FIND LAND DELAY |", "Animation Loading... LAND AGAIN.")
+							else
+								warn("FIND LAND DELAY |", RevertToDefaultLandDelay_upvw, "- Use as Default LandDelay")
+							end
+						end
+						task.wait(RevertToDefaultLandDelay_upvw)
+						pose_upvw = "Standing"
+						onMoving(Parent_upvr.PrimaryPart.Velocity.Magnitude)
+					end
+					var97_upvw = 0
+					-- KONSTANTWARNING: GOTO [106] #80
+				end
+			else
+				var98_upvw = true
+			end
+			local Y = HumanoidRootPart_upvr.Position.Y
+			if Y < Y_2_upvw and var98_upvw then
+				var97_upvw += Y_2_upvw - Y
+			else
+				var97_upvw = 0
+			end
+			Y_2_upvw = Y
+		end
+	end)
+end
+function configureAnimationSet(arg1, arg2) -- Line 218
+	--[[ Upvalues[1]:
+		[1]: animTable_upvr (readonly)
+	]]
+	if animTable_upvr[arg1] ~= nil then
+		for _, v in pairs(animTable_upvr[arg1].connections) do
+			v:Disconnect()
+		end
+	end
+	animTable_upvr[arg1] = {}
+	animTable_upvr[arg1].count = 0
+	animTable_upvr[arg1].totalWeight = 0
+	animTable_upvr[arg1].connections = {}
+	local SOME = script:FindFirstChild(arg1)
+	if SOME ~= nil then
+		table.insert(animTable_upvr[arg1].connections, SOME.ChildAdded:Connect(function(arg1_2) -- Line 233
+			--[[ Upvalues[2]:
+				[1]: arg1 (readonly)
+				[2]: arg2 (readonly)
+			]]
+			configureAnimationSet(arg1, arg2)
+		end))
+		table.insert(animTable_upvr[arg1].connections, SOME.ChildRemoved:Connect(function(arg1_3) -- Line 234
+			--[[ Upvalues[2]:
+				[1]: arg1 (readonly)
+				[2]: arg2 (readonly)
+			]]
+			configureAnimationSet(arg1, arg2)
+		end))
+		local var116 = 1
+		for _, v_2 in pairs(SOME:GetChildren()) do
+			if v_2:IsA("Animation") then
+				table.insert(animTable_upvr[arg1].connections, v_2.Changed:Connect(function(arg1_4) -- Line 238
+					--[[ Upvalues[2]:
+						[1]: arg1 (readonly)
+						[2]: arg2 (readonly)
+					]]
+					configureAnimationSet(arg1, arg2)
+				end))
+				animTable_upvr[arg1][var116] = {}
+				animTable_upvr[arg1][var116].anim = v_2
+				local Weight = v_2:FindFirstChild("Weight")
+				if Weight == nil then
+					animTable_upvr[arg1][var116].weight = 1
+				else
+					animTable_upvr[arg1][var116].weight = Weight.Value
+				end
+				animTable_upvr[arg1].count = animTable_upvr[arg1].count + 1
+				animTable_upvr[arg1].totalWeight = animTable_upvr[arg1].totalWeight + animTable_upvr[arg1][var116].weight
+			end
+		end
+	end
+	if animTable_upvr[arg1].count <= 0 then
+		for i_3, v_3 in pairs(arg2) do
+			v_2 = animTable_upvr[arg1]
+			v_2[i_3] = {}
+			v_2 = animTable_upvr[arg1][i_3]
+			v_2.anim = Instance.new("Animation")
+			v_2 = animTable_upvr[arg1][i_3].anim
+			v_2.Name = arg1
+			v_2 = animTable_upvr[arg1][i_3].anim
+			v_2.AnimationId = v_3.defaultid
+			v_2 = animTable_upvr[arg1][i_3]
+			v_2.weight = v_3.weight
+			v_2 = animTable_upvr[arg1]
+			v_2.count = animTable_upvr[arg1].count + 1
+			v_2 = animTable_upvr[arg1]
+			v_2.totalWeight = animTable_upvr[arg1].totalWeight + v_3.weight
+		end
+	end
+end
+function scriptChildModified(arg1) -- Line 271
+	--[[ Upvalues[1]:
+		[1]: animNames_upvr (readonly)
+	]]
+	local var125 = animNames_upvr[arg1.Name]
+	if var125 ~= nil then
+		configureAnimationSet(arg1.Name, var125)
+	end
+end
+script.ChildAdded:Connect(scriptChildModified)
+script.ChildRemoved:Connect(scriptChildModified)
+if Humanoid_upvr then
+	local _ = Humanoid_upvr:FindFirstChildOfClass("Animator")
+else
+end
+if nil then
+	for _, v_4 in ipairs(nil:GetPlayingAnimationTracks()) do
+		v_4:Stop(0)
+		v_4:Destroy()
+	end
+end
+for i_5, _ in pairs(animNames_upvr) do
+	-- KONSTANTWARNING: Failed to evaluate expression, replaced with nil [670.48]
+	configureAnimationSet(i_5, nil)
+end
+local var133_upvw = "None"
+local var134_upvw = 0
+function stopAllAnimations() -- Line 312
+	--[[ Upvalues[5]:
+		[1]: currentAnim_upvw (read and write)
+		[2]: emoteNames_upvr (readonly)
+		[3]: currentAnimInstance_upvw (read and write)
+		[4]: currentAnimKeyframeHandler_upvw (read and write)
+		[5]: currentAnimTrack_upvw (read and write)
+	]]
+	local var135
+	if emoteNames_upvr[currentAnim_upvw] ~= nil and emoteNames_upvr[var135] == false then
+		var135 = "idle"
+	end
+	currentAnim_upvw = ""
+	currentAnimInstance_upvw = nil
+	if currentAnimKeyframeHandler_upvw ~= nil then
+		currentAnimKeyframeHandler_upvw:Disconnect()
+	end
+	if currentAnimTrack_upvw ~= nil then
+		currentAnimTrack_upvw:Stop()
+		currentAnimTrack_upvw:Destroy()
+		currentAnimTrack_upvw = nil
+	end
+	return var135
+end
+function setAnimationSpeed(arg1) -- Line 334
+	--[[ Upvalues[2]:
+		[1]: currentAnimSpeed_upvw (read and write)
+		[2]: currentAnimTrack_upvw (read and write)
+	]]
+	if arg1 ~= currentAnimSpeed_upvw then
+		currentAnimSpeed_upvw = arg1
+		currentAnimTrack_upvw:AdjustSpeed(currentAnimSpeed_upvw)
+	end
+end
+function keyFrameReachedFunc(arg1) -- Line 354
+	--[[ Upvalues[4]:
+		[1]: currentAnim_upvw (read and write)
+		[2]: emoteNames_upvr (readonly)
+		[3]: currentAnimSpeed_upvw (read and write)
+		[4]: Humanoid_upvr (readonly)
+	]]
+	if arg1 == "End" then
+		local var136
+		if emoteNames_upvr[currentAnim_upvw] ~= nil and emoteNames_upvr[var136] == false then
+			var136 = "idle"
+		end
+		playAnimation(var136, 0, Humanoid_upvr)
+		setAnimationSpeed(currentAnimSpeed_upvw)
+	end
+end
+local var137_upvw
+function playAnimation(arg1, arg2, arg3) -- Line 370
+	--[[ Upvalues[8]:
+		[1]: animTable_upvr (readonly)
+		[2]: currentAnimInstance_upvw (read and write)
+		[3]: currentAnimTrack_upvw (read and write)
+		[4]: currentAnimSpeed_upvw (read and write)
+		[5]: var137_upvw (read and write)
+		[6]: currentAnimLength_upvw (read and write)
+		[7]: currentAnim_upvw (read and write)
+		[8]: currentAnimKeyframeHandler_upvw (read and write)
+	]]
+	local var139
+	while animTable_upvr[arg1][var139].weight < math.random(1, animTable_upvr[arg1].totalWeight) do
+		var139 += 1
+	end
+	local anim = animTable_upvr[arg1][var139].anim
+	if anim ~= currentAnimInstance_upvw then
+		if currentAnimTrack_upvw ~= nil then
+			currentAnimTrack_upvw:Stop(arg2)
+			currentAnimTrack_upvw:Destroy()
+		end
+		currentAnimTrack_upvw = arg3:LoadAnimation(anim)
+		currentAnimSpeed_upvw = 1
+		var137_upvw = currentAnimTrack_upvw.Priority
+		currentAnimTrack_upvw.Priority = Enum.AnimationPriority.Core
+		currentAnimLength_upvw = currentAnimTrack_upvw.Length / currentAnimSpeed_upvw
+		currentAnimTrack_upvw:Play(arg2)
+		currentAnim_upvw = arg1
+		currentAnimInstance_upvw = anim
+		if currentAnimKeyframeHandler_upvw ~= nil then
+			currentAnimKeyframeHandler_upvw:Disconnect()
+		end
+		currentAnimKeyframeHandler_upvw = currentAnimTrack_upvw.KeyframeReached:Connect(keyFrameReachedFunc)
+	end
+end
+local var141_upvw = ""
+local var142_upvw
+local var143_upvw
+local var144_upvw
+function toolKeyFrameReachedFunc(arg1) -- Line 442
+	--[[ Upvalues[2]:
+		[1]: var141_upvw (read and write)
+		[2]: Humanoid_upvr (readonly)
+	]]
+	if arg1 == "End" then
+		playToolAnimation(var141_upvw, 0, Humanoid_upvr)
+	end
+end
+function playToolAnimation(arg1, arg2, arg3, arg4) -- Line 450
+	--[[ Upvalues[5]:
+		[1]: animTable_upvr (readonly)
+		[2]: var143_upvw (read and write)
+		[3]: var142_upvw (read and write)
+		[4]: var141_upvw (read and write)
+		[5]: var144_upvw (read and write)
+	]]
+	local var146
+	while animTable_upvr[arg1][var146].weight < math.random(1, animTable_upvr[arg1].totalWeight) do
+		var146 += 1
+	end
+	local var147
+	local anim_2 = animTable_upvr[arg1][var146].anim
+	if var143_upvw ~= anim_2 then
+		if var142_upvw ~= nil then
+			var142_upvw:Stop()
+			var142_upvw:Destroy()
+			var147 = 0
+		end
+		var142_upvw = arg3:LoadAnimation(anim_2)
+		if arg4 then
+			var142_upvw.Priority = arg4
+		end
+		var142_upvw:Play(var147)
+		var141_upvw = arg1
+		var143_upvw = anim_2
+		var144_upvw = var142_upvw.KeyframeReached:Connect(toolKeyFrameReachedFunc)
+	end
+end
+function stopToolAnimations() -- Line 485
+	--[[ Upvalues[4]:
+		[1]: var141_upvw (read and write)
+		[2]: var144_upvw (read and write)
+		[3]: var143_upvw (read and write)
+		[4]: var142_upvw (read and write)
+	]]
+	if var144_upvw ~= nil then
+		var144_upvw:Disconnect()
+	end
+	var141_upvw = ""
+	var143_upvw = nil
+	if var142_upvw ~= nil then
+		var142_upvw:Stop()
+		var142_upvw:Destroy()
+		var142_upvw = nil
+	end
+	return var141_upvw
+end
+local idleSpeedSafetyRange_upvr = animconfig["Velocity Mechanics"].idleSpeedSafetyRange
+local walkSpeedSafetyRange_upvr = animconfig["Velocity Mechanics"].walkSpeedSafetyRange
+function onMoving(arg1) -- Line 508
+	--[[ Upvalues[10]:
+		[1]: pose_upvw (read and write)
+		[2]: var31_upvr (readonly)
+		[3]: Parent_upvr (readonly)
+		[4]: idleSpeedSafetyRange_upvr (readonly)
+		[5]: Humanoid_upvr (readonly)
+		[6]: emoteNames_upvr (readonly)
+		[7]: currentAnim_upvw (read and write)
+		[8]: var24_upvw (read and write)
+		[9]: walkSpeedSafetyRange_upvr (readonly)
+		[10]: currentAnimInstance_upvw (read and write)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 35 start (CF ANALYSIS FAILED)
+	local var151
+	if var151 == "Landing" then return end
+	if var31_upvr then
+		var151 = Parent_upvr:GetScale()
+	else
+		var151 = 1
+	end
+	var151 = idleSpeedSafetyRange_upvr
+	-- KONSTANTERROR: [0] 1. Error Block 35 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [16] 14. Error Block 8 start (CF ANALYSIS FAILED)
+	var151 = Humanoid_upvr.MoveDirection.Magnitude
+	-- KONSTANTERROR: [16] 14. Error Block 8 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [24] 19. Error Block 28 start (CF ANALYSIS FAILED)
+	var151 = emoteNames_upvr[currentAnim_upvw]
+	-- KONSTANTERROR: [24] 19. Error Block 28 end (CF ANALYSIS FAILED)
+end
+function onDied() -- Line 531
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "Dead"
+	task.wait(1)
+	if script then
+		script:Destroy()
+	end
+end
+function onJumping() -- Line 539
+	--[[ Upvalues[3]:
+		[1]: Humanoid_upvr (readonly)
+		[2]: var134_upvw (read and write)
+		[3]: pose_upvw (read and write)
+	]]
+	playAnimation("jump", 0.1, Humanoid_upvr)
+	var134_upvw = 0.3
+	pose_upvw = "Jumping"
+end
+function onClimbing(arg1) -- Line 545
+	--[[ Upvalues[5]:
+		[1]: var31_upvr (readonly)
+		[2]: Parent_upvr (readonly)
+		[3]: Humanoid_upvr (readonly)
+		[4]: pose_upvw (read and write)
+		[5]: var97_upvw (read and write)
+	]]
+	local var152
+	if var31_upvr then
+		var152 = Parent_upvr:GetScale()
+	else
+		var152 = 1
+	end
+	var152 = playAnimation
+	var152("climb", 0.1, Humanoid_upvr)
+	var152 = setAnimationSpeed
+	var152(arg1 / var152 / 12)
+	var152 = "Climbing"
+	pose_upvw = var152
+	var152 = 0
+	var97_upvw = var152
+end
+function onGettingUp() -- Line 554
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "GettingUp"
+end
+function onFreeFall() -- Line 558
+	--[[ Upvalues[3]:
+		[1]: pose_upvw (read and write)
+		[2]: var134_upvw (read and write)
+		[3]: Humanoid_upvr (readonly)
+	]]
+	if pose_upvw == "Landing" then
+	else
+		if var134_upvw <= 0 then
+			playAnimation("fall", 0.3, Humanoid_upvr)
+		end
+		pose_upvw = "FreeFall"
+	end
+end
+function onFallingDown() -- Line 566
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "FallingDown"
+end
+function onSeated() -- Line 570
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "Seated"
+end
+function onPlatformStanding() -- Line 574
+	--[[ Upvalues[1]:
+		[1]: pose_upvw (read and write)
+	]]
+	pose_upvw = "PlatformStanding"
+end
+function onSwimming(arg1) -- Line 578
+	--[[ Upvalues[2]:
+		[1]: Humanoid_upvr (readonly)
+		[2]: pose_upvw (read and write)
+	]]
+	if Humanoid_upvr.MoveDirection.Magnitude ~= 0 then
+		if script:FindFirstChild("swim").SwimAnim.AnimationId ~= "rbxassetid://"..0 then
+			pose_upvw = "Swimming"
+		else
+			pose_upvw = "Running"
+		end
+	end
+	if script:FindFirstChild("swimidle").SwimIdleAnim.AnimationId ~= "rbxassetid://"..0 then
+		pose_upvw = "SwimmingIdle"
+	else
+		pose_upvw = "Standing"
+	end
+end
+function getTool() -- Line 594
+	--[[ Upvalues[1]:
+		[1]: Parent_upvr (readonly)
+	]]
+	for _, v_6 in ipairs(Parent_upvr:GetChildren()) do
+		if v_6.className == "Tool" then
+			return v_6
+		end
+	end
+	return nil
+end
+function getToolAnim(arg1) -- Line 601
+	for _, v_7 in ipairs(arg1:GetChildren()) do
+		if v_7.Name == "toolanim" and v_7.className == "StringValue" then
+			return v_7
+		end
+	end
+	return nil
+end
+function animateTool() -- Line 610
+	--[[ Upvalues[2]:
+		[1]: var133_upvw (read and write)
+		[2]: Humanoid_upvr (readonly)
+	]]
+	if var133_upvw == "None" then
+		playToolAnimation("toolnone", 0.1, Humanoid_upvr, Enum.AnimationPriority.Idle)
+	else
+		if var133_upvw == "Slash" then
+			playToolAnimation("toolslash", 0, Humanoid_upvr, Enum.AnimationPriority.Action)
+			return
+		end
+		if var133_upvw == "Lunge" then
+			playToolAnimation("toollunge", 0, Humanoid_upvr, Enum.AnimationPriority.Action)
+			return
+		end
+	end
+end
+function moveSit() -- Line 628
+	--[[ Upvalues[4]:
+		[1]: Right_Shoulder_upvr (readonly)
+		[2]: Left_Shoulder_upvr (readonly)
+		[3]: Right_Hip_upvr (readonly)
+		[4]: Left_Hip_upvr (readonly)
+	]]
+	Right_Shoulder_upvr.MaxVelocity = 0.15
+	Left_Shoulder_upvr.MaxVelocity = 0.15
+	Right_Shoulder_upvr:SetDesiredAngle(1.57)
+	Left_Shoulder_upvr:SetDesiredAngle(-1.57)
+	Right_Hip_upvr:SetDesiredAngle(1.57)
+	Left_Hip_upvr:SetDesiredAngle(-1.57)
+end
+local var163_upvw = 0
+local var164_upvw = 0
+function move(arg1) -- Line 639
+	--[[ Upvalues[11]:
+		[1]: var163_upvw (read and write)
+		[2]: var134_upvw (read and write)
+		[3]: pose_upvw (read and write)
+		[4]: Humanoid_upvr (readonly)
+		[5]: Right_Shoulder_upvr (readonly)
+		[6]: Left_Shoulder_upvr (readonly)
+		[7]: Right_Hip_upvr (readonly)
+		[8]: Left_Hip_upvr (readonly)
+		[9]: var133_upvw (read and write)
+		[10]: var164_upvw (read and write)
+		[11]: var143_upvw (read and write)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	var163_upvw = arg1
+	if 0 < var134_upvw then
+		var134_upvw -= arg1 - var163_upvw
+	end
+	if animconfig.DEBUG["Pose Warns"] then
+		warn(pose_upvw)
+	end
+	if pose_upvw == "Landing" then
+	else
+		local var165
+		if pose_upvw == "FreeFall" and var134_upvw <= 0 then
+			playAnimation("fall", 0.3, Humanoid_upvr)
+		else
+			if pose_upvw == "Seated" then
+				playAnimation("sit", 0.5, Humanoid_upvr)
+				return
+			end
+			if pose_upvw == "Walking" then
+				playAnimation("walk", 0.1, Humanoid_upvr)
+			elseif pose_upvw == "Running" then
+				playAnimation("run", 0.1, Humanoid_upvr)
+			elseif pose_upvw == "Swimming" then
+				playAnimation("swim", 0.1, Humanoid_upvr)
+			elseif pose_upvw == "SwimmingIdle" then
+				playAnimation("swimidle", 0.1, Humanoid_upvr)
+			elseif pose_upvw == "Dead" or pose_upvw == "GettingUp" or pose_upvw == "FallingDown" or pose_upvw == "Seated" or pose_upvw == "PlatformStanding" then
+				stopAllAnimations()
+				var165 = true
+			end
+		end
+		if var165 then
+			local var166 = 0.1 * math.sin(arg1 * 1)
+			Right_Shoulder_upvr:SetDesiredAngle(var166 + 0)
+			Left_Shoulder_upvr:SetDesiredAngle(var166 - 0)
+			Right_Hip_upvr:SetDesiredAngle(-var166)
+			Left_Hip_upvr:SetDesiredAngle(-var166)
+		end
+		local getTool_result1 = getTool()
+		if getTool_result1 and getTool_result1:FindFirstChild("Handle") then
+			local getToolAnim_result1 = getToolAnim(getTool_result1)
+			if getToolAnim_result1 then
+				var133_upvw = getToolAnim_result1.Value
+				getToolAnim_result1.Parent = nil
+				var164_upvw = arg1 + 0.3
+			end
+			if var164_upvw < arg1 then
+				var164_upvw = 0
+				var133_upvw = "None"
+			end
+			animateTool()
+			return
+		end
+		stopToolAnimations()
+		var133_upvw = "None"
+		var143_upvw = nil
+		var164_upvw = 0
+	end
+end
+Humanoid_upvr.Died:Connect(onDied)
+Humanoid_upvr.Running:Connect(onMoving)
+Humanoid_upvr.Jumping:Connect(onJumping)
+Humanoid_upvr.Climbing:Connect(onClimbing)
+Humanoid_upvr.GettingUp:Connect(onGettingUp)
+Humanoid_upvr.FreeFalling:Connect(onFreeFall)
+Humanoid_upvr.FallingDown:Connect(onFallingDown)
+Humanoid_upvr.Seated:Connect(onSeated)
+Humanoid_upvr.PlatformStanding:Connect(onPlatformStanding)
+Humanoid_upvr.Swimming:Connect(onSwimming)
+local dances_upvr = tbl.dances
+game:GetService("Players").LocalPlayer.Chatted:Connect(function(arg1) -- Line 725
+	--[[ Upvalues[4]:
+		[1]: dances_upvr (readonly)
+		[2]: pose_upvw (read and write)
+		[3]: emoteNames_upvr (readonly)
+		[4]: Humanoid_upvr (readonly)
+	]]
+	local var171
+	if arg1 == "/e dance" then
+		var171 = dances_upvr[math.random(1, #dances_upvr)]
+	elseif string.sub(arg1, 1, 3) == "/e " then
+		var171 = string.sub(arg1, 4)
+	elseif string.sub(arg1, 1, 7) == "/emote " then
+		var171 = string.sub(arg1, 8)
+	end
+	if pose_upvw == "Standing" and emoteNames_upvr[var171] ~= nil then
+		playAnimation(var171, 0.1, Humanoid_upvr)
+	end
+end)
+script:WaitForChild("PlayEmote").OnInvoke = function(arg1) -- Line 742
+	--[[ Upvalues[4]:
+		[1]: pose_upvw (read and write)
+		[2]: emoteNames_upvr (readonly)
+		[3]: Humanoid_upvr (readonly)
+		[4]: currentAnimTrack_upvw (read and write)
+	]]
+	if pose_upvw ~= "Standing" then return end
+	if emoteNames_upvr[arg1] ~= nil then
+		playAnimation(arg1, 0.1, Humanoid_upvr)
+		return true, currentAnimTrack_upvw
+	end
+	return false
+end
+playAnimation("idle", 0.1, Humanoid_upvr)
+pose_upvw = "Standing"
+while Parent_upvr.Parent ~= nil do
+	local _, wait_result2 = wait(0.1)
+	move(wait_result2)
+endad
