@@ -1,0 +1,1780 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-14 12:55:52
+-- Luau version 6, Types version 3
+-- Time taken: 0.133908 seconds
+
+-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+local LocalPlayer_upvr = game:GetService("Players").LocalPlayer
+char = script.Parent -- Setting global
+local var10_upvw
+if char ~= LocalPlayer_upvr.Character then
+	warn("char redefined, may cause errors")
+	local Character = LocalPlayer_upvr.Character
+	if not Character then
+		Character = LocalPlayer_upvr.CharacterAdded:Wait()
+	end
+	char = Character -- Setting global
+	LocalPlayer_upvr.ReplicationFocus = nil
+end
+local ReplicatedStorage_upvr = game:GetService("ReplicatedStorage")
+local Framework = ReplicatedStorage_upvr.Framework
+local Modules = Framework.Modules
+local Events_2_upvr = Framework.Events
+local System_upvr = require(ReplicatedStorage_upvr:WaitForChild("DroneSystem").Modules.System)
+local Projectiles = ReplicatedStorage_upvr.Projectiles
+local Events = Projectiles.Events
+local Visuals_upvr = Projectiles.Visuals
+local FrameworkHUD_upvw = LocalPlayer_upvr.PlayerGui:WaitForChild("FrameworkHUD")
+local any_new_result1_4_upvr = require(Modules.Framework).new()
+any_new_result1_4_upvr.newchar(char)
+local PartCache_upvr = require(Modules.PartCache)
+local any_new_result1_2_upvr = require(Modules.CameraShaker).new(Enum.RenderPriority.Camera.Value, function(arg1) -- Line 54
+	local CurrentCamera = workspace.CurrentCamera
+	CurrentCamera.CFrame *= arg1
+end)
+any_new_result1_2_upvr:Start()
+any_new_result1_4_upvr.stand()
+any_new_result1_4_upvr.sprint(false, true)
+local any_new_result1 = require(Projectiles.Modules.FastCastRedux).new().new()
+local RaycastParams_new_result1 = RaycastParams.new()
+RaycastParams_new_result1.FilterType = Enum.RaycastFilterType.Exclude
+RaycastParams_new_result1.IgnoreWater = true
+local RunService = game:GetService("RunService")
+local TweenService_upvr_2 = game:GetService("TweenService")
+local UserInputService_upvr = game:GetService("UserInputService")
+local ContextActionService_upvr = game:GetService("ContextActionService")
+local var32_upvw
+;({})[1] = "Head"
+local _ = {"LeftHand", "LeftUpperArm", "LeftLowerArm", "RightHand", "RightUpperArm", "RightLowerArm"}
+local Waist_upvr = char.UpperTorso:WaitForChild("Waist")
+local var35_upvw = 0
+char.Humanoid.CameraOffset = Vector3.new(0.07999, -0.3499, -1.25)
+local var36_upvw = false
+local var37_upvw = false
+local var38_upvw = true
+local var39_upvw = false
+local var40_upvw = "none"
+local var41_upvw = false
+local var42_upvw = false
+local var43_upvw = 100
+local Keymapper_upvr = require(Modules.Keymapper)
+local function bindinputs_upvr() -- Line 134, Named "bindinputs"
+	--[[ Upvalues[3]:
+		[1]: var39_upvw (read and write)
+		[2]: ContextActionService_upvr (readonly)
+		[3]: Keymapper_upvr (readonly)
+	]]
+	if var39_upvw then
+	else
+		ContextActionService_upvr:BindAction("Sprint", InputHandler, false, Keymapper_upvr.SprintKeyboard, Keymapper_upvr.SprintController)
+		ContextActionService_upvr:BindAction("Crouch", InputHandler, false, Keymapper_upvr.CrouchKeyboard, Keymapper_upvr.CrouchController)
+		ContextActionService_upvr:BindAction("Prone", InputHandler, false, Keymapper_upvr.ProneKeyboard, Keymapper_upvr.ProneController)
+		ContextActionService_upvr:BindAction("Reload", InputHandler, false, Keymapper_upvr.ReloadKeyboard, Keymapper_upvr.ReloadController)
+		ContextActionService_upvr:BindAction("Stand", InputHandler, false, Keymapper_upvr.StandKeyboard, Keymapper_upvr.StandController)
+		ContextActionService_upvr:BindAction("Selector", InputHandler, false, Keymapper_upvr.SwitchFiremodeKeyboard, Keymapper_upvr.SwitchFiremodeController)
+		ContextActionService_upvr:BindAction("EquipOne", InputHandler, false, Keymapper_upvr.EquipSlot1Keyboard)
+		ContextActionService_upvr:BindAction("EquipTwo", InputHandler, false, Keymapper_upvr.EquipSlot2Keyboard)
+		ContextActionService_upvr:BindAction("EquipThree", InputHandler, false, Keymapper_upvr.EquipSlot3Keyboard)
+		ContextActionService_upvr:BindAction("EquipFour", InputHandler, false, Keymapper_upvr.EquipSlot4Keyboard)
+		ContextActionService_upvr:BindAction("EquipFive", InputHandler, false, Keymapper_upvr.EquipSlot5Keyboard)
+		ContextActionService_upvr:BindAction("Blindfire", InputHandler, false, Keymapper_upvr.ToggleBlindfireKeyboard, Keymapper_upvr.ToggleBlindfireController)
+		ContextActionService_upvr:BindAction("Pointaim", InputHandler, false, Keymapper_upvr.TogglePointaimKeyboard, Keymapper_upvr.TogglePointaimController)
+		ContextActionService_upvr:BindAction("Stance", InputHandler, false, Keymapper_upvr.StanceKeyboard)
+		ContextActionService_upvr:BindAction("Use", InputHandler, false, Keymapper_upvr.UseToolKeyboard, Keymapper_upvr.UseToolController)
+		ContextActionService_upvr:BindAction("Aim", InputHandler, false, Keymapper_upvr.AimToolKeyboard, Keymapper_upvr.AimToolController)
+		ContextActionService_upvr:BindAction("LeanL", InputHandler, false, Keymapper_upvr.LeanLeftKeyboard, Keymapper_upvr.LeanLeftController)
+		ContextActionService_upvr:BindAction("LeanR", InputHandler, false, Keymapper_upvr.LeanRightKeyboard, Keymapper_upvr.LeanRightController)
+		ContextActionService_upvr:BindAction("SlotCycleR", InputHandler, false, Keymapper_upvr.CycleRightController)
+		ContextActionService_upvr:BindAction("SlotCycleL", InputHandler, false, Keymapper_upvr.CycleLeftController)
+	end
+end
+local function unbindinputs_upvr(arg1) -- Line 158, Named "unbindinputs"
+	--[[ Upvalues[1]:
+		[1]: ContextActionService_upvr (readonly)
+	]]
+	ContextActionService_upvr:UnbindAction("Sprint")
+	ContextActionService_upvr:UnbindAction("Crouch")
+	ContextActionService_upvr:UnbindAction("Prone")
+	ContextActionService_upvr:UnbindAction("Reload")
+	ContextActionService_upvr:UnbindAction("Stand")
+	ContextActionService_upvr:UnbindAction("Selector")
+	ContextActionService_upvr:UnbindAction("Blindfire")
+	ContextActionService_upvr:UnbindAction("Pointaim")
+	ContextActionService_upvr:UnbindAction("Stance")
+	ContextActionService_upvr:UnbindAction("Use")
+	ContextActionService_upvr:UnbindAction("Aim")
+	ContextActionService_upvr:UnbindAction("LeanL")
+	ContextActionService_upvr:UnbindAction("LeanR")
+	ContextActionService_upvr:UnbindAction("SlotCycleR")
+	ContextActionService_upvr:UnbindAction("SlotCycleL")
+	if arg1 then
+		ContextActionService_upvr:UnbindAction("EquipOne")
+		ContextActionService_upvr:UnbindAction("EquipTwo")
+		ContextActionService_upvr:UnbindAction("EquipThree")
+		ContextActionService_upvr:UnbindAction("EquipFour")
+		ContextActionService_upvr:UnbindAction("EquipFive")
+	end
+end
+var10_upvw = LocalPlayer_upvr.PlayerGui
+var10_upvw.MainMenu:GetPropertyChangedSignal("Enabled"):Connect(function() -- Line 189
+	--[[ Upvalues[3]:
+		[1]: LocalPlayer_upvr (readonly)
+		[2]: unbindinputs_upvr (readonly)
+		[3]: bindinputs_upvr (readonly)
+	]]
+	if LocalPlayer_upvr.PlayerGui.MainMenu.Enabled then
+		unbindinputs_upvr(true)
+	else
+		LocalPlayer_upvr.PlayerGui.FrameworkHUD.Enabled = true
+		bindinputs_upvr()
+	end
+end)
+var10_upvw = true
+local var46_upvw
+local function slotuifade_upvr(arg1) -- Line 204, Named "slotuifade"
+	--[[ Upvalues[4]:
+		[1]: var10_upvw (read and write)
+		[2]: var46_upvw (read and write)
+		[3]: TweenService_upvr_2 (readonly)
+		[4]: FrameworkHUD_upvw (read and write)
+	]]
+	if var10_upvw then
+	else
+		if var46_upvw then
+			task.cancel(var46_upvw)
+		end
+		if _G.PlayerData and not _G.PlayerData.Settings.HUD then return end
+		TweenService_upvr_2:Create(FrameworkHUD_upvw.Slots, TweenInfo.new(0.3, Enum.EasingStyle.Linear), {
+			GroupTransparency = 0;
+		}):Play()
+		var46_upvw = task.delay(arg1, function() -- Line 216
+			--[[ Upvalues[2]:
+				[1]: TweenService_upvr_2 (copied, readonly)
+				[2]: FrameworkHUD_upvw (copied, read and write)
+			]]
+			TweenService_upvr_2:Create(FrameworkHUD_upvw.Slots, TweenInfo.new(0.3, Enum.EasingStyle.Linear), {
+				GroupTransparency = 1;
+			}):Play()
+		end)
+	end
+end
+local var50_upvw = false
+local function equiphandler_upvr(arg1) -- Line 222, Named "equiphandler"
+	--[[ Upvalues[10]:
+		[1]: var39_upvw (read and write)
+		[2]: LocalPlayer_upvr (readonly)
+		[3]: System_upvr (readonly)
+		[4]: slotuifade_upvr (readonly)
+		[5]: var50_upvw (read and write)
+		[6]: any_new_result1_4_upvr (readonly)
+		[7]: var32_upvw (read and write)
+		[8]: unbindinputs_upvr (readonly)
+		[9]: ReplicatedStorage_upvr (readonly)
+		[10]: bindinputs_upvr (readonly)
+	]]
+	if var39_upvw then
+	else
+		if LocalPlayer_upvr.PlayerGui.MainMenu.Enabled then return end
+		if not arg1 then return end
+		local SOME_3 = char:FindFirstChild("Slot"..arg1)
+		if SOME_3.Value ~= "Mavic" and System_upvr.equipped then return end
+		if not SOME_3 or SOME_3.Value == "" then return end
+		slotuifade_upvr(1.8)
+		if string.find(SOME_3.Value, "FPV") then
+			var50_upvw = true
+			any_new_result1_4_upvr.unequip()
+			var32_upvw = nil
+			unbindinputs_upvr()
+			System_upvr.Spawn(LocalPlayer_upvr, ReplicatedStorage_upvr.DroneSystem.Drones.FPV[SOME_3.Value])
+			task.delay(2, function() -- Line 243
+				--[[ Upvalues[1]:
+					[1]: var50_upvw (copied, read and write)
+				]]
+				var50_upvw = false
+			end)
+			return
+		end
+		local var53
+		if SOME_3.Value == "Mavic" then
+			var50_upvw = true
+			var53 = any_new_result1_4_upvr
+			var53.unequip()
+			var32_upvw = nil
+			var53 = workspace
+			local SOME = var53.Drones:FindFirstChild(LocalPlayer_upvr.Name)
+			var53 = nil
+			if SOME then
+				var53 = SOME:FindFirstChild("Mavic")
+			end
+			if var53 and System_upvr.equipped then
+				System_upvr.Disconnect(LocalPlayer_upvr)
+			else
+				unbindinputs_upvr()
+				System_upvr.Spawn(LocalPlayer_upvr, ReplicatedStorage_upvr.DroneSystem.Drones.Mavic.Mavic)
+			end
+			task.delay(2, function() -- Line 266
+				--[[ Upvalues[1]:
+					[1]: var50_upvw (copied, read and write)
+				]]
+				var50_upvw = false
+			end)
+			return
+		end
+		if System_upvr.equipped then return end
+		bindinputs_upvr()
+		if var32_upvw == arg1 then
+			any_new_result1_4_upvr.unequip()
+			var32_upvw = nil
+			return
+		end
+		if any_new_result1_4_upvr.bools.equipped then
+			any_new_result1_4_upvr.unequip()
+			repeat
+				task.wait()
+			until not any_new_result1_4_upvr.bools.equipped
+		end
+		any_new_result1_4_upvr.equip(SOME_3.Value, SOME_3)
+		var32_upvw = arg1
+	end
+end
+local var56_upvw = false
+local function fireinput_upvr(arg1) -- Line 289, Named "fireinput"
+	--[[ Upvalues[2]:
+		[1]: any_new_result1_4_upvr (readonly)
+		[2]: var56_upvw (read and write)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 1 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [0] 1. Error Block 1 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [8] 6. Error Block 2 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [8] 6. Error Block 2 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [15] 10. Error Block 32 start (CF ANALYSIS FAILED)
+	if not any_new_result1_4_upvr.bools.equipped then
+		-- KONSTANTERROR: [21] 14. Error Block 5 start (CF ANALYSIS FAILED)
+		do
+			return
+		end
+		-- KONSTANTERROR: [21] 14. Error Block 5 end (CF ANALYSIS FAILED)
+	end
+	if arg1 == Enum.UserInputState.Begin then
+		if any_new_result1_4_upvr.anims.reload and (any_new_result1_4_upvr.anims.reload.IsPlaying or any_new_result1_4_upvr.anims.dryreload.IsPlaying) then
+			any_new_result1_4_upvr.reloadcancel()
+		else
+			if any_new_result1_4_upvr.values.ammo <= 0 or var56_upvw then return end
+			var56_upvw = true
+			any_new_result1_4_upvr.bools.shooting = true
+			task.spawn(function() -- Line 303
+				--[[ Upvalues[2]:
+					[1]: any_new_result1_4_upvr (copied, readonly)
+					[2]: var56_upvw (copied, read and write)
+				]]
+				repeat
+					if any_new_result1_4_upvr.values.ammo <= 0 then break end
+					if not any_new_result1_4_upvr.bools.canfire then break end
+					any_new_result1_4_upvr.fire()
+					if not any_new_result1_4_upvr.settings.usesnewprojectiles then
+						any_new_result1_4_upvr.cast()
+					else
+						any_new_result1_4_upvr.castnewprojectile()
+					end
+					task.wait(any_new_result1_4_upvr.settings.firerate)
+				until any_new_result1_4_upvr.settings.firemode == "semi" and not any_new_result1_4_upvr.bools.shooting
+				any_new_result1_4_upvr.bools.shooting = false
+				var56_upvw = false
+			end)
+		end
+	end
+	if arg1 == Enum.UserInputState.End then
+		any_new_result1_4_upvr.bools.shooting = false
+	end
+	-- KONSTANTERROR: [15] 10. Error Block 32 end (CF ANALYSIS FAILED)
+end
+local function aimtoggle_upvr() -- Line 326, Named "aimtoggle"
+	--[[ Upvalues[2]:
+		[1]: any_new_result1_4_upvr (readonly)
+		[2]: var37_upvw (read and write)
+	]]
+	if not any_new_result1_4_upvr.bools.canaim then
+	else
+		if var37_upvw then return end
+		var37_upvw = true
+		aimtog = not aimtog -- Setting global
+		any_new_result1_4_upvr.aim(aimtog)
+		task.delay(0.1, function() -- Line 335
+			--[[ Upvalues[1]:
+				[1]: var37_upvw (copied, read and write)
+			]]
+			var37_upvw = false
+		end)
+	end
+end
+local function sprinttoggle_upvr() -- Line 340, Named "sprinttoggle"
+	--[[ Upvalues[1]:
+		[1]: any_new_result1_4_upvr (readonly)
+	]]
+	if any_new_result1_4_upvr.bools.aiming then
+		any_new_result1_4_upvr.sprint(true)
+	else
+		if not any_new_result1_4_upvr.cansprint() then return end
+		if any_new_result1_4_upvr.bools.blindfiring then
+			any_new_result1_4_upvr.blindfire(false)
+		end
+		any_new_result1_4_upvr.reloadcancel()
+		if any_new_result1_4_upvr.bools.sprinting then
+			any_new_result1_4_upvr.sprint(false)
+			return
+		end
+		any_new_result1_4_upvr.sprint(true)
+	end
+end
+local function _() -- Line 358, Named "leanLtoggle"
+	--[[ Upvalues[2]:
+		[1]: var40_upvw (read and write)
+		[2]: any_new_result1_4_upvr (readonly)
+	]]
+	if var40_upvw == "none" then
+		var40_upvw = "left"
+		any_new_result1_4_upvr.lean("left")
+	elseif var40_upvw ~= "none" then
+		var40_upvw = "none"
+		any_new_result1_4_upvr.lean("none")
+	end
+end
+local function _() -- Line 368, Named "leanRtoggle"
+	--[[ Upvalues[2]:
+		[1]: var40_upvw (read and write)
+		[2]: any_new_result1_4_upvr (readonly)
+	]]
+	if var40_upvw == "none" then
+		var40_upvw = "right"
+		any_new_result1_4_upvr.lean("right")
+	elseif var40_upvw ~= "none" then
+		var40_upvw = "none"
+		any_new_result1_4_upvr.lean("none")
+	end
+end
+local function _() -- Line 378, Named "pronetoggle"
+	--[[ Upvalues[1]:
+		[1]: any_new_result1_4_upvr (readonly)
+	]]
+	if not any_new_result1_4_upvr.bools.canprone then
+	else
+		if char.Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+			any_new_result1_4_upvr.stand()
+			return
+		end
+		if any_new_result1_4_upvr.bools.proning then
+			if any_new_result1_4_upvr.bools.sprinting then
+			else
+				any_new_result1_4_upvr.stand()
+			end
+		end
+		any_new_result1_4_upvr.prone(true)
+	end
+end
+local function _() -- Line 389, Named "crouchtoggle"
+	--[[ Upvalues[1]:
+		[1]: any_new_result1_4_upvr (readonly)
+	]]
+	if not any_new_result1_4_upvr.bools.cancrouch then
+	else
+		if char.Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+			any_new_result1_4_upvr.stand()
+			return
+		end
+		if any_new_result1_4_upvr.bools.crouching then
+			if any_new_result1_4_upvr.bools.sprinting then
+			else
+				any_new_result1_4_upvr.stand()
+			end
+		end
+		any_new_result1_4_upvr.crouch(true)
+	end
+end
+local function _() -- Line 401, Named "selectortoggle"
+	--[[ Upvalues[1]:
+		[1]: any_new_result1_4_upvr (readonly)
+	]]
+	if any_new_result1_4_upvr.bools.equipped and any_new_result1_4_upvr.settings.switchfiremode then
+		if any_new_result1_4_upvr.settings.firemode == "semi" then
+			any_new_result1_4_upvr.firemodeswitch("auto")
+			return
+		end
+		any_new_result1_4_upvr.firemodeswitch("semi")
+	end
+end
+local function _() -- Line 411, Named "reloadtoggle"
+	--[[ Upvalues[1]:
+		[1]: any_new_result1_4_upvr (readonly)
+	]]
+	if any_new_result1_4_upvr.bools.equipped then
+		if any_new_result1_4_upvr.bools.blindfiring then
+			any_new_result1_4_upvr.blindfire(false)
+		end
+		any_new_result1_4_upvr.reload()
+	end
+end
+local TweenService_upvr = game:GetService("TweenService")
+local function _(arg1, arg2, arg3) -- Line 425, Named "Tween"
+	--[[ Upvalues[1]:
+		[1]: TweenService_upvr (readonly)
+	]]
+	return TweenService_upvr:Create(arg1, TweenInfo.new(arg3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), arg2)
+end
+local function _() -- Line 434, Named "blindfiretoggle"
+	--[[ Upvalues[2]:
+		[1]: any_new_result1_4_upvr (readonly)
+		[2]: var36_upvw (read and write)
+	]]
+	if any_new_result1_4_upvr.bools.equipped then
+		if var36_upvw then
+			if any_new_result1_4_upvr.bools.aiming then
+			else
+				any_new_result1_4_upvr.blindfire(false)
+				var36_upvw = false
+			end
+		end
+		any_new_result1_4_upvr.aim(false)
+		aimtog = false -- Setting global
+		any_new_result1_4_upvr.blindfire(true)
+		var36_upvw = true
+	end
+end
+local function _() -- Line 452, Named "pointaimtoggle"
+	--[[ Upvalues[1]:
+		[1]: any_new_result1_4_upvr (readonly)
+	]]
+	if any_new_result1_4_upvr.bools.equipped then
+		if any_new_result1_4_upvr.bools.pointaim then
+			any_new_result1_4_upvr.pointaim(false)
+			return
+		end
+		any_new_result1_4_upvr.pointaim(true)
+	end
+end
+local function cycleequip_upvr(arg1) -- Line 462, Named "cycleequip"
+	--[[ Upvalues[10]:
+		[1]: var39_upvw (read and write)
+		[2]: LocalPlayer_upvr (readonly)
+		[3]: System_upvr (readonly)
+		[4]: var50_upvw (read and write)
+		[5]: any_new_result1_4_upvr (readonly)
+		[6]: var32_upvw (read and write)
+		[7]: unbindinputs_upvr (readonly)
+		[8]: ReplicatedStorage_upvr (readonly)
+		[9]: bindinputs_upvr (readonly)
+		[10]: var42_upvw (read and write)
+	]]
+	if var39_upvw then
+	else
+		if not arg1 then return end
+		if LocalPlayer_upvr.PlayerGui.MainMenu.Enabled then return end
+		local SOME_2 = char:FindFirstChild("Slot"..arg1)
+		if SOME_2.Value ~= "Mavic" and System_upvr.equipped then return end
+		if not SOME_2 or SOME_2.Value == "" then return end
+		if string.find(SOME_2.Value, "FPV") then
+			var50_upvw = true
+			any_new_result1_4_upvr.unequip()
+			var32_upvw = nil
+			unbindinputs_upvr()
+			System_upvr.Spawn(LocalPlayer_upvr, ReplicatedStorage_upvr.DroneSystem.Drones.FPV[SOME_2.Value])
+			task.delay(2, function() -- Line 482
+				--[[ Upvalues[1]:
+					[1]: var50_upvw (copied, read and write)
+				]]
+				var50_upvw = false
+			end)
+			return
+		end
+		local var62
+		if SOME_2.Value == "Mavic" then
+			var50_upvw = true
+			var62 = any_new_result1_4_upvr
+			var62.unequip()
+			var32_upvw = nil
+			var62 = workspace
+			local SOME_7 = var62.Drones:FindFirstChild(LocalPlayer_upvr.Name)
+			var62 = nil
+			if SOME_7 then
+				var62 = SOME_7:FindFirstChild("Mavic")
+			end
+			if var62 and System_upvr.equipped then
+				System_upvr.Disconnect(LocalPlayer_upvr)
+			else
+				unbindinputs_upvr()
+				System_upvr.Spawn(LocalPlayer_upvr, ReplicatedStorage_upvr.DroneSystem.Drones.Mavic.Mavic)
+			end
+			task.delay(2, function() -- Line 505
+				--[[ Upvalues[1]:
+					[1]: var50_upvw (copied, read and write)
+				]]
+				var50_upvw = false
+			end)
+			return
+		end
+		if System_upvr.equipped then return end
+		bindinputs_upvr()
+		if any_new_result1_4_upvr.bools.equipped then
+			any_new_result1_4_upvr.unequip()
+			repeat
+				task.wait()
+			until not any_new_result1_4_upvr.bools.equipped
+		end
+		any_new_result1_4_upvr.equip(SOME_2.Value, SOME_2)
+		task.delay(any_new_result1_4_upvr.anims.equip.Length, function() -- Line 521
+			--[[ Upvalues[1]:
+				[1]: var42_upvw (copied, read and write)
+			]]
+			var42_upvw = false
+		end)
+	end
+end
+local var67_upvw
+local var68_upvw = false
+char.Humanoid.Running:Connect(function(arg1) -- Line 529
+	--[[ Upvalues[4]:
+		[1]: var67_upvw (read and write)
+		[2]: var68_upvw (read and write)
+		[3]: any_new_result1_4_upvr (readonly)
+		[4]: sprinttoggle_upvr (readonly)
+	]]
+	var67_upvw = arg1
+	local var70
+	if 0.1 >= arg1 then
+		var70 = false
+	else
+		var70 = true
+	end
+	var68_upvw = var70
+	var70 = var68_upvw
+	if not var70 then
+		var70 = any_new_result1_4_upvr.bools.sprinting
+		if var70 then
+			var70 = sprinttoggle_upvr
+			var70()
+		end
+	end
+end)
+local var71_upvw = true
+local var72_upvw = false
+local var73_upvw
+function InputHandler(arg1, arg2, arg3) -- Line 538
+	--[[ Upvalues[17]:
+		[1]: var43_upvw (read and write)
+		[2]: var71_upvw (read and write)
+		[3]: any_new_result1_4_upvr (readonly)
+		[4]: var72_upvw (read and write)
+		[5]: var10_upvw (read and write)
+		[6]: sprinttoggle_upvr (readonly)
+		[7]: fireinput_upvr (readonly)
+		[8]: aimtoggle_upvr (readonly)
+		[9]: var37_upvw (read and write)
+		[10]: var40_upvw (read and write)
+		[11]: slotuifade_upvr (readonly)
+		[12]: var42_upvw (read and write)
+		[13]: var32_upvw (read and write)
+		[14]: cycleequip_upvr (readonly)
+		[15]: var73_upvw (read and write)
+		[16]: equiphandler_upvr (readonly)
+		[17]: var36_upvw (read and write)
+	]]
+	if arg1 == "Sprint" then
+		if var43_upvw == 0 then return end
+		if var71_upvw then
+			if arg2 == Enum.UserInputState.Begin then
+				if any_new_result1_4_upvr.bools.aiming then
+					any_new_result1_4_upvr.sprint(true)
+					return
+				end
+				if not any_new_result1_4_upvr.cansprint() then return end
+				if any_new_result1_4_upvr.bools.blindfiring then
+					any_new_result1_4_upvr.blindfire(false)
+				end
+				any_new_result1_4_upvr.reloadcancel()
+				any_new_result1_4_upvr.sprint(true)
+			elseif arg2 == Enum.UserInputState.End then
+				any_new_result1_4_upvr.sprint(false)
+				-- KONSTANTWARNING: GOTO [71] #54
+			end
+		elseif var72_upvw or var10_upvw or arg2 == Enum.UserInputState.Begin then
+			sprinttoggle_upvr()
+		end
+	end
+	if arg1 == "Use" then
+		if any_new_result1_4_upvr.bools.equipped and any_new_result1_4_upvr.settings.guntype < 5 then
+			fireinput_upvr(arg2)
+		elseif any_new_result1_4_upvr.settings.guntype == 5 and arg2 == Enum.UserInputState.Begin then
+			any_new_result1_4_upvr.throwgrenade()
+		elseif any_new_result1_4_upvr.settings.guntype == 6 and arg2 == Enum.UserInputState.Begin then
+			any_new_result1_4_upvr.bandage()
+		elseif any_new_result1_4_upvr.settings.guntype == 7 and arg2 == Enum.UserInputState.Begin then
+			any_new_result1_4_upvr.firerpg()
+		end
+		any_new_result1_4_upvr.stance(0)
+	end
+	if arg1 == "Aim" then
+		if any_new_result1_4_upvr.bools.equipped and 5 <= any_new_result1_4_upvr.settings.guntype and any_new_result1_4_upvr.settings.guntype ~= 7 then return end
+		if var71_upvw then
+			if arg2 == Enum.UserInputState.Begin then
+				aimtoggle_upvr()
+				if any_new_result1_4_upvr.bools.aiming then
+					any_new_result1_4_upvr.pointaim(false)
+					any_new_result1_4_upvr.stance(0)
+					-- KONSTANTWARNING: GOTO [237] #169
+				end
+				-- KONSTANTWARNING: GOTO [237] #169
+			end
+		elseif var72_upvw then
+			if arg2 == Enum.UserInputState.Begin then
+				if not any_new_result1_4_upvr.bools.canaim then return end
+				if var37_upvw then return end
+				var37_upvw = true
+				aimtog = true -- Setting global
+				any_new_result1_4_upvr.aim(true)
+				task.delay(0.1, function() -- Line 599
+					--[[ Upvalues[1]:
+						[1]: var37_upvw (copied, read and write)
+					]]
+					var37_upvw = false
+				end)
+			elseif arg2 == Enum.UserInputState.End then
+				aimtog = false -- Setting global
+				any_new_result1_4_upvr.aim(false)
+			end
+		end
+	end
+	if arg1 == "Stance" and arg2 == Enum.UserInputState.Change then
+		if any_new_result1_4_upvr.bools.equipped and 5 <= any_new_result1_4_upvr.settings.guntype then
+			return Enum.ContextActionResult.Pass
+		end
+		if 0 < arg3.Position.Z then
+			local stance = any_new_result1_4_upvr.bools.stance
+			local clamped_2 = math.clamp(stance + 1, -1, 1)
+			if clamped_2 == stance then return end
+			if clamped_2 ~= 0 then
+				any_new_result1_4_upvr.pointaim(false)
+				aimtog = false -- Setting global
+			end
+			any_new_result1_4_upvr.stance(clamped_2)
+		elseif arg3.Position.Z < 0 then
+			local stance_3 = any_new_result1_4_upvr.bools.stance
+			local clamped_3 = math.clamp(stance_3 - 1, -1, 1)
+			if clamped_3 == stance_3 then return end
+			if clamped_3 ~= 0 then
+				any_new_result1_4_upvr.pointaim(false)
+				aimtog = false -- Setting global
+			end
+			any_new_result1_4_upvr.stance(clamped_3)
+		end
+		return Enum.ContextActionResult.Pass
+	end
+	if arg1 == "LeanL" then
+		if arg2 == Enum.UserInputState.Begin then
+			any_new_result1_4_upvr.lean("left")
+			var40_upvw = "left"
+		elseif arg2 == Enum.UserInputState.End and var40_upvw == "left" then
+			any_new_result1_4_upvr.lean("none")
+			var40_upvw = "none"
+		end
+	end
+	if arg1 == "LeanR" then
+		if arg2 == Enum.UserInputState.Begin then
+			any_new_result1_4_upvr.lean("right")
+			var40_upvw = "right"
+		elseif arg2 == Enum.UserInputState.End and var40_upvw == "right" then
+			any_new_result1_4_upvr.lean("none")
+			var40_upvw = "none"
+		end
+	end
+	if arg2 ~= Enum.UserInputState.Begin then
+	else
+		if arg1 == "SlotCycleR" then
+			slotuifade_upvr(2.3)
+			if var42_upvw then return end
+			if not var32_upvw then
+				var32_upvw = 1
+				var42_upvw = true
+				cycleequip_upvr(var32_upvw)
+				return
+			end
+			if var32_upvw == 5 then
+				var32_upvw = 1
+			else
+				var32_upvw += 1
+			end
+			local SOME_6 = char:FindFirstChild("Slot"..var32_upvw)
+			if not SOME_6 or SOME_6.Value == "" then
+				var42_upvw = true
+				cycleequip_upvr(var32_upvw)
+				var32_upvw = 1
+				return
+			end
+			if var73_upvw then
+				task.cancel(var73_upvw)
+				var73_upvw = nil
+			end
+			var73_upvw = task.delay(0.5, function() -- Line 703
+				--[[ Upvalues[3]:
+					[1]: var42_upvw (copied, read and write)
+					[2]: cycleequip_upvr (copied, readonly)
+					[3]: var32_upvw (copied, read and write)
+				]]
+				var42_upvw = true
+				cycleequip_upvr(var32_upvw)
+			end)
+			local var92
+		end
+		if arg1 == "SlotCycleL" then
+			var92 = 2.3
+			slotuifade_upvr(var92)
+			if var42_upvw then return end
+			if not var32_upvw then
+				var32_upvw = 1
+				var42_upvw = true
+				var92 = var32_upvw
+				cycleequip_upvr(var92)
+				return
+			end
+			var92 = false
+			while 0 < 5 and not var92 do
+				if var32_upvw == 1 then
+					var32_upvw = 5
+				else
+					var32_upvw -= 1
+				end
+				local SOME_4 = char:FindFirstChild("Slot"..var32_upvw)
+				if SOME_4 and SOME_4.Value ~= "" then
+					var92 = true
+				end
+			end
+			if not var92 then
+				var32_upvw = 1
+				var42_upvw = true
+				cycleequip_upvr(var32_upvw)
+				return
+			end
+			if var73_upvw then
+				var92 = var73_upvw
+				task.cancel(var92)
+				var73_upvw = nil
+			end
+			var92 = 0.5
+			var73_upvw = task.delay(var92, function() -- Line 749
+				--[[ Upvalues[3]:
+					[1]: var42_upvw (copied, read and write)
+					[2]: cycleequip_upvr (copied, readonly)
+					[3]: var32_upvw (copied, read and write)
+				]]
+				var42_upvw = true
+				cycleequip_upvr(var32_upvw)
+			end)
+		end
+		if arg1 == "Stand" then
+			var92 = char
+			var92 = Enum.HumanoidStateType.Freefall
+			if var92.Humanoid:GetState() == var92 then
+				var92 = any_new_result1_4_upvr
+				var92.stand()
+				return
+			end
+			var92 = any_new_result1_4_upvr.bools
+			if var92.crouching then
+				var92 = any_new_result1_4_upvr
+				var92.stand()
+			else
+				var92 = any_new_result1_4_upvr.bools
+				if var92.proning then
+					var92 = any_new_result1_4_upvr
+					var92 = true
+					var92.crouch(var92)
+				end
+			end
+		end
+		if arg1 == "Crouch" then
+			var92 = any_new_result1_4_upvr.bools
+			if var92.cancrouch then
+				var92 = char
+				var92 = Enum.HumanoidStateType.Freefall
+				if var92.Humanoid:GetState() == var92 then
+					var92 = any_new_result1_4_upvr
+					var92.stand()
+					return
+				end
+				var92 = any_new_result1_4_upvr.bools
+				if var92.crouching then
+					var92 = any_new_result1_4_upvr.bools
+					if var92.sprinting then return end
+					var92 = any_new_result1_4_upvr
+					var92.stand()
+				else
+					var92 = any_new_result1_4_upvr
+					var92 = true
+					var92.crouch(var92)
+				end
+			end
+		end
+		if arg1 == "Prone" then
+			var92 = any_new_result1_4_upvr.bools
+			if var92.canprone then
+				var92 = char
+				var92 = Enum.HumanoidStateType.Freefall
+				if var92.Humanoid:GetState() == var92 then
+					var92 = any_new_result1_4_upvr
+					var92.stand()
+					return
+				end
+				var92 = any_new_result1_4_upvr.bools
+				if var92.proning then
+					var92 = any_new_result1_4_upvr.bools
+					if var92.sprinting then return end
+					var92 = any_new_result1_4_upvr
+					var92.stand()
+				else
+					var92 = any_new_result1_4_upvr
+					var92 = true
+					var92.prone(var92)
+				end
+			end
+		end
+		if arg1 == "EquipOne" then
+			var92 = 1
+			equiphandler_upvr(var92)
+		end
+		if arg1 == "EquipTwo" then
+			var92 = 2
+			equiphandler_upvr(var92)
+		end
+		if arg1 == "EquipThree" then
+			var92 = 3
+			equiphandler_upvr(var92)
+		end
+		if arg1 == "EquipFour" then
+			var92 = 4
+			equiphandler_upvr(var92)
+		end
+		if arg1 == "EquipFive" then
+			var92 = 5
+			equiphandler_upvr(var92)
+		end
+		if arg1 == "Reload" then
+			var92 = any_new_result1_4_upvr.bools
+			if var92.equipped then
+				var92 = any_new_result1_4_upvr.settings
+				var92 = 5
+				if var92 <= var92.guntype then return end
+				var92 = any_new_result1_4_upvr.bools
+				if var92.blindfiring then
+					var92 = any_new_result1_4_upvr
+					var92 = false
+					var92.blindfire(var92)
+				end
+				var92 = any_new_result1_4_upvr
+				var92.reload()
+			end
+		end
+		if arg1 == "Selector" then
+			var92 = any_new_result1_4_upvr.bools
+			if var92.equipped then
+				var92 = any_new_result1_4_upvr.settings
+				if var92.switchfiremode then
+					var92 = any_new_result1_4_upvr.settings
+					var92 = 5
+					if var92 <= var92.guntype then return end
+					var92 = any_new_result1_4_upvr.settings
+					if var92.firemode == "semi" then
+						var92 = any_new_result1_4_upvr
+						var92 = "auto"
+						var92.firemodeswitch(var92)
+					else
+						var92 = any_new_result1_4_upvr
+						var92 = "semi"
+						var92.firemodeswitch(var92)
+					end
+				end
+			end
+		end
+		if arg1 == "Blindfire" then
+			var92 = any_new_result1_4_upvr.bools
+			if var92.equipped then
+				var92 = any_new_result1_4_upvr.settings
+				var92 = 5
+				if var92 <= var92.guntype then return end
+				if var36_upvw then
+					var92 = any_new_result1_4_upvr.bools
+					if var92.aiming then
+					else
+						var92 = any_new_result1_4_upvr
+						var92 = false
+						var92.blindfire(var92)
+						var36_upvw = false
+					end
+				else
+					var92 = any_new_result1_4_upvr
+					var92 = false
+					var92.aim(var92)
+					aimtog = false -- Setting global
+					var92 = any_new_result1_4_upvr
+					var92 = true
+					var92.blindfire(var92)
+					var36_upvw = true
+				end
+			end
+		end
+		if arg1 == "Pointaim" then
+			var92 = any_new_result1_4_upvr.bools
+			if var92.equipped then
+				var92 = any_new_result1_4_upvr.settings
+				var92 = 5
+				if var92 <= var92.guntype then return end
+				var92 = any_new_result1_4_upvr.bools
+				if var92.pointaim then
+					var92 = any_new_result1_4_upvr
+					var92 = false
+					var92.pointaim(var92)
+					return
+				end
+				var92 = any_new_result1_4_upvr.bools
+				if var92.aiming then
+					var92 = any_new_result1_4_upvr
+					var92 = false
+					var92.aim(var92)
+					aimtog = false -- Setting global
+				end
+				var92 = any_new_result1_4_upvr.bools
+				if var92.stance ~= 0 then
+					var92 = any_new_result1_4_upvr
+					var92 = 0
+					var92.stance(var92)
+				end
+				var92 = any_new_result1_4_upvr
+				var92 = true
+				var92.pointaim(var92)
+			end
+		end
+	end
+end
+local var96_upvw = 0
+UserInputService_upvr.JumpRequest:Connect(function() -- Line 862
+	--[[ Upvalues[3]:
+		[1]: any_new_result1_4_upvr (readonly)
+		[2]: var38_upvw (read and write)
+		[3]: var96_upvw (read and write)
+	]]
+	if any_new_result1_4_upvr.bools.proning then
+		any_new_result1_4_upvr.crouch(true)
+	elseif any_new_result1_4_upvr.bools.crouching then
+		any_new_result1_4_upvr.stand()
+		var38_upvw = false
+		if var96_upvw == 0 then
+			var96_upvw = 0.1
+		end
+		task.delay(0.1, function() -- Line 871
+			--[[ Upvalues[2]:
+				[1]: var38_upvw (copied, read and write)
+				[2]: var96_upvw (copied, read and write)
+			]]
+			var38_upvw = true
+			var96_upvw = 0
+		end)
+	end
+end)
+char.Humanoid.Jumping:Connect(function(arg1) -- Line 878
+	--[[ Upvalues[2]:
+		[1]: var38_upvw (read and write)
+		[2]: var96_upvw (read and write)
+	]]
+	if arg1 then
+		var38_upvw = false
+		var96_upvw = 0
+		task.spawn(function() -- Line 883
+			--[[ Upvalues[1]:
+				[1]: var96_upvw (copied, read and write)
+			]]
+			while var96_upvw < 2 do
+				task.wait(0.1)
+				var96_upvw += 0.1
+			end
+			var96_upvw = 0
+		end)
+	end
+end)
+local var101_upvw = false
+local function HumanoidDied() -- Line 897
+	--[[ Upvalues[6]:
+		[1]: var101_upvw (read and write)
+		[2]: any_new_result1_4_upvr (readonly)
+		[3]: var41_upvw (read and write)
+		[4]: System_upvr (readonly)
+		[5]: LocalPlayer_upvr (readonly)
+		[6]: var32_upvw (read and write)
+	]]
+	if var101_upvw then
+	else
+		var101_upvw = true
+		any_new_result1_4_upvr.sprint(false, true)
+		any_new_result1_4_upvr.unequip(true)
+		any_new_result1_4_upvr.stand()
+		any_new_result1_4_upvr.lean("none")
+		any_new_result1_4_upvr.heavybreath(false)
+		var41_upvw = false
+		System_upvr.Destroy(LocalPlayer_upvr, false)
+		var32_upvw = nil
+		for _, v_3 in pairs(workspace.CurrentCamera:GetChildren()) do
+			if v_3:IsA("Model") then
+				v_3:Destroy()
+			end
+		end
+		for _, v_4 in pairs(workspace.Bullets:GetDescendants()) do
+			if v_4:IsA("BasePart") then
+				v_4:Destroy()
+			end
+		end
+	end
+end
+char.Humanoid.Died:Connect(HumanoidDied)
+Framework.Events.Ragdolled.OnClientInvoke = HumanoidDied
+Events_2_upvr.SoundPosition.OnClientEvent:Connect(function(arg1, arg2, arg3, arg4) -- Line 933
+	-- KONSTANTERROR: [0] 1. Error Block 1 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [0] 1. Error Block 1 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [2] 2. Error Block 2 start (CF ANALYSIS FAILED)
+	print("sound is nil")
+	do
+		return
+	end
+	-- KONSTANTERROR: [2] 2. Error Block 2 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [7] 6. Error Block 3 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [7] 6. Error Block 3 end (CF ANALYSIS FAILED)
+end)
+Events_2_upvr.Sound.OnClientEvent:Connect(function(arg1, arg2, arg3, arg4, arg5) -- Line 1008
+	-- KONSTANTERROR: [0] 1. Error Block 1 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [0] 1. Error Block 1 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [2] 2. Error Block 2 start (CF ANALYSIS FAILED)
+	print("sound is nil")
+	do
+		return
+	end
+	-- KONSTANTERROR: [2] 2. Error Block 2 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [7] 6. Error Block 3 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [7] 6. Error Block 3 end (CF ANALYSIS FAILED)
+end)
+RunService.Stepped:Connect(function(arg1, arg2) -- Line 1084
+	--[[ Upvalues[1]:
+		[1]: any_new_result1_4_upvr (readonly)
+	]]
+	any_new_result1_4_upvr.stepfunc(arg2)
+end)
+local tbl_upvr = {}
+for _, v in ipairs(Visuals_upvr.HitEffects:GetChildren()) do
+	if v:IsA("BasePart") then
+		tbl_upvr[v.Name] = PartCache_upvr.new(v, 10, workspace.Bullets.Visuals)
+	end
+end
+local function _(arg1) -- Line 1096, Named "getEffectClone"
+	--[[ Upvalues[1]:
+		[1]: tbl_upvr (readonly)
+	]]
+	local var119 = tbl_upvr[arg1.Name]
+	if var119 then
+		local any_GetPart_result1 = var119:GetPart()
+		any_GetPart_result1:SetAttribute("FromCache", true)
+		any_GetPart_result1:SetAttribute("CacheName", arg1.Name)
+		return any_GetPart_result1
+	end
+	return arg1:Clone()
+end
+Events.Effect.OnClientEvent:Connect(function(arg1, arg2, arg3, arg4, arg5) -- Line 1108
+	--[[ Upvalues[2]:
+		[1]: Visuals_upvr (readonly)
+		[2]: tbl_upvr (readonly)
+	]]
+	-- KONSTANTWARNING: Variable analysis failed. Output will have some incorrect variable assignments
+	local var130
+	if not Visuals_upvr.HitEffects:FindFirstChild(arg5.Name) then
+		var130 = Visuals_upvr.HitEffects
+	end
+	var130 = Visuals_upvr.BulletHoles:FindFirstChild(arg5.Name)
+	if not var130 then
+		var130 = Visuals_upvr.BulletHoles.Concrete
+	end
+	if arg1 then
+		var130 = Visuals_upvr.BulletHoles.Blood
+	end
+	if not arg1 then
+		local clone = var130:GetChildren()[math.random(1, #var130:GetChildren())]:Clone()
+		clone.Size = Vector3.new(0.5, 0.5, 0.00100)
+		clone.CFrame = CFrame.new(arg3, arg3 + arg4)
+		clone.Transparency = 1
+		clone.Parent = workspace.Bullets.Visuals
+		local WeldConstraint = Instance.new("WeldConstraint")
+		WeldConstraint.Part0 = arg2
+		WeldConstraint.Part1 = clone
+		WeldConstraint.Parent = clone
+		game.Debris:AddItem(clone, 10)
+	end
+	local Humanoid = Visuals_upvr.HitEffects.Humanoid
+	local var134 = tbl_upvr[Humanoid.Name]
+	if var134 then
+		local any_GetPart_result1_2 = var134:GetPart()
+		any_GetPart_result1_2:SetAttribute("FromCache", true)
+		any_GetPart_result1_2:SetAttribute("CacheName", Humanoid.Name)
+		local _ = any_GetPart_result1_2
+	else
+	end
+	Humanoid:Clone().CFrame = CFrame.new(arg3, arg3 + arg4)
+	-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+	Humanoid:Clone().Transparency = 1
+	-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+	Humanoid:Clone().Parent = workspace.Bullets.Visuals
+	for _, v_2_upvr in ipairs(Humanoid:Clone():GetDescendants()) do
+		if v_2_upvr:IsA("ParticleEmitter") then
+			if 10 < v_2_upvr.Rate then
+				v_2_upvr:Emit(v_2_upvr.Rate / 10)
+			else
+				v_2_upvr:Emit(1)
+			end
+		elseif v_2_upvr:IsA("PointLight") then
+			v_2_upvr.Enabled = true
+			task.delay(0.05, function() -- Line 1145
+				--[[ Upvalues[1]:
+					[1]: v_2_upvr (readonly)
+				]]
+				v_2_upvr.Enabled = false
+			end)
+		end
+	end
+	local function INLINED() -- Internal function, doesn't exist in bytecode
+		-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+		return Humanoid:Clone().Sounds:GetChildren()
+	end
+	if not Humanoid:Clone():FindFirstChild("Sounds") or not INLINED() then
+		local children = Visuals_upvr.HitEffects.Concrete.Sounds:GetChildren()
+	end
+	local clone_4 = children[math.random(1, #children)]:Clone()
+	-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+	clone_4.Parent = Humanoid:Clone()
+	clone_4:Play()
+	local clone_2_upvr = Humanoid:Clone()
+	task.delay(10, function() -- Line 1157
+		--[[ Upvalues[2]:
+			[1]: clone_2_upvr (readonly)
+			[2]: tbl_upvr (copied, readonly)
+		]]
+		-- KONSTANTERROR: [0] 1. Error Block 1 start (CF ANALYSIS FAILED)
+		-- KONSTANTERROR: [0] 1. Error Block 1 end (CF ANALYSIS FAILED)
+		-- KONSTANTERROR: [14] 13. Error Block 3 start (CF ANALYSIS FAILED)
+		-- KONSTANTWARNING: Failed to evaluate expression, replaced with nil [15.1]
+		nil:ReturnPart(clone_2_upvr)
+		do
+			return
+		end
+		-- KONSTANTERROR: [14] 13. Error Block 3 end (CF ANALYSIS FAILED)
+		-- KONSTANTERROR: [19] 17. Error Block 4 start (CF ANALYSIS FAILED)
+		clone_2_upvr:Destroy()
+		-- KONSTANTERROR: [19] 17. Error Block 4 end (CF ANALYSIS FAILED)
+	end)
+end)
+local any_new_result1_5_upvr = PartCache_upvr.new(Visuals_upvr.Tracers.BlankTracer, 100, workspace.Bullets)
+local tbl_upvr_6 = {}
+local function getcache_upvr(arg1) -- Line 1174, Named "getcache"
+	--[[ Upvalues[4]:
+		[1]: any_new_result1_5_upvr (readonly)
+		[2]: tbl_upvr_6 (readonly)
+		[3]: Visuals_upvr (readonly)
+		[4]: PartCache_upvr (readonly)
+	]]
+	if arg1 == "BlankTracer" then
+		return any_new_result1_5_upvr
+	end
+	if tbl_upvr_6[arg1] then
+		return tbl_upvr_6[arg1]
+	end
+	local SOME_5 = Visuals_upvr.Tracers:FindFirstChild(arg1)
+	if not SOME_5 then
+		warn("Tracer not found:", arg1)
+		return any_new_result1_5_upvr
+	end
+	local any_new_result1_3 = PartCache_upvr.new(SOME_5, 5, workspace.Bullets)
+	tbl_upvr_6[arg1] = any_new_result1_3
+	return any_new_result1_3
+end
+local BulletHandler_upvr = require(Modules.BulletHandler)
+BulletHandler_upvr.init()
+Events.Replicate.OnClientEvent:Connect(function(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) -- Line 1198
+	--[[ Upvalues[1]:
+		[1]: BulletHandler_upvr (readonly)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 35 start (CF ANALYSIS FAILED)
+	local var157
+	if var157 then
+		var157 = arg1:FindFirstChildOfClass("Humanoid")
+	end
+	if not arg1 or var157 and var157.Health <= 0 then return end
+	local ServerTools = arg1:FindFirstChild("ServerTools")
+	if ServerTools then
+		ServerTools = arg1.ServerTools:FindFirstChild("Weapon")
+		if ServerTools then
+			ServerTools = arg1.ServerTools.Weapon:FindFirstChild("FirePart")
+		end
+	end
+	if not ServerTools then return end
+	local pairs_result1, pairs_result2_6, pairs_result3_4 = pairs(ServerTools:GetDescendants())
+	-- KONSTANTERROR: [0] 1. Error Block 35 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [85] 67. Error Block 23 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [85] 67. Error Block 23 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [53] 42. Error Block 42 start (CF ANALYSIS FAILED)
+	-- KONSTANTWARNING: Failed to evaluate expression, replaced with nil [85.16]
+	if nil then
+		local function INLINED_3() -- Internal function, doesn't exist in bytecode
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			return nil
+		end
+		if arg2 or INLINED_3() then
+			-- KONSTANTWARNING: GOTO [85] #67
+		end
+	else
+		-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+		if nil and arg2 then
+		end
+	end
+	-- KONSTANTERROR: [53] 42. Error Block 42 end (CF ANALYSIS FAILED)
+end)
+any_new_result1.LengthChanged:Connect(function(arg1, arg2, arg3, arg4, arg5, arg6) -- Line 1235
+	if arg6 then
+		arg6.CFrame = CFrame.lookAt(arg2, arg2 + arg3):ToWorldSpace(CFrame.new(0, 0, -(arg4 - arg6.Size.Z / 2)))
+	end
+end)
+any_new_result1.CastTerminating:Connect(function(arg1) -- Line 1242
+	--[[ Upvalues[1]:
+		[1]: getcache_upvr (readonly)
+	]]
+	local RayInfo = arg1.RayInfo
+	if RayInfo then
+		RayInfo = arg1.RayInfo.CosmeticBulletObject
+	end
+	if RayInfo then
+		getcache_upvr(RayInfo.Name):ReturnPart(RayInfo)
+	end
+end)
+Events.type.OnClientEvent:Connect(function() -- Line 1249
+	--[[ Upvalues[2]:
+		[1]: System_upvr (readonly)
+		[2]: LocalPlayer_upvr (readonly)
+	]]
+	System_upvr.Destroy(LocalPlayer_upvr, true)
+end)
+local tbl_upvr_4 = {}
+local tbl_upvr_5 = {}
+local function suppress_upvr(arg1, arg2, arg3, arg4, arg5, arg6) -- Line 1258, Named "suppress"
+	--[[ Upvalues[7]:
+		[1]: Visuals_upvr (readonly)
+		[2]: tbl_upvr_4 (readonly)
+		[3]: FrameworkHUD_upvw (read and write)
+		[4]: tbl_upvr_5 (readonly)
+		[5]: var35_upvw (read and write)
+		[6]: TweenService_upvr_2 (readonly)
+		[7]: any_new_result1_2_upvr (readonly)
+	]]
+	if table.find(arg2, arg1) then
+	else
+		table.insert(arg2, arg1)
+		local children_2 = Visuals_upvr.Tracers.Sounds.Cracks:GetChildren()
+		local clone_3 = children_2[math.random(1, #children_2)]:Clone()
+		clone_3.Parent = char.Head
+		clone_3:Play()
+		game.Debris:AddItem(clone_3, clone_3.TimeLength)
+		if arg6 then
+			local popped_upvr = table.remove(tbl_upvr_4)
+			if not popped_upvr then
+				popped_upvr = FrameworkHUD_upvw.Suppression.CloneVignette:Clone()
+			end
+			local popped_upvr_2 = table.remove(tbl_upvr_5)
+			if not popped_upvr_2 then
+				popped_upvr_2 = FrameworkHUD_upvw.Suppression.Shine:Clone()
+			end
+			popped_upvr.Parent = FrameworkHUD_upvw
+			popped_upvr_2.Parent = FrameworkHUD_upvw
+			popped_upvr.ImageTransparency = 1
+			popped_upvr_2.ImageTransparency = 1
+			var35_upvw += 0.05
+			var35_upvw = math.min(var35_upvw, 0.5)
+			TweenService_upvr_2:Create(popped_upvr, TweenInfo.new(0.05), {
+				ImageTransparency = 0.15;
+			}):Play()
+			TweenService_upvr_2:Create(popped_upvr_2, TweenInfo.new(0.05), {
+				ImageTransparency = 0.93;
+			}):Play()
+			task.delay(1, function() -- Line 1285
+				--[[ Upvalues[5]:
+					[1]: TweenService_upvr_2 (copied, readonly)
+					[2]: popped_upvr (readonly)
+					[3]: popped_upvr_2 (readonly)
+					[4]: tbl_upvr_4 (copied, readonly)
+					[5]: tbl_upvr_5 (copied, readonly)
+				]]
+				local any_Create_result1 = TweenService_upvr_2:Create(popped_upvr, TweenInfo.new(1), {
+					ImageTransparency = 1;
+				})
+				any_Create_result1:Play()
+				TweenService_upvr_2:Create(popped_upvr_2, TweenInfo.new(1), {
+					ImageTransparency = 1;
+				}):Play()
+				any_Create_result1.Completed:Once(function() -- Line 1289
+					--[[ Upvalues[4]:
+						[1]: popped_upvr (copied, readonly)
+						[2]: popped_upvr_2 (copied, readonly)
+						[3]: tbl_upvr_4 (copied, readonly)
+						[4]: tbl_upvr_5 (copied, readonly)
+					]]
+					popped_upvr.Parent = nil
+					popped_upvr_2.Parent = nil
+					table.insert(tbl_upvr_4, popped_upvr)
+					table.insert(tbl_upvr_5, popped_upvr_2)
+				end)
+			end)
+		end
+		popped_upvr = any_new_result1_2_upvr:ShakeOnce
+		popped_upvr(arg4 * 0.1, arg5, 0.1, 0.1)
+		popped_upvr = task.delay
+		popped_upvr_2 = 5
+		popped_upvr(popped_upvr_2, function() -- Line 1302
+			--[[ Upvalues[2]:
+				[1]: arg2 (readonly)
+				[2]: arg1 (readonly)
+			]]
+			local table_find_result1 = table.find(arg2, arg1)
+			if table_find_result1 then
+				table.remove(arg2, table_find_result1)
+			end
+		end)
+	end
+end
+RunService.RenderStepped:Connect(function(arg1) -- Line 1317
+	--[[ Upvalues[4]:
+		[1]: any_new_result1_4_upvr (readonly)
+		[2]: any_new_result1_2_upvr (readonly)
+		[3]: System_upvr (readonly)
+		[4]: LocalPlayer_upvr (readonly)
+	]]
+	any_new_result1_4_upvr.update(arg1)
+	any_new_result1_2_upvr:Update(arg1)
+	System_upvr.Update(LocalPlayer_upvr, arg1)
+end)
+if UserInputService_upvr.TouchEnabled and not UserInputService_upvr.KeyboardEnabled then
+	var10_upvw = true
+	var71_upvw = false
+	var72_upvw = false
+elseif UserInputService_upvr.GamepadEnabled or game:GetService("GuiService"):IsTenFootInterface() then
+	var72_upvw = true
+	var71_upvw = false
+	var10_upvw = false
+else
+	var71_upvw = true
+	var72_upvw = false
+	var10_upvw = false
+	local var182_upvw
+end
+if var10_upvw and UserInputService_upvr.GamepadEnabled then
+	var10_upvw = true
+	var182_upvw = true
+end
+if var71_upvw and var182_upvw then
+	var71_upvw = true
+	var182_upvw = false
+end
+local var184_upvw = 0
+local C1_upvr = Waist_upvr.C1
+local var186_upvw = false
+local var187_upvw
+local Bullets_upvr = workspace.Bullets
+local tbl_upvr_2 = {}
+local Explosions_upvr = workspace.Grenades.Explosions
+local tbl_upvr_3 = {}
+local Suppression_upvr = game:GetService("Lighting"):FindFirstChild("Suppression")
+local JumpPower_upvr = char.Humanoid.JumpPower
+local var194_upvw
+RunService.Heartbeat:Connect(function(arg1) -- Line 1370
+	--[[ Upvalues[26]:
+		[1]: any_new_result1_4_upvr (readonly)
+		[2]: FrameworkHUD_upvw (read and write)
+		[3]: var184_upvw (read and write)
+		[4]: Events_2_upvr (readonly)
+		[5]: Waist_upvr (readonly)
+		[6]: C1_upvr (readonly)
+		[7]: LocalPlayer_upvr (readonly)
+		[8]: var186_upvw (read and write)
+		[9]: ReplicatedStorage_upvr (readonly)
+		[10]: UserInputService_upvr (readonly)
+		[11]: var187_upvw (read and write)
+		[12]: Bullets_upvr (readonly)
+		[13]: suppress_upvr (readonly)
+		[14]: tbl_upvr_2 (readonly)
+		[15]: Explosions_upvr (readonly)
+		[16]: tbl_upvr_3 (readonly)
+		[17]: Suppression_upvr (readonly)
+		[18]: var35_upvw (read and write)
+		[19]: unbindinputs_upvr (readonly)
+		[20]: var32_upvw (read and write)
+		[21]: var38_upvw (read and write)
+		[22]: var96_upvw (read and write)
+		[23]: JumpPower_upvr (readonly)
+		[24]: var43_upvw (read and write)
+		[25]: var10_upvw (read and write)
+		[26]: var194_upvw (read and write)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 213 start (CF ANALYSIS FAILED)
+	if any_new_result1_4_upvr.bools.aiming then
+		FrameworkHUD_upvw.MobileControls.Sprint.Title.Text = "FOCUS"
+	else
+		FrameworkHUD_upvw.MobileControls.Sprint.Title.Text = "SPRINT"
+	end
+	var184_upvw += arg1
+	local var196
+	if char:FindFirstChild("Spawned") and char:FindFirstChild("Humanoid") and 0 < char.Humanoid.Health then
+		var196 = workspace.CurrentCamera.CFrame.LookVector.Y
+		var196 = math.asin(workspace.CurrentCamera.CFrame.LookVector.X)
+		Events_2_upvr.Actions.CamRotational:FireServer(Waist_upvr, C1_upvr, math.asin(var196), var196, any_new_result1_4_upvr.bools.proning)
+	end
+	if LocalPlayer_upvr.PlayerGui:FindFirstChild("FrameworkHUD") then
+		FrameworkHUD_upvw = LocalPlayer_upvr.PlayerGui:FindFirstChild("FrameworkHUD")
+	end
+	if FrameworkHUD_upvw and FrameworkHUD_upvw:FindFirstChild("Slots") then
+	else
+		return
+	end
+	if any_new_result1_4_upvr and any_new_result1_4_upvr.bools and any_new_result1_4_upvr.bools.sprinting and var186_upvw then
+		var186_upvw = any_new_result1_4_upvr.bools.sprinting
+	end
+	local PlayerData = _G.PlayerData
+	if PlayerData and PlayerData.Settings and not PlayerData.Settings.HUD then
+		FrameworkHUD_upvw.Slots.GroupTransparency = 1
+	end
+	local pairs_result1_4, pairs_result2_3, pairs_result3_3 = pairs(FrameworkHUD_upvw.Slots:GetChildren())
+	-- KONSTANTERROR: [0] 1. Error Block 213 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [251] 171. Error Block 38 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [251] 171. Error Block 38 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [168] 117. Error Block 226 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: Expression was reused, decompilation is incorrect (x2)
+	if any_new_result1_4_upvr.bools.proning and any_new_result1_4_upvr.bools.proning then
+		-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+		if any_new_result1_4_upvr.bools == "" then
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			if any_new_result1_4_upvr.bools then
+				-- KONSTANTWARNING: GOTO [251] #171
+			end
+		else
+			-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+			if not any_new_result1_4_upvr.bools then
+				-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+				if any_new_result1_4_upvr.bools then
+				end
+				-- KONSTANTERROR: Expression was reused, decompilation is incorrect
+				if not any_new_result1_4_upvr then
+				end
+			end
+		end
+	end
+	-- KONSTANTERROR: [168] 117. Error Block 226 end (CF ANALYSIS FAILED)
+end)
+task.spawn(function() -- Line 1588
+	--[[ Upvalues[2]:
+		[1]: LocalPlayer_upvr (readonly)
+		[2]: ReplicatedStorage_upvr (readonly)
+	]]
+	-- KONSTANTERROR: [199] 131. Error Block 40 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [199] 131. Error Block 40 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [0] 1. Error Block 48 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [0] 1. Error Block 48 end (CF ANALYSIS FAILED)
+end)
+char.Humanoid.Seated:Connect(function(arg1) -- Line 1653
+	--[[ Upvalues[4]:
+		[1]: var39_upvw (read and write)
+		[2]: unbindinputs_upvr (readonly)
+		[3]: any_new_result1_4_upvr (readonly)
+		[4]: bindinputs_upvr (readonly)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 1 start (CF ANALYSIS FAILED)
+	var39_upvw = arg1
+	-- KONSTANTERROR: [0] 1. Error Block 1 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [43] 32. Error Block 10 start (CF ANALYSIS FAILED)
+	any_new_result1_4_upvr.lean("none")
+	do
+		return
+	end
+	-- KONSTANTERROR: [43] 32. Error Block 10 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [49] 37. Error Block 11 start (CF ANALYSIS FAILED)
+	bindinputs_upvr()
+	-- KONSTANTERROR: [49] 37. Error Block 11 end (CF ANALYSIS FAILED)
+end)
+task.spawn(function() -- Line 1676
+	--[[ Upvalues[6]:
+		[1]: any_new_result1_4_upvr (readonly)
+		[2]: var43_upvw (read and write)
+		[3]: var182_upvw (read and write)
+		[4]: var10_upvw (read and write)
+		[5]: sprinttoggle_upvr (readonly)
+		[6]: var71_upvw (read and write)
+	]]
+	-- KONSTANTERROR: [0] 1. Error Block 18 start (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [0] 1. Error Block 18 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [6] 5. Error Block 22 start (CF ANALYSIS FAILED)
+	var43_upvw = math.clamp(var43_upvw - 3, 0, 100)
+	if var43_upvw == 0 then
+		if not var182_upvw then
+			if var10_upvw then
+				sprinttoggle_upvr()
+			elseif var71_upvw then
+				any_new_result1_4_upvr.sprint(false)
+				-- KONSTANTWARNING: GOTO [42] #37
+			end
+			-- KONSTANTWARNING: GOTO [42] #37
+		end
+		-- KONSTANTWARNING: GOTO [22] #19
+	end
+	-- KONSTANTERROR: [6] 5. Error Block 22 end (CF ANALYSIS FAILED)
+end)
+local Health_upvw = char.Humanoid.Health
+char.Humanoid.HealthChanged:Connect(function(arg1) -- Line 1698
+	--[[ Upvalues[4]:
+		[1]: Health_upvw (read and write)
+		[2]: var41_upvw (read and write)
+		[3]: any_new_result1_4_upvr (readonly)
+		[4]: Events_2_upvr (readonly)
+	]]
+	if 25 <= Health_upvw - arg1 and not var41_upvw then
+		var41_upvw = true
+		task.spawn(function() -- Line 1701
+			--[[ Upvalues[5]:
+				[1]: var41_upvw (copied, read and write)
+				[2]: any_new_result1_4_upvr (copied, readonly)
+				[3]: Events_2_upvr (copied, readonly)
+				[4]: Health_upvw (copied, read and write)
+				[5]: arg1 (readonly)
+			]]
+			while var41_upvw do
+				if any_new_result1_4_upvr.anims.use and any_new_result1_4_upvr.anims.use.IsPlaying then
+					any_new_result1_4_upvr.anims.use:GetMarkerReachedSignal("heal"):Connect(function() -- Line 1704
+						--[[ Upvalues[1]:
+							[1]: var41_upvw (copied, read and write)
+						]]
+						var41_upvw = false
+					end)
+				end
+				task.wait(1)
+				if not var41_upvw then return end
+				Events_2_upvr.Actions.func:FireServer(179, 311)
+				Health_upvw = arg1
+			end
+		end)
+	end
+end)
+local MobileControls = FrameworkHUD_upvw:WaitForChild("MobileControls")
+local Use = MobileControls.Use
+if not var10_upvw then
+else
+	Use.InputBegan:Connect(function(arg1) -- Line 1738
+		--[[ Upvalues[2]:
+			[1]: any_new_result1_4_upvr (readonly)
+			[2]: fireinput_upvr (readonly)
+		]]
+		if arg1.UserInputType == Enum.UserInputType.Touch then
+			if any_new_result1_4_upvr.bools.equipped and any_new_result1_4_upvr.settings.guntype < 5 then
+				fireinput_upvr(Enum.UserInputState.Begin)
+				return
+			end
+			if any_new_result1_4_upvr.settings.guntype == 5 then
+				any_new_result1_4_upvr.throwgrenade()
+				return
+			end
+			if any_new_result1_4_upvr.settings.guntype == 6 then
+				any_new_result1_4_upvr.bandage()
+				return
+			end
+			if any_new_result1_4_upvr.settings.guntype == 7 then
+				any_new_result1_4_upvr.firerpg()
+			end
+		end
+	end)
+	Use.InputEnded:Connect(function(arg1) -- Line 1752
+		--[[ Upvalues[2]:
+			[1]: any_new_result1_4_upvr (readonly)
+			[2]: fireinput_upvr (readonly)
+		]]
+		if arg1.UserInputType == Enum.UserInputType.Touch and any_new_result1_4_upvr.bools.equipped and any_new_result1_4_upvr.settings.guntype < 5 then
+			fireinput_upvr(Enum.UserInputState.End)
+		end
+	end)
+	FrameworkHUD_upvw.Slots.Slot1.TouchTap:Connect(function() -- Line 1760
+		--[[ Upvalues[1]:
+			[1]: equiphandler_upvr (readonly)
+		]]
+		equiphandler_upvr(1)
+	end)
+	FrameworkHUD_upvw.Slots.Slot2.TouchTap:Connect(function() -- Line 1764
+		--[[ Upvalues[1]:
+			[1]: equiphandler_upvr (readonly)
+		]]
+		equiphandler_upvr(2)
+	end)
+	FrameworkHUD_upvw.Slots.Slot3.TouchTap:Connect(function() -- Line 1767
+		--[[ Upvalues[1]:
+			[1]: equiphandler_upvr (readonly)
+		]]
+		equiphandler_upvr(3)
+	end)
+	FrameworkHUD_upvw.Slots.Slot4.TouchTap:Connect(function() -- Line 1770
+		--[[ Upvalues[1]:
+			[1]: equiphandler_upvr (readonly)
+		]]
+		equiphandler_upvr(4)
+	end)
+	FrameworkHUD_upvw.Slots.Slot5.TouchTap:Connect(function() -- Line 1773
+		--[[ Upvalues[1]:
+			[1]: equiphandler_upvr (readonly)
+		]]
+		equiphandler_upvr(5)
+	end)
+	MobileControls.Aim.TouchTap:Connect(function() -- Line 1777
+		--[[ Upvalues[2]:
+			[1]: any_new_result1_4_upvr (readonly)
+			[2]: aimtoggle_upvr (readonly)
+		]]
+		if any_new_result1_4_upvr.settings and 5 <= any_new_result1_4_upvr.settings.guntype and any_new_result1_4_upvr.settings.guntype ~= 7 then
+		else
+			aimtoggle_upvr()
+		end
+	end)
+	MobileControls.Sprint.TouchTap:Connect(function() -- Line 1782
+		--[[ Upvalues[2]:
+			[1]: var43_upvw (read and write)
+			[2]: sprinttoggle_upvr (readonly)
+		]]
+		if var43_upvw == 0 then
+		else
+			sprinttoggle_upvr()
+		end
+	end)
+	MobileControls.Prone.TouchTap:Connect(function() -- Line 1787
+		--[[ Upvalues[1]:
+			[1]: any_new_result1_4_upvr (readonly)
+		]]
+		if not any_new_result1_4_upvr.bools.canprone then
+		else
+			if char.Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+				any_new_result1_4_upvr.stand()
+				return
+			end
+			if any_new_result1_4_upvr.bools.proning then
+				if any_new_result1_4_upvr.bools.sprinting then
+				else
+					any_new_result1_4_upvr.stand()
+				end
+			end
+			any_new_result1_4_upvr.prone(true)
+		end
+	end)
+	MobileControls.Crouch.TouchTap:Connect(function() -- Line 1801
+		--[[ Upvalues[1]:
+			[1]: any_new_result1_4_upvr (readonly)
+		]]
+		if not any_new_result1_4_upvr.bools.cancrouch then
+		else
+			if char.Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+				any_new_result1_4_upvr.stand()
+				return
+			end
+			if any_new_result1_4_upvr.bools.crouching then
+				if any_new_result1_4_upvr.bools.sprinting then
+				else
+					any_new_result1_4_upvr.stand()
+				end
+			end
+			any_new_result1_4_upvr.crouch(true)
+		end
+	end)
+	MobileControls.Reload.TouchTap:Connect(function() -- Line 1815
+		--[[ Upvalues[1]:
+			[1]: any_new_result1_4_upvr (readonly)
+		]]
+		if any_new_result1_4_upvr.bools.equipped then
+			if 5 <= any_new_result1_4_upvr.settings.guntype then return end
+			if any_new_result1_4_upvr.bools.blindfiring then
+				any_new_result1_4_upvr.blindfire(false)
+			end
+			any_new_result1_4_upvr.reload()
+		end
+	end)
+	MobileControls.Firemode.TouchTap:Connect(function() -- Line 1825
+		--[[ Upvalues[1]:
+			[1]: any_new_result1_4_upvr (readonly)
+		]]
+		if any_new_result1_4_upvr.bools.equipped and any_new_result1_4_upvr.settings.switchfiremode then
+			if 5 <= any_new_result1_4_upvr.settings.guntype then return end
+			if any_new_result1_4_upvr.settings.firemode == "semi" then
+				any_new_result1_4_upvr.firemodeswitch("auto")
+				return
+			end
+			any_new_result1_4_upvr.firemodeswitch("semi")
+		end
+	end)
+	MobileControls.LeanL.TouchTap:Connect(function() -- Line 1836
+		--[[ Upvalues[2]:
+			[1]: var40_upvw (read and write)
+			[2]: any_new_result1_4_upvr (readonly)
+		]]
+		if var40_upvw == "none" then
+			any_new_result1_4_upvr.lean("left")
+			var40_upvw = "left"
+		else
+			if var40_upvw == "right" then
+				any_new_result1_4_upvr.lean("none")
+				var40_upvw = "none"
+				return
+			end
+			if var40_upvw == "left" then
+				any_new_result1_4_upvr.lean("none")
+				var40_upvw = "none"
+			end
+		end
+	end)
+	MobileControls.LeanR.TouchTap:Connect(function() -- Line 1849
+		--[[ Upvalues[2]:
+			[1]: var40_upvw (read and write)
+			[2]: any_new_result1_4_upvr (readonly)
+		]]
+		if var40_upvw == "none" then
+			any_new_result1_4_upvr.lean("right")
+			var40_upvw = "right"
+		else
+			if var40_upvw == "left" then
+				any_new_result1_4_upvr.lean("none")
+				var40_upvw = "none"
+				return
+			end
+			if var40_upvw == "right" then
+				any_new_result1_4_upvr.lean("none")
+				var40_upvw = "none"
+			end
+		end
+	end)
+	MobileControls.Blindfire.TouchTap:Connect(function() -- Line 1862
+		--[[ Upvalues[2]:
+			[1]: any_new_result1_4_upvr (readonly)
+			[2]: var36_upvw (read and write)
+		]]
+		if any_new_result1_4_upvr.bools.equipped then
+			if 5 <= any_new_result1_4_upvr.settings.guntype then return end
+			if var36_upvw then
+				if any_new_result1_4_upvr.bools.aiming then
+				else
+					any_new_result1_4_upvr.blindfire(false)
+					var36_upvw = false
+				end
+			end
+			any_new_result1_4_upvr.aim(false)
+			aimtog = false -- Setting global
+			any_new_result1_4_upvr.blindfire(true)
+			var36_upvw = true
+		end
+	end)
+end
