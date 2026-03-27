@@ -1,0 +1,92 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+-- Decompiled with Konstant V2.1, a fast Luau decompiler made in Luau by plusgiant5 (https://discord.gg/brNTY8nX8t)
+-- Decompiled on 2026-02-15 12:30:55
+-- Luau version 6, Types version 3
+-- Time taken: 0.008890 seconds
+
+local module_upvr = {}
+module_upvr.__index = module_upvr
+local function _(arg1) -- Line 4, Named "zeroLike"
+	if typeof(arg1) == "Vector3" then
+		return Vector3.new(0, 0, 0)
+	end
+	return 0
+end
+function module_upvr.new(arg1, arg2, arg3, arg4) -- Line 8
+	--[[ Upvalues[1]:
+		[1]: module_upvr (readonly)
+	]]
+	local module = {}
+	local var3 = arg3 or Vector3.new(0, 0, 0)
+	module.Position = var3
+	if typeof(arg3 or Vector3.new(0, 0, 0)) == "Vector3" then
+		var3 = Vector3.new(0, 0, 0)
+	else
+		var3 = 0
+	end
+	module.Velocity = var3
+	module.Target = arg3 or Vector3.new(0, 0, 0)
+	module.Frequency = arg1 or 6
+	module.Damping = arg2 or 0.75
+	module.Mass = arg4 or 1.1
+	module.MaxVelocity = nil
+	module.SnapDistance = 0.001
+	return setmetatable(module, module_upvr)
+end
+function module_upvr.SetTarget(arg1, arg2) -- Line 21
+	arg1.Target = arg2
+end
+function module_upvr.SetFrequency(arg1, arg2) -- Line 22
+	arg1.Frequency = arg2
+end
+function module_upvr.SetDamping(arg1, arg2) -- Line 23
+	arg1.Damping = arg2
+end
+function module_upvr.SetMass(arg1, arg2) -- Line 24
+	arg1.Mass = arg2
+end
+function module_upvr.SetMaxVelocity(arg1, arg2) -- Line 25
+	arg1.MaxVelocity = arg2
+end
+function module_upvr.SetSnapDistance(arg1, arg2) -- Line 26
+	arg1.SnapDistance = arg2
+end
+function module_upvr.Shove(arg1, arg2) -- Line 28
+	arg1.Velocity += arg2
+end
+function module_upvr.Update(arg1, arg2) -- Line 32
+	-- KONSTANTERROR: [0] 1. Error Block 27 start (CF ANALYSIS FAILED)
+	if arg2 <= 0 then
+		return arg1.Position
+	end
+	arg1.Velocity += (-arg1.Frequency * arg1.Frequency * (arg1.Position - arg1.Target) + -2 * arg1.Frequency * arg1.Damping * arg1.Velocity) / arg1.Mass * arg2
+	if arg1.MaxVelocity then
+		if typeof(arg1.Velocity) == "Vector3" then
+			if arg1.MaxVelocity < arg1.Velocity.Magnitude then
+				arg1.Velocity = arg1.Velocity.Unit * arg1.MaxVelocity
+				-- KONSTANTWARNING: GOTO [80] #52
+			end
+		else
+			arg1.Velocity = math.clamp(arg1.Velocity, -arg1.MaxVelocity, arg1.MaxVelocity)
+		end
+	end
+	arg1.Position += arg1.Velocity * arg2
+	if typeof(arg1.Position) == "Vector3" then
+		if (arg1.Position - arg1.Target).Magnitude < arg1.SnapDistance and arg1.Velocity.Magnitude < arg1.SnapDistance then
+			arg1.Position = arg1.Target
+			arg1.Velocity = Vector3.new(0, 0, 0)
+			-- KONSTANTWARNING: GOTO [153] #95
+		end
+	elseif math.abs(arg1.Position - arg1.Target) < arg1.SnapDistance and math.abs(arg1.Velocity) < arg1.SnapDistance then
+		arg1.Position = arg1.Target
+		arg1.Velocity = 0
+	end
+	-- KONSTANTERROR: [0] 1. Error Block 27 end (CF ANALYSIS FAILED)
+	-- KONSTANTERROR: [153] 95. Error Block 17 start (CF ANALYSIS FAILED)
+	do
+		return arg1.Position
+	end
+	-- KONSTANTERROR: [153] 95. Error Block 17 end (CF ANALYSIS FAILED)
+end
+return module_upvr
