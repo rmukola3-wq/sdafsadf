@@ -1,0 +1,287 @@
+--!strict
+-- Advanced Stateful Spring-Based Recoil System
+-- Интегрировано из папки ВНЕДРЕНИЕ
+
+-- BACKUP ORIGINAL CODE:
+--[[
+local gunKickback = profile.gunKickback or 0.06
+local gunRise = profile.gunRise or 0.04
+
+self.velZ -= gunKickback * speedModifier * 1.1
+self.velY += gunRise * speedModifier * 0.75
+]]
+
+local RecoilSystem = {}
+RecoilSystem.__index = RecoilSystem
+
+-- Математические функции
+local min = math.min
+local max = math.max
+local abs = math.abs
+local clamp = math.clamp
+local sin = math.sin
+local cos = math.cos
+local random = math.random
+local clock = os.clock
+
+-- Создание нового экземпляра системы отдачи
+function RecoilSystem.new()
+	local self = setmetatable({}, RecoilSystem)
+	
+	-- Rotational recoil (pitch, yaw, roll)
+	self.pitch = 0
+	self.yaw = 0
+	self.roll = 0
+	self.pitchVel = 0
+	self.yawVel = 0
+	self.rollVel = 0
+	
+	-- Positional recoil (x, y, z)
+	self.posX = 0
+	self.posY = 0
+	self.posZ = 0
+	self.velX = 0
+	self.velY = 0
+	self.velZ = 0
+	
+	-- Spray pattern state
+	self.shotsFired = 0
+	self.sprayAmount = 0
+	self.lastShotTime = 0
+	self.patternIndex = 0
+	self.bounceDirection = 1
+	
+	-- Текущий профиль отдачи
+	self.currentProfile = nil
+	
+	return self
+end
+
+-- Установка профиля отдачи
+function RecoilSystem:SetProfile(profile)
+	self.currentProfile = profile
+	self.patternIndex = 0
+end
+
+-- Основной метод Kick - вызывается при выстреле
+-- profile: таблица настроек отдачи
+-- multiplier: множитель силы (опционально)
+function RecoilSystem:Kick(profile, multiplier)
+	multiplier = multiplier or 1
+	
+	if not profile then
+		profile = self.currentProfile or {}
+	end
+	
+	local currentTime = clock()
+	local timeSinceLastShot = currentTime - self.lastShotTime
+	
+	-- Decay spray если прошло достаточно времени (УВЕЛИЧЕНО скорость затухания)
+	local sprayDecayTime = profile.sprayDecayTime or 0.3
+	if timeSinceLastShot > sprayDecayTime then
+		self.sprayAmount = max(0, self.sprayAmount - timeSinceLastShot * 8.0)
+		if self.sprayAmount < 0.05 then
+			self.sprayAmount = 0
+			self.shotsFired = 0
+			self.patternIndex = 0
+		end
+	end
+	
+	self.lastShotTime = currentTime
+	
+	-- First shot multiplier
+	local firstShotMult = 1
+	if self.shotsFired == 0 and profile.firstShotMultiplier then
+		firstShotMult = profile.firstShotMultiplier
+	end
+	
+	self.shotsFired += 1
+	
+	-- Progressive spray
+	local sprayIncrease = profile.sprayIncrease or 0.08
+	self.sprayAmount += sprayIncrease / (1 + self.shotsFired * 0.035)
+	
+	-- Базовая сила отдачи
+	local kickStrength = profile.kickStrength or 0.08
+	local kickRandomness = profile.kickRandomness or 0.3
+	local verticalKick = kickStrength * (1 + (random() - 0.5) * kickRandomness) * firstShotMult * (1 + self.sprayAmount)
+	
+	-- Горизонтальная отдача
+	local horizontalStrength = profile.horizontalStrength or 0.04
+	local horizontalRandomness = profile.horizontalRandomness or 0.5
+	local horizontalKick = horizontalStrength * (random() * 2 - 1) * (1 + (random() - 0.5) * horizontalRandomness)
+	
+	-- Pattern-based recoil
+	if profile.usePattern and profile.pattern and #profile.pattern > 0 then
+		self.patternIndex = min(self.patternIndex + 1, #profile.pattern)
+		local patternPoint = profile.pattern[self.patternIndex]
+		local patternScale = profile.patternScale or 1
+		local patternRandomness = profile.patternRandomness or 0.1
+		local patternNoise = 1 + (random() - 0.5) * patternRandomness * 0.8
+		
+		verticalKick = patternPoint.y * patternScale * patternNoise
+		horizontalKick = patternPoint.x * patternScale * patternNoise
+	end
+	
+	-- Horizontal bounce (лево-право)
+	if profile.horizontalBounce then
+		local bounceAmount = profile.bounceAmount or 0.7
+		horizontalKick *= self.bounceDirection * bounceAmount
+		self.bounceDirection = -self.bounceDirection
+	end
+	
+	-- Pattern speed modifier
+	local patternSpeed = profile.patternSpeed or 25
+	local speedModifier = patternSpeed * (min(timeSinceLastShot, 0.1) * 2 + 0.8)
+	
+	verticalKick *= multiplier * speedModifier
+	horizontalKick *= multiplier * speedModifier
+	
+	-- instant kick: делает "поднялось сразу"
+	local instant = profile.instantKickRatio or 0 -- 0..1 (например 0.65)
+
+	-- часть отдачи сразу в положение (моментальный рывок)
+	self.pitch += verticalKick * instant
+	self.yaw   += horizontalKick * instant
+
+	-- оставшаяся часть в скорость (пружина отработает возврат)
+	verticalKick *= (1 - instant)
+	horizontalKick *= (1 - instant)
+	
+	-- extra tuning (нужно для "выше" и "чуть влево")
+	local vMult = profile.verticalMult or 1
+	local hMult = profile.horizontalMult or 1
+	local leftBias = profile.leftBias or 0 -- отрицательное = влево
+
+	verticalKick *= vMult
+	horizontalKick = horizontalKick * hMult + (leftBias * speedModifier * multiplier)
+	
+	-- Применяем к velocity (spring physics)
+	self.pitchVel += verticalKick
+	self.yawVel += horizontalKick
+	
+	-- Roll recoil
+	local rollStrength = profile.rollStrength or 0.02
+	self.rollVel += (rollStrength * (random() * 2 - 1)) * (multiplier * speedModifier) * 0.7 - horizontalKick * 0.25
+	
+	-- Gun kick (positional)
+	local gunKickback = math.abs(profile.gunKickback or 0.06) -- всегда положительное число
+	local gunRise = profile.gunRise or 0.04
+
+	-- ВАЖНО: multiplier должен усиливать и positional kick тоже
+	local posMult = profile.posMult or 1
+	local posInstant = profile.posInstantKickRatio or instant
+
+	-- мгновенный positional kick (чтобы ствол дергало сразу)
+	self.posZ -= gunKickback * speedModifier * 0.45 * multiplier * posMult * posInstant
+	self.posY += gunRise     * speedModifier * 0.35 * multiplier * posMult * posInstant
+
+	self.velZ -= gunKickback * speedModifier * 1.1 * multiplier * posMult
+	self.velY += gunRise * speedModifier * 0.75 * multiplier * posMult
+	self.velX += horizontalKick * 0.25 * multiplier * posMult
+end
+
+-- Spring update - вызывается каждый кадр
+-- dt: delta time
+-- Возвращает CFrame для применения к оружию/камере
+function RecoilSystem:Update(dt)
+	dt = min(dt, 0.1) -- Ограничиваем dt для стабильности
+	
+	-- Spring constants (настраиваются из профиля)
+	local profile = self.currentProfile or {}
+	local springStiffness = profile.springStiffness or 75.0
+	local springDamping   = profile.springDamping   or 18.0
+	
+	-- Функция обновления spring
+	local function updateSpring(position, velocity)
+		local acceleration = (-springStiffness * position - springDamping * velocity) * dt
+		local newVelocity = velocity + acceleration
+		local newPosition = position + newVelocity * dt
+		
+		-- Early return если почти остановился
+		if abs(newPosition) < 0.0008 and abs(newVelocity) < 0.008 then
+			return newPosition * 0.5, newVelocity * 0.5
+		end
+		
+		return newPosition, newVelocity
+	end
+	
+	-- Обновляем rotational springs
+	self.pitch, self.pitchVel = updateSpring(self.pitch, self.pitchVel)
+	self.yaw, self.yawVel = updateSpring(self.yaw, self.yawVel)
+	self.roll, self.rollVel = updateSpring(self.roll, self.rollVel)
+	
+	-- Anti-down-bounce: не даём сильно "клевать" вниз после подлёта
+	if self.pitch < 0 and self.pitchVel < 0 then
+		self.pitchVel = self.pitchVel * 0.35
+	end
+	
+	-- Обновляем positional springs
+	self.posX, self.velX = updateSpring(self.posX, self.velX)
+	self.posY, self.velY = updateSpring(self.posY, self.velY)
+	self.posZ, self.velZ = updateSpring(self.posZ, self.velZ)
+	
+	-- Decay spray (УВЕЛИЧЕНО скорость затухания для быстрого возвращения)
+	self.sprayAmount = max(0, self.sprayAmount - dt * 5.5)
+	
+	-- Clamp values (настраиваются из профиля)
+	local minPitch = profile.minPitch or -0.30
+	local maxPitch = profile.maxPitch or  0.80
+	local maxYaw   = profile.maxYaw   or  0.50
+	local maxRoll  = profile.maxRoll  or  0.35
+
+	self.pitch = clamp(self.pitch, minPitch, maxPitch)
+	self.yaw   = clamp(self.yaw,   -maxYaw,  maxYaw)
+	self.roll  = clamp(self.roll,  -maxRoll, maxRoll)
+	
+	-- Генерируем CFrame для отдачи
+	local currentTime = clock()
+	local camShake = profile.cameraShake or 0.04
+	local shakeIntensity = (abs(self.pitchVel) + abs(self.yawVel)) * (0.0025 + camShake * 0.02)
+	
+	local positionalCF = CFrame.new(
+		self.posX * 0.25 + (sin(currentTime * 47.3) * 0.6 + cos(currentTime * 31.7) * 0.4) * shakeIntensity,
+		self.posY * 0.35 + (sin(currentTime * 41.2) * 0.6 + cos(currentTime * 37.9) * 0.4) * shakeIntensity,
+		self.posZ * 0.4
+	)
+	
+	local rotationalCF = CFrame.Angles(self.pitch, self.yaw, self.roll)
+	
+	return positionalCF * rotationalCF
+end
+
+-- Получить отдачу для камеры (в градусах)
+function RecoilSystem:GetCameraRecoil()
+	return Vector2.new(self.yaw * 45, -self.pitch * 45)
+end
+
+-- Сброс состояния
+function RecoilSystem:Reset()
+	self.pitch = 0
+	self.yaw = 0
+	self.roll = 0
+	self.pitchVel = 0
+	self.yawVel = 0
+	self.rollVel = 0
+	self.posX = 0
+	self.posY = 0
+	self.posZ = 0
+	self.velX = 0
+	self.velY = 0
+	self.velZ = 0
+	self.shotsFired = 0
+	self.sprayAmount = 0
+	self.patternIndex = 0
+end
+
+-- Получить текущий spray amount
+function RecoilSystem:GetSprayAmount()
+	return self.sprayAmount
+end
+
+-- Получить количество выстрелов
+function RecoilSystem:GetShotsFired()
+	return self.shotsFired
+end
+
+return RecoilSystem
